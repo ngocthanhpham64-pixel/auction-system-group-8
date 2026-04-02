@@ -30,7 +30,16 @@ public class Electronics extends Item {
    * @param brand             
    * @param warrantyPeriod    
    */
-  public Electronics(String id, LocalDateTime createdAt, boolean isDeleted, String name, String description, BigDecimal startingPrice, BigDecimal currentPrice, String brand, int warrantyPeriod) {
+  public Electronics(
+      String id, 
+      LocalDateTime createdAt, 
+      boolean isDeleted, 
+      String name, 
+      String description, 
+      BigDecimal startingPrice, 
+      BigDecimal currentPrice, 
+      String brand, 
+      int warrantyPeriod) {
     super(id, createdAt, isDeleted, name, description, startingPrice, currentPrice);
     this.brand = brand;
     this.warrantyPeriod = warrantyPeriod;

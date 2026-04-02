@@ -2,6 +2,7 @@ package vn.edu.vnu.uet.group8.common.entity;
 
 import java.time.LocalDateTime;
 
+import vn.edu.vnu.uet.group8.common.enums.UserRole;
 public abstract class User extends Entity {
   /**
    * Lớp trừu tượng cơ sở cho tất cả các người dùng trên hệ thống.
