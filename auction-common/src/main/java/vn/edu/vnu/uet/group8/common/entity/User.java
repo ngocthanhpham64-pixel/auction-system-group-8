@@ -1,5 +1,6 @@
 package vn.edu.vnu.uet.group8.common.entity;
 
+import java.time.Instant;
 import java.time.LocalDateTime;
 
 import vn.edu.vnu.uet.group8.common.enums.UserRole;
@@ -36,7 +37,7 @@ public abstract class User extends Entity {
    * @param time
    */
 
-  public User(String id, LocalDateTime createdAt, boolean isDeleted, String username, String fullName, String encryptedPassword, String email, LocalDateTime time) {
+  public User(String id, Instant createdAt, boolean isDeleted, String username, String fullName, String encryptedPassword, String email, LocalDateTime time) {
     super(id, createdAt, isDeleted);
     this.username = username;
     this.fullName = fullName;
