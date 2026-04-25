@@ -3,7 +3,7 @@ package vn.edu.vnu.uet.group8.common.enums;
 public enum UserRole {
   ADMIN("Quản trị viên"),
   SELLER("Người bán"),
-  BUYER("Người mua");
+  BIDDER("Người mua");
 
   private final String label;
 
