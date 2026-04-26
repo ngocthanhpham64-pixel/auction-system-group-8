@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.text.*?>
+
+<StackPane xmlns:fx="http://javafx.com/fxml/1"
+           fx:controller="vn.edu.vnu.uet.group8.client.controller.LoginController"
+           stylesheets="@../css/style.css"
+           style="-fx-background-color: #0F0F13;">
+
+    <VBox alignment="CENTER" spacing="0">
+        <!-- Card -->
+        <VBox styleClass="login-card" maxWidth="340" spacing="0">
+
+            <!-- Logo -->
+            <Label text="AuctionPro" styleClass="logo-text"
+                   alignment="CENTER" maxWidth="Infinity"/>
+            <Label text="Nền tảng đấu giá trực tuyến" styleClass="text-muted"
+                   alignment="CENTER" maxWidth="Infinity" style="-fx-padding: 4 0 20 0;"/>
+
+            <!-- Tab Đăng nhập / Đăng ký -->
+            <HBox styleClass="tab-container" spacing="3">
+                <Button fx:id="btnTabLogin" text="Đăng nhập"
+                        styleClass="tab-btn-active" maxWidth="Infinity"
+                        onAction="#onTabLogin" HBox.hgrow="ALWAYS"/>
+                <Button fx:id="btnTabRegister" text="Đăng ký"
+                        styleClass="tab-btn" maxWidth="Infinity"
+                        onAction="#onTabRegister" HBox.hgrow="ALWAYS"/>
+            </HBox>
+
+            <!-- Form -->
+            <VBox fx:id="loginForm" spacing="4" style="-fx-padding: 20 0 0 0;">
+                <Label text="Email" styleClass="form-label"/>
+                <TextField fx:id="tfEmail" promptText="example@email.com"
+                           styleClass="form-input"/>
+                <Label text="Mật khẩu" styleClass="form-label"
+                       style="-fx-padding: 8 0 0 0;"/>
+                <PasswordField fx:id="pfPassword" promptText="••••••••"
+                               styleClass="form-input"/>
+                <Label text="Quên mật khẩu?" styleClass="link-text"
+                       alignment="CENTER_RIGHT" maxWidth="Infinity"
+                       style="-fx-padding: 2 0 10 0;" onMouseClicked="#onForgotPassword"/>
+                <Button fx:id="btnSubmit" text="Đăng nhập"
+                        styleClass="btn-primary" maxWidth="Infinity"
+                        onAction="#onLogin"/>
+                <Label fx:id="lblError" styleClass="error-text"
+                       maxWidth="Infinity" alignment="CENTER" visible="false"/>
+            </VBox>
+
+        </VBox>
+    </VBox>
+</StackPane>
