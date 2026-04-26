@@ -26,8 +26,11 @@
 
             <!-- Logo -->
             <HBox fx:id="logoArea" alignment="CENTER_LEFT" spacing="10" style="-fx-padding: 0 0 28 0;">
-                <Label text="🔨"
-                       style="-fx-background-color: #1E3A6E; -fx-background-radius: 8; -fx-padding: 6 8; -fx-font-size: 18px;"/>
+                <ImageView fitWidth="40" fitHeight="40" preserveRatio="true">
+                    <image>
+                        <Image url="@../image/logo.png"/>
+                    </image>
+                </ImageView>
                 <VBox fx:id="logoText">
                     <Label text="AUCTIVA"
                            style="-fx-font-size: 16px; -fx-font-weight: bold; -fx-text-fill: #1E3A6E;"/>
