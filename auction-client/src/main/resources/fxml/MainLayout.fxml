@@ -1,75 +1,113 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <?import javafx.scene.layout.*?>
 <?import javafx.scene.control.*?>
+<?import javafx.scene.image.*?>
 <?import javafx.geometry.Insets?>
 
 <BorderPane xmlns:fx="http://javafx.com/fxml/1"
             fx:controller="vn.edu.vnu.uet.group8.client.controller.MainController"
             prefWidth="1280" prefHeight="800"
-            style="-fx-background-color: #F0F2F5;">
+            style="-fx-background-color: #F8F8F8;">
 
-    <!-- SIDEBAR trái -->
-    <left>
-        <VBox fx:id="sidebar" prefWidth="220"
-              style="-fx-background-color: white; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.06), 10, 0, 2, 0);">
-            <padding>
-                <Insets top="16" bottom="24" left="16" right="16"/>
-            </padding>
-
-            <!-- Nút hamburger ☰ -->
-            <Button fx:id="btnToggle" text="☰"
-                    onAction="#onToggleSidebar"
-                    style="-fx-background-color: transparent; -fx-text-fill: #1E3A6E; -fx-font-size: 20px; -fx-cursor: hand; -fx-padding: 4 8; -fx-background-radius: 8;"
-                    maxWidth="Infinity" alignment="CENTER_LEFT"/>
-
-            <Region prefHeight="12"/>
+    <!-- HEADER TRÊN CÙNG -->
+    <top>
+        <HBox style="-fx-background-color: white; -fx-border-color: #F0F0F0; -fx-border-width: 0 0 1 0;"
+              alignment="CENTER_LEFT" spacing="16">
+            <padding><Insets top="12" bottom="12" left="24" right="24"/></padding>
 
             <!-- Logo -->
-            <HBox fx:id="logoArea" alignment="CENTER_LEFT" spacing="10" style="-fx-padding: 0 0 28 0;">
-                <ImageView fitWidth="40" fitHeight="40" preserveRatio="true">
-                    <image>
-                        <Image url="@../image/logo.png"/>
-                    </image>
+            <HBox alignment="CENTER_LEFT" spacing="8">
+                <ImageView fitWidth="32" fitHeight="32" preserveRatio="true">
+                    <image><Image url="@../image/logo.png"/></image>
                 </ImageView>
-                <VBox fx:id="logoText">
+                <VBox>
                     <Label text="AUCTIVA"
-                           style="-fx-font-size: 16px; -fx-font-weight: bold; -fx-text-fill: #1E3A6E;"/>
+                           style="-fx-font-size: 14px; -fx-font-weight: bold; -fx-text-fill: #1E3A6E;"/>
                     <Label text="LIVE ONLINE AUCTIONS"
-                           style="-fx-font-size: 8px; -fx-text-fill: #F97316; -fx-font-weight: bold;"/>
+                           style="-fx-font-size: 7px; -fx-text-fill: #F97316; -fx-font-weight: bold;"/>
                 </VBox>
             </HBox>
 
-            <!-- Nav buttons -->
-            <Button fx:id="btnHome" text="🏠   Trang chủ"
-                    userData="HOME" onAction="#onNavClick"
-                    maxWidth="Infinity" style="-fx-background-color: #FFF3EB; -fx-text-fill: #F97316; -fx-font-weight: bold; -fx-background-radius: 10; -fx-padding: 12 16; -fx-cursor: hand; -fx-alignment: CENTER_LEFT;"/>
-            <Region prefHeight="4"/>
-            <Button fx:id="btnExplore" text="🔍   Khám phá"
-                    userData="EXPLORE" onAction="#onNavClick"
-                    maxWidth="Infinity" style="-fx-background-color: transparent; -fx-text-fill: #666; -fx-background-radius: 10; -fx-padding: 12 16; -fx-cursor: hand; -fx-alignment: CENTER_LEFT;"/>
-            <Region prefHeight="4"/>
-            <Button fx:id="btnMyAuctions" text="📋   Đấu giá của tôi"
-                    userData="MY_AUCTIONS" onAction="#onNavClick"
-                    maxWidth="Infinity" style="-fx-background-color: transparent; -fx-text-fill: #666; -fx-background-radius: 10; -fx-padding: 12 16; -fx-cursor: hand; -fx-alignment: CENTER_LEFT;"/>
-            <Region prefHeight="4"/>
-            <Button fx:id="btnWallet" text="💰   Ví tiền"
-                    userData="WALLET" onAction="#onNavClick"
-                    maxWidth="Infinity" style="-fx-background-color: transparent; -fx-text-fill: #666; -fx-background-radius: 10; -fx-padding: 12 16; -fx-cursor: hand; -fx-alignment: CENTER_LEFT;"/>
+            <!-- Thanh tìm kiếm -->
+            <TextField fx:id="tfSearch" promptText="🔍  Tìm kiếm sản phẩm đấu giá..."
+                       maxWidth="500" HBox.hgrow="ALWAYS"
+                       style="-fx-background-color: #F5F5F5; -fx-border-color: #EFEFEF; -fx-border-radius: 10; -fx-background-radius: 10; -fx-font-size: 13px; -fx-padding: 8 16;"/>
 
             <!-- Spacer -->
+            <Region HBox.hgrow="ALWAYS"/>
+
+            <!-- Trực tiếp -->
+            <HBox alignment="CENTER" spacing="6" style="-fx-cursor: hand;" onMouseClicked="#onLiveClick">
+                <Label text="●" style="-fx-text-fill: #F97316; -fx-font-size: 10px;"/>
+                <Label text="Trực tiếp"
+                       style="-fx-text-fill: #F97316; -fx-font-size: 13px; -fx-font-weight: bold;"/>
+            </HBox>
+
+            <!-- Yêu thích -->
+            <StackPane onMouseClicked="#onFavoriteClick" style="-fx-cursor: hand;">
+                <Label text="♥" style="-fx-font-size: 20px; -fx-text-fill: #666;"/>
+                <Label fx:id="lblFavCount" text="3"
+                       style="-fx-background-color: #F97316; -fx-text-fill: white; -fx-font-size: 9px; -fx-font-weight: bold; -fx-background-radius: 50; -fx-padding: 1 4;"
+                       StackPane.alignment="TOP_RIGHT"/>
+            </StackPane>
+
+            <!-- Thông báo -->
+            <StackPane onMouseClicked="#onNotificationClick" style="-fx-cursor: hand;">
+                <Label text="🔔" style="-fx-font-size: 18px;"/>
+                <Label fx:id="lblNotiCount" text="5"
+                       style="-fx-background-color: #F97316; -fx-text-fill: white; -fx-font-size: 9px; -fx-font-weight: bold; -fx-background-radius: 50; -fx-padding: 1 4;"
+                       StackPane.alignment="TOP_RIGHT"/>
+            </StackPane>
+
+            <!-- Avatar -->
+            <StackPane onMouseClicked="#onProfileClick" style="-fx-cursor: hand;">
+                <Label fx:id="lblAvatar" text="N"
+                       style="-fx-background-color: #F97316; -fx-text-fill: white; -fx-font-size: 14px; -fx-font-weight: bold; -fx-background-radius: 50; -fx-min-width: 36; -fx-min-height: 36; -fx-alignment: CENTER;"/>
+            </StackPane>
+
+        </HBox>
+    </top>
+
+    <!-- SIDEBAR TRÁI -->
+    <left>
+        <VBox fx:id="sidebar" prefWidth="200"
+              style="-fx-background-color: white; -fx-border-color: #F0F0F0; -fx-border-width: 0 1 0 0;">
+            <padding><Insets top="16" bottom="24" left="14" right="14"/></padding>
+
+            <!-- Hamburger -->
+            <Button fx:id="btnToggle" text="☰" onAction="#onToggleSidebar"
+                    style="-fx-background-color: transparent; -fx-text-fill: #1E3A6E; -fx-font-size: 20px; -fx-cursor: hand; -fx-padding: 4 8; -fx-background-radius: 8;"
+                    maxWidth="Infinity" alignment="CENTER_LEFT"/>
+            <Region prefHeight="16"/>
+
+            <!-- Nav -->
+            <Button fx:id="btnHome" text="🏠   Trang chủ"
+                    userData="HOME" onAction="#onNavClick" maxWidth="Infinity"
+                    style="-fx-background-color: #FFF3EB; -fx-text-fill: #F97316; -fx-font-weight: bold; -fx-background-radius: 10; -fx-padding: 12 16; -fx-cursor: hand; -fx-alignment: CENTER_LEFT;"/>
+            <Region prefHeight="4"/>
+            <Button fx:id="btnExplore" text="🔍   Khám phá"
+                    userData="EXPLORE" onAction="#onNavClick" maxWidth="Infinity"
+                    style="-fx-background-color: transparent; -fx-text-fill: #666; -fx-background-radius: 10; -fx-padding: 12 16; -fx-cursor: hand; -fx-alignment: CENTER_LEFT;"/>
+            <Region prefHeight="4"/>
+            <Button fx:id="btnMyAuctions" text="📋   Đấu giá của tôi"
+                    userData="MY_AUCTIONS" onAction="#onNavClick" maxWidth="Infinity"
+                    style="-fx-background-color: transparent; -fx-text-fill: #666; -fx-background-radius: 10; -fx-padding: 12 16; -fx-cursor: hand; -fx-alignment: CENTER_LEFT;"/>
+            <Region prefHeight="4"/>
+            <Button fx:id="btnWallet" text="💰   Ví tiền"
+                    userData="WALLET" onAction="#onNavClick" maxWidth="Infinity"
+                    style="-fx-background-color: transparent; -fx-text-fill: #666; -fx-background-radius: 10; -fx-padding: 12 16; -fx-cursor: hand; -fx-alignment: CENTER_LEFT;"/>
+
             <Region VBox.vgrow="ALWAYS"/>
 
-            <!-- Logout -->
-            <Button text="🚪   Đăng xuất"
-                    onAction="#onLogout"
-                    maxWidth="Infinity" style="-fx-background-color: #FFF0F0; -fx-text-fill: #E03030; -fx-background-radius: 10; -fx-padding: 12 16; -fx-cursor: hand; -fx-alignment: CENTER_LEFT;"/>
+            <Button text="🚪   Đăng xuất" onAction="#onLogout" maxWidth="Infinity"
+                    style="-fx-background-color: #FFF0F0; -fx-text-fill: #E03030; -fx-background-radius: 10; -fx-padding: 12 16; -fx-cursor: hand; -fx-alignment: CENTER_LEFT;"/>
         </VBox>
     </left>
 
     <!-- CONTENT -->
     <center>
         <StackPane fx:id="contentPane"
-                   style="-fx-background-color: #F0F2F5;"/>
+                   style="-fx-background-color: #F8F8F8;"/>
     </center>
 
 </BorderPane>
