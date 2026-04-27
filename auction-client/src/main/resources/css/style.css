@@ -98,3 +98,20 @@
     -fx-background-color: #1E1E2E;
     -fx-text-fill: #E0E0F0;
 }
+/* === ProductCard hover effects === */
+.product-card {
+    -fx-cursor: hand;
+    -fx-transition: all 0.2s ease;
+}
+
+.product-card:hover {
+    -fx-effect: dropshadow(three-pass-box, rgba(249,115,22,0.25), 14, 0, 0, 5);
+    -fx-translate-y: -3;
+    -fx-border-color: #F97316;
+    -fx-border-width: 1;
+    -fx-border-radius: 10;
+}
+
+.image-container {
+    -fx-background-radius: 8;
+}
