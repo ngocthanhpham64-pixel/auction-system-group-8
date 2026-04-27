@@ -11,11 +11,16 @@
 <?import javafx.scene.layout.VBox?>
 <?import javafx.scene.text.Font?>
 
-<VBox alignment="CENTER" minWidth="-Infinity" prefHeight="363.0" prefWidth="220.0" spacing="10.0" style="-fx-background-color: white; -fx-background-radius: 10; -fx-padding: 15; -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.1), 5, 0, 0, 0);" xmlns="http://javafx.com/javafx/25" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.example.hellofx.ProductCardController">
+<VBox alignment="CENTER" minWidth="-Infinity" prefHeight="363.0" prefWidth="220.0" spacing="10.0"
+      styleClass="product-card"
+      stylesheets="@../css/style.css"
+      xmlns="http://javafx.com/javafx/25" xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="com.example.hellofx.ProductCardController">
    <children>
-      <StackPane prefHeight="150.0" prefWidth="200.0">
+      <StackPane fx:id="imageContainer" prefHeight="150.0" prefWidth="200.0"
+                 styleClass="image-container">
          <children>
-            <ImageView fitHeight="149.0" fitWidth="115.0" pickOnBounds="true" preserveRatio="true">
+            <ImageView fx:id="productImage" fitHeight="149.0" fitWidth="115.0" pickOnBounds="true" preserveRatio="true">
                <image>
                   <Image url="@Ip17promax.png" />
                </image>
