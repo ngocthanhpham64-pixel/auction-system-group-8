@@ -1,0 +1,139 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.geometry.Insets?>
+
+<VBox xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="vn.edu.vnu.uet.group8.client.controller.NotificationController"
+      style="-fx-background-color: #F8F8F8;"
+      spacing="0">
+
+    <ScrollPane fitToWidth="true" VBox.vgrow="ALWAYS"
+                style="-fx-background-color: transparent; -fx-background: transparent; -fx-border-color: transparent;">
+        <content>
+            <VBox spacing="16" style="-fx-padding: 24;">
+
+                <!-- TIÊU ĐỀ -->
+                <HBox alignment="CENTER_LEFT">
+                    <Label text="Thông báo"
+                           style="-fx-font-size: 20px; -fx-font-weight: bold; -fx-text-fill: #1a1a1a;"/>
+                    <Region HBox.hgrow="ALWAYS"/>
+                    <Button text="Đánh dấu tất cả đã đọc" onAction="#onMarkAllRead"
+                            style="-fx-background-color: white; -fx-border-color: #E0E0E0; -fx-border-radius: 8; -fx-background-radius: 8; -fx-font-size: 12px; -fx-cursor: hand; -fx-padding: 6 14;"/>
+                </HBox>
+
+                <!-- TABS -->
+                <HBox spacing="8">
+                    <Button fx:id="btnTabAll" text="Tất cả" onAction="#onTabAll"
+                            style="-fx-background-color: #1a1a1a; -fx-text-fill: white; -fx-background-radius: 20; -fx-font-size: 12px; -fx-cursor: hand; -fx-padding: 6 16;"/>
+                    <Button fx:id="btnTabAuction" text="Đấu giá" onAction="#onTabAuction"
+                            style="-fx-background-color: white; -fx-border-color: #E0E0E0; -fx-border-radius: 20; -fx-font-size: 12px; -fx-cursor: hand; -fx-padding: 6 16;"/>
+                    <Button fx:id="btnTabWatch" text="Theo dõi" onAction="#onTabWatch"
+                            style="-fx-background-color: white; -fx-border-color: #E0E0E0; -fx-border-radius: 20; -fx-font-size: 12px; -fx-cursor: hand; -fx-padding: 6 16;"/>
+                    <Button fx:id="btnTabResult" text="Kết quả" onAction="#onTabResult"
+                            style="-fx-background-color: white; -fx-border-color: #E0E0E0; -fx-border-radius: 20; -fx-font-size: 12px; -fx-cursor: hand; -fx-padding: 6 16;"/>
+                </HBox>
+
+                <!-- DANH SÁCH THÔNG BÁO -->
+                <VBox fx:id="notificationList" spacing="8">
+
+                    <!-- Bị vượt giá - CHƯA ĐỌC -->
+                    <HBox style="-fx-background-color: white; -fx-border-color: #F97316; -fx-border-radius: 12; -fx-background-radius: 12; -fx-padding: 14;"
+                          spacing="12" alignment="TOP_LEFT">
+                        <Label text="⚡"
+                               style="-fx-background-color: #FFF3EB; -fx-background-radius: 50; -fx-font-size: 18px; -fx-min-width: 40; -fx-min-height: 40; -fx-alignment: CENTER;"/>
+                        <VBox spacing="4" HBox.hgrow="ALWAYS">
+                            <HBox alignment="CENTER_LEFT" spacing="8">
+                                <Label text="Bạn vừa bị vượt giá!"
+                                       style="-fx-font-size: 13px; -fx-font-weight: bold; -fx-text-fill: #1a1a1a;"/>
+                                <Label text="Mới"
+                                       style="-fx-background-color: #F97316; -fx-text-fill: white; -fx-font-size: 10px; -fx-font-weight: bold; -fx-background-radius: 20; -fx-padding: 2 8;"/>
+                            </HBox>
+                            <Label text="Đồng Hồ Rolex Submariner — Người dùng 7829 vừa đặt 860.000.000 đ, cao hơn giá của bạn."
+                                   wrapText="true" style="-fx-font-size: 12px; -fx-text-fill: #666;"/>
+                            <HBox spacing="8" alignment="CENTER_LEFT">
+                                <Label text="2 phút trước"
+                                       style="-fx-font-size: 11px; -fx-text-fill: #999;"/>
+                                <Button text="Đặt giá ngay" onAction="#onBidNow"
+                                        style="-fx-background-color: #F97316; -fx-text-fill: white; -fx-font-size: 11px; -fx-background-radius: 6; -fx-padding: 4 12; -fx-cursor: hand;"/>
+                            </HBox>
+                        </VBox>
+                    </HBox>
+
+                    <!-- Sắp kết thúc - CHƯA ĐỌC -->
+                    <HBox style="-fx-background-color: white; -fx-border-color: #F97316; -fx-border-radius: 12; -fx-background-radius: 12; -fx-padding: 14;"
+                          spacing="12" alignment="TOP_LEFT">
+                        <Label text="⏰"
+                               style="-fx-background-color: #FFF3EB; -fx-background-radius: 50; -fx-font-size: 18px; -fx-min-width: 40; -fx-min-height: 40; -fx-alignment: CENTER;"/>
+                        <VBox spacing="4" HBox.hgrow="ALWAYS">
+                            <HBox alignment="CENTER_LEFT" spacing="8">
+                                <Label text="Phiên đấu giá sắp kết thúc"
+                                       style="-fx-font-size: 13px; -fx-font-weight: bold; -fx-text-fill: #1a1a1a;"/>
+                                <Label text="Mới"
+                                       style="-fx-background-color: #F97316; -fx-text-fill: white; -fx-font-size: 10px; -fx-font-weight: bold; -fx-background-radius: 20; -fx-padding: 2 8;"/>
+                            </HBox>
+                            <Label text="Tranh Sơn Dầu Cổ Điển — Còn 30 phút nữa là kết thúc. Giá hiện tại: 1.250.000.000 đ."
+                                   wrapText="true" style="-fx-font-size: 12px; -fx-text-fill: #666;"/>
+                            <HBox spacing="8" alignment="CENTER_LEFT">
+                                <Label text="15 phút trước"
+                                       style="-fx-font-size: 11px; -fx-text-fill: #999;"/>
+                                <Button text="Xem ngay" onAction="#onViewAuction"
+                                        style="-fx-background-color: #F97316; -fx-text-fill: white; -fx-font-size: 11px; -fx-background-radius: 6; -fx-padding: 4 12; -fx-cursor: hand;"/>
+                            </HBox>
+                        </VBox>
+                    </HBox>
+
+                    <!-- Mặt hàng theo dõi - ĐÃ ĐỌC -->
+                    <HBox style="-fx-background-color: #F5F5F5; -fx-border-color: #EEEEEE; -fx-border-radius: 12; -fx-background-radius: 12; -fx-padding: 14;"
+                          spacing="12" alignment="TOP_LEFT">
+                        <Label text="🔍"
+                               style="-fx-background-color: #E8F0FE; -fx-background-radius: 50; -fx-font-size: 18px; -fx-min-width: 40; -fx-min-height: 40; -fx-alignment: CENTER;"/>
+                        <VBox spacing="4" HBox.hgrow="ALWAYS">
+                            <Label text="Có mặt hàng mới theo dõi của bạn"
+                                   style="-fx-font-size: 13px; -fx-font-weight: bold; -fx-text-fill: #1a1a1a;"/>
+                            <Label text="Danh mục Đồng hồ cao cấp — Vừa có sản phẩm mới: Patek Philippe 5711 khởi điểm 2.000.000.000 đ."
+                                   wrapText="true" style="-fx-font-size: 12px; -fx-text-fill: #666;"/>
+                            <Label text="1 giờ trước"
+                                   style="-fx-font-size: 11px; -fx-text-fill: #999;"/>
+                        </VBox>
+                    </HBox>
+
+                    <!-- Thắng đấu giá - ĐÃ ĐỌC -->
+                    <HBox style="-fx-background-color: #F5F5F5; -fx-border-color: #EEEEEE; -fx-border-radius: 12; -fx-background-radius: 12; -fx-padding: 14;"
+                          spacing="12" alignment="TOP_LEFT">
+                        <Label text="🏆"
+                               style="-fx-background-color: #F0FFF4; -fx-background-radius: 50; -fx-font-size: 18px; -fx-min-width: 40; -fx-min-height: 40; -fx-alignment: CENTER;"/>
+                        <VBox spacing="4" HBox.hgrow="ALWAYS">
+                            <Label text="Chúc mừng! Bạn đã thắng đấu giá"
+                                   style="-fx-font-size: 13px; -fx-font-weight: bold; -fx-text-fill: #1a1a1a;"/>
+                            <Label text="Nhẫn Kim Cương 5 Carat — Bạn đã thắng với giá 980.000.000 đ. Vui lòng hoàn tất thanh toán."
+                                   wrapText="true" style="-fx-font-size: 12px; -fx-text-fill: #666;"/>
+                            <HBox spacing="8" alignment="CENTER_LEFT">
+                                <Label text="2 giờ trước"
+                                       style="-fx-font-size: 11px; -fx-text-fill: #999;"/>
+                                <Button text="Thanh toán ngay" onAction="#onPayment"
+                                        style="-fx-background-color: white; -fx-border-color: #E0E0E0; -fx-border-radius: 6; -fx-background-radius: 6; -fx-font-size: 11px; -fx-cursor: hand; -fx-padding: 4 12;"/>
+                            </HBox>
+                        </VBox>
+                    </HBox>
+
+                    <!-- Thua đấu giá - ĐÃ ĐỌC -->
+                    <HBox style="-fx-background-color: #F5F5F5; -fx-border-color: #EEEEEE; -fx-border-radius: 12; -fx-background-radius: 12; -fx-padding: 14;"
+                          spacing="12" alignment="TOP_LEFT">
+                        <Label text="😔"
+                               style="-fx-background-color: #FFF0F0; -fx-background-radius: 50; -fx-font-size: 18px; -fx-min-width: 40; -fx-min-height: 40; -fx-alignment: CENTER;"/>
+                        <VBox spacing="4" HBox.hgrow="ALWAYS">
+                            <Label text="Phiên đấu giá đã kết thúc"
+                                   style="-fx-font-size: 13px; -fx-font-weight: bold; -fx-text-fill: #1a1a1a;"/>
+                            <Label text="Xe Cổ Mercedes-Benz 1960 — Rất tiếc, bạn không thắng phiên này. Giá thắng: 3.500.000.000 đ."
+                                   wrapText="true" style="-fx-font-size: 12px; -fx-text-fill: #666;"/>
+                            <Label text="Hôm qua"
+                                   style="-fx-font-size: 11px; -fx-text-fill: #999;"/>
+                        </VBox>
+                    </HBox>
+
+                </VBox>
+            </VBox>
+        </content>
+    </ScrollPane>
+</VBox>
