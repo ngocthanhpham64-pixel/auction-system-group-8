@@ -1,62 +1,72 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<?import javafx.geometry.Insets?>
-<?import javafx.scene.control.Button?>
-<?import javafx.scene.control.Label?>
-<?import javafx.scene.image.Image?>
-<?import javafx.scene.image.ImageView?>
-<?import javafx.scene.layout.HBox?>
-<?import javafx.scene.layout.Region?>
-<?import javafx.scene.layout.StackPane?>
-<?import javafx.scene.layout.VBox?>
-<?import javafx.scene.text.Font?>
+<?import javafx.geometry.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.image.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.shape.*?>
 
-<VBox alignment="CENTER" minWidth="-Infinity" prefHeight="363.0" prefWidth="220.0" spacing="10.0" style="-fx-background-color: white; -fx-background-radius: 10; -fx-padding: 15; -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.1), 5, 0, 0, 0);" xmlns="http://javafx.com/javafx/25" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.example.hellofx.ProductCardController">
-   <children>
-      <StackPane prefHeight="150.0" prefWidth="200.0">
-         <children>
-            <ImageView fitHeight="149.0" fitWidth="115.0" pickOnBounds="true" preserveRatio="true">
-               <image>
-                  <Image url="@Ip17promax.png" />
-               </image>
-            </ImageView>
-            <Label alignment="BOTTOM_RIGHT" minWidth="-Infinity" prefHeight="24.0" prefWidth="78.0" style="-fx-background-color: rgba(0, 0, 0, 0.6); -fx-text-fill: white; -fx-padding: 3 8 3 8; -fx-background-radius: 15; -fx-font-weight: bold;" text="02:35:00" StackPane.alignment="TOP_RIGHT" />
-         </children>
-      </StackPane>
-      <Label fx:id="productName" style="-fx-font-size: 16px; -fx-font-weight: bold; -fx-text-fill: #222222;" text="Iphone 17 Pro Max">
-         <font>
-            <Font size="18.0" />
-         </font>
+<VBox xmlns="http://javafx.com/javafx/21"
+      xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="vn.edu.vnu.uet.group8.client.controller.ProductCardController"
+      styleClass="product-card"
+      stylesheets="@../css/style.css"
+      prefWidth="220" spacing="0">
+
+   <!-- Image Area -->
+   <StackPane styleClass="card-image-wrapper" prefHeight="160">
+      <ImageView fx:id="ivProduct" fitWidth="220" fitHeight="160"
+                 preserveRatio="false" styleClass="card-image"/>
+
+      <!-- Status badge -->
+      <Label fx:id="lblStatus" text="LIVE" styleClass="status-badge-live"
+             StackPane.alignment="TOP_LEFT">
+         <StackPane.margin><Insets top="10" left="10"/></StackPane.margin>
       </Label>
-      <Label prefHeight="18.0" prefWidth="190.0" style="-fx-font-size: 12px; -fx-text-fill: #777777;" text="màn hình OLED 6.9 inch, chip A19 Pro 3nm mạnh mẽ, RAM 12GB và hệ thống 3 camera sau 48MP (Fusion Main, Ultra Wide, Telephoto) hỗ trợ zoom quang 8x" textFill="#0000009a" wrapText="true" />
-      <HBox prefHeight="100.0" prefWidth="200.0">
-         <children>
-            <Label minWidth="-Infinity" style="-fx-text-fill: #666666; -fx-font-size: 13px;" text="Giá khởi điểm " />
-            <Region prefHeight="200.0" prefWidth="200.0" HBox.hgrow="ALWAYS" />
-            <Label alignment="CENTER_RIGHT" minWidth="-Infinity" style="-fx-text-fill: #555555; -fx-font-size: 13px;" text="45.000.000đ" />
-         </children>
+
+      <!-- Timer / countdown badge -->
+      <HBox styleClass="timer-badge" alignment="CENTER"
+            StackPane.alignment="BOTTOM_RIGHT">
+         <StackPane.margin><Insets bottom="10" right="10"/></StackPane.margin>
+         <Label fx:id="lblTimer" text="02:34:10" styleClass="timer-text"/>
       </HBox>
-      <HBox prefHeight="100.0" prefWidth="200.0">
-         <children>
-            <Label minWidth="-Infinity" prefHeight="18.0" prefWidth="72.0" style="-fx-text-fill: #666666; -fx-font-size: 13px;" text="Giá hiện tại" />
-            <Region prefHeight="200.0" prefWidth="200.0" HBox.hgrow="ALWAYS" />
-            <Label fx:id="currentPrice" alignment="CENTER_RIGHT" minWidth="-Infinity" style="-fx-font-size: 16px; -fx-font-weight: bold; -fx-text-fill: #E53935;" text="50.000.000đ" />
-         </children>
+   </StackPane>
+
+   <!-- Card Content -->
+   <VBox styleClass="card-content" spacing="8">
+      <padding><Insets top="14" right="14" bottom="14" left="14"/></padding>
+
+      <!-- Category tag -->
+      <Label fx:id="lblCategory" text="Nghệ thuật" styleClass="card-category"/>
+
+      <!-- Title -->
+      <Label fx:id="lblName" text="Tên sản phẩm" styleClass="card-title"
+             wrapText="true"/>
+
+      <!-- Seller -->
+      <HBox spacing="6" alignment="CENTER_LEFT">
+         <Label text="👤" styleClass="card-seller-icon"/>
+         <Label fx:id="lblSeller" text="Người bán" styleClass="card-seller"/>
       </HBox>
-      <HBox prefHeight="100.0" prefWidth="200.0">
-         <children>
-            <Label minWidth="-Infinity" prefHeight="19.0" prefWidth="79.0" style="-fx-text-fill: #666666; -fx-font-size: 13px;" text="Lượt đấu giá " />
-            <Region prefHeight="24.0" prefWidth="52.0" HBox.hgrow="ALWAYS" />
-            <Label alignment="CENTER_RIGHT" minWidth="-Infinity" prefHeight="18.0" prefWidth="70.0" style="-fx-text-fill: #1976D2; -fx-underline: true; -fx-cursor: hand;" text="Xem chi tiết " textFill="#1e1a1a" />
-         </children>
-      </HBox>
-      <VBox prefHeight="200.0" prefWidth="100.0" spacing="10.0">
-         <children>
-            <Button maxWidth="1.7976931348623157E308" mnemonicParsing="false" style="-fx-background-color: #f41717; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 8; -fx-padding: 10;" text="Đặt giá ngay " textFill="#f41717" />
-         </children>
+
+      <!-- Separator -->
+      <Separator styleClass="card-sep"/>
+
+      <!-- Bid info -->
+      <VBox spacing="4">
+         <Label text="Giá hiện tại" styleClass="bid-label"/>
+         <Label fx:id="lblCurrentBid" text="0 ₫" styleClass="bid-amount"/>
       </VBox>
-   </children>
-   <padding>
-      <Insets bottom="20.0" left="20.0" right="20.0" top="20.0" />
-   </padding>
+
+      <!-- Bid count and button row -->
+      <HBox alignment="CENTER_LEFT" spacing="8">
+         <VBox>
+            <Label fx:id="lblBidCount" text="0 lượt đấu" styleClass="bid-count"/>
+         </VBox>
+         <Region HBox.hgrow="ALWAYS"/>
+         <Button fx:id="btnBid" text="Đặt giá" styleClass="bid-btn"
+                 onAction="#onBidNow"/>
+      </HBox>
+   </VBox>
+
 </VBox>
