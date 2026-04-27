@@ -1,50 +1,67 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <?import javafx.scene.layout.*?>
 <?import javafx.scene.control.*?>
-<?import javafx.scene.text.*?>
+<?import javafx.scene.image.*?>
+<?import javafx.geometry.Insets?>
 
 <StackPane xmlns:fx="http://javafx.com/fxml/1"
            fx:controller="vn.edu.vnu.uet.group8.client.controller.LoginController"
-           stylesheets="@../css/style.css"
-           style="-fx-background-color: #0F0F13;">
+           style="-fx-background-color: #F5F5F5;">
 
     <VBox alignment="CENTER" spacing="0">
-        <!-- Card -->
-        <VBox styleClass="login-card" maxWidth="340" spacing="0">
+        <VBox style="-fx-background-color: white; -fx-background-radius: 16; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.08), 24, 0, 0, 4);"
+              maxWidth="360" spacing="0">
+            <padding><Insets top="40" bottom="40" left="36" right="36"/></padding>
 
             <!-- Logo -->
-            <Label text="AuctionPro" styleClass="logo-text"
-                   alignment="CENTER" maxWidth="Infinity"/>
-            <Label text="Nền tảng đấu giá trực tuyến" styleClass="text-muted"
-                   alignment="CENTER" maxWidth="Infinity" style="-fx-padding: 4 0 20 0;"/>
+            <HBox alignment="CENTER" spacing="10" style="-fx-padding: 0 0 20 0;">
+                <ImageView fitWidth="60" fitHeight="60" preserveRatio="true">
+                    <image>
+                        <Image url="@../image/logo.png"/>
+                    </image>
+                </ImageView>
+                <VBox alignment="CENTER_LEFT">
+                    <Label text="AUCTIVA"
+                           style="-fx-font-size: 20px; -fx-font-weight: bold; -fx-text-fill: #1E3A6E;"/>
+                    <Label text="LIVE ONLINE AUCTIONS"
+                           style="-fx-font-size: 9px; -fx-text-fill: #888888;"/>
+                </VBox>
+            </HBox>
 
-            <!-- Tab Đăng nhập / Đăng ký -->
-            <HBox styleClass="tab-container" spacing="3">
-                <Button fx:id="btnTabLogin" text="Đăng nhập"
-                        styleClass="tab-btn-active" maxWidth="Infinity"
-                        onAction="#onTabLogin" HBox.hgrow="ALWAYS"/>
-                <Button fx:id="btnTabRegister" text="Đăng ký"
-                        styleClass="tab-btn" maxWidth="Infinity"
-                        onAction="#onTabRegister" HBox.hgrow="ALWAYS"/>
+            <!-- Title -->
+            <Label text="Chào mừng trở lại!" maxWidth="Infinity" alignment="CENTER"
+                   style="-fx-font-size: 22px; -fx-font-weight: bold; -fx-text-fill: #1a1a1a;"/>
+            <Label text="Đăng nhập để tiếp tục đấu giá" maxWidth="Infinity" alignment="CENTER"
+                   style="-fx-font-size: 13px; -fx-text-fill: #888888; -fx-padding: 4 0 20 0;"/>
+
+            <!-- Tabs -->
+            <HBox style="-fx-background-color: #F5F5F5; -fx-background-radius: 10; -fx-padding: 4 4 4 4;" spacing="4">
+                <Button fx:id="btnTabLogin" text="Đăng nhập" maxWidth="Infinity"
+                        onAction="#onTabLogin" HBox.hgrow="ALWAYS"
+                        style="-fx-background-color: white; -fx-text-fill: #1a1a1a; -fx-font-weight: bold; -fx-background-radius: 8; -fx-cursor: hand; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.1), 4, 0, 0, 1);"/>
+                <Button fx:id="btnTabRegister" text="Đăng ký" maxWidth="Infinity"
+                        onAction="#onTabRegister" HBox.hgrow="ALWAYS"
+                        style="-fx-background-color: transparent; -fx-text-fill: #888888; -fx-background-radius: 8; -fx-cursor: hand;"/>
             </HBox>
 
             <!-- Form -->
-            <VBox fx:id="loginForm" spacing="4" style="-fx-padding: 20 0 0 0;">
-                <Label text="Email" styleClass="form-label"/>
+            <VBox spacing="4" style="-fx-padding: 20 0 0 0;">
+                <Label text="Email"
+                       style="-fx-font-size: 12px; -fx-font-weight: bold; -fx-text-fill: #444444;"/>
                 <TextField fx:id="tfEmail" promptText="example@email.com"
-                           styleClass="form-input"/>
-                <Label text="Mật khẩu" styleClass="form-label"
-                       style="-fx-padding: 8 0 0 0;"/>
+                           style="-fx-background-color: #F9F9F9; -fx-border-color: #E5E5E5; -fx-border-radius: 10; -fx-background-radius: 10; -fx-font-size: 13px; -fx-padding: 11 14;"/>
+                <Label text="Mật khẩu"
+                       style="-fx-font-size: 12px; -fx-font-weight: bold; -fx-text-fill: #444444; -fx-padding: 6 0 0 0;"/>
                 <PasswordField fx:id="pfPassword" promptText="••••••••"
-                               styleClass="form-input"/>
-                <Label text="Quên mật khẩu?" styleClass="link-text"
-                       alignment="CENTER_RIGHT" maxWidth="Infinity"
-                       style="-fx-padding: 2 0 10 0;" onMouseClicked="#onForgotPassword"/>
-                <Button fx:id="btnSubmit" text="Đăng nhập"
-                        styleClass="btn-primary" maxWidth="Infinity"
-                        onAction="#onLogin"/>
-                <Label fx:id="lblError" styleClass="error-text"
-                       maxWidth="Infinity" alignment="CENTER" visible="false"/>
+                               style="-fx-background-color: #F9F9F9; -fx-border-color: #E5E5E5; -fx-border-radius: 10; -fx-background-radius: 10; -fx-font-size: 13px; -fx-padding: 11 14;"/>
+                <Label text="Quên mật khẩu?" alignment="CENTER_RIGHT" maxWidth="Infinity"
+                       style="-fx-text-fill: #F97316; -fx-font-size: 12px; -fx-cursor: hand; -fx-padding: 2 0 10 0;"
+                       onMouseClicked="#onForgotPassword"/>
+                <Button fx:id="btnSubmit" text="Đăng nhập" maxWidth="Infinity"
+                        onAction="#onLogin"
+                        style="-fx-background-color: #F97316; -fx-text-fill: white; -fx-font-size: 14px; -fx-font-weight: bold; -fx-background-radius: 10; -fx-cursor: hand; -fx-padding: 12 0;"/>
+                <Label fx:id="lblError" maxWidth="Infinity" alignment="CENTER"
+                       style="-fx-text-fill: #E03030; -fx-font-size: 12px;" visible="false"/>
             </VBox>
 
         </VBox>
