@@ -4,18 +4,36 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="0bb1ef1c-18e8-45f0-a19c-29cb43874fde" name="Changes" comment="" />
+    <list default="true" id="0bb1ef1c-18e8-45f0-a19c-29cb43874fde" name="Changes" comment="Thêm 1 số xử lý exception">
+      <change afterPath="$PROJECT_DIR$/auction-server/src/main/java/vn/edu/vnu/uet/group8/server/network/AuctionClient.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/auction-server/src/main/java/vn/edu/vnu/uet/group8/server/network/AppTest.java" beforeDir="false" afterPath="$PROJECT_DIR$/auction-server/src/main/java/vn/edu/vnu/uet/group8/server/network/AuctionServer.java" afterDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
     <option name="LAST_RESOLUTION" value="IGNORE" />
   </component>
+  <component name="CopilotPersistence">
+    <persistenceIdMap>
+      <entry key="_D:/nguyen dac thinh/auction-system-group-8" value="3Bq3g82ZpkH62da3ueC33mkvtGr" />
+    </persistenceIdMap>
+  </component>
+  <component name="CopilotUserSelectedChatMode">
+    <option name="chatModeId" value="Agent" />
+  </component>
+  <component name="CopilotUserSelectedModel">
+    <selectedModels>
+      <entry key="agent-panel" value="Claude Haiku 4.5" />
+      <entry key="chat-panel" value="Claude Haiku 4.5" />
+    </selectedModels>
+  </component>
   <component name="FileTemplateManagerImpl">
     <option name="RECENT_TEMPLATES">
       <list>
         <option value="Enum" />
-        <option value="Class" />
         <option value="Exception" />
+        <option value="Class" />
       </list>
     </option>
   </component>
@@ -61,9 +79,10 @@
     &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
     &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
     &quot;com.intellij.ml.llm.matterhorn.ej.ui.settings.DefaultModelSelectionForGA.v1&quot;: &quot;true&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;dev__entity&quot;,
     &quot;junie.onboarding.icon.badge.shown&quot;: &quot;true&quot;,
     &quot;kotlin-language-version-configured&quot;: &quot;true&quot;,
-    &quot;settings.editor.selected.configurable&quot;: &quot;preferences.sourceCode.JAVA&quot;,
+    &quot;settings.editor.selected.configurable&quot;: &quot;preferences.pluginManager&quot;,
     &quot;to.speed.mode.migration.done&quot;: &quot;true&quot;
   }
 }</component>
@@ -109,7 +128,15 @@
       <option name="project" value="LOCAL" />
       <updated>1775533211536</updated>
     </task>
-    <option name="localTasksCounter" value="3" />
+    <task id="LOCAL-00003" summary="Thêm 1 số xử lý exception">
+      <option name="closed" value="true" />
+      <created>1776412367432</created>
+      <option name="number" value="00003" />
+      <option name="presentableId" value="LOCAL-00003" />
+      <option name="project" value="LOCAL" />
+      <updated>1776412367432</updated>
+    </task>
+    <option name="localTasksCounter" value="4" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -125,6 +152,17 @@
   </component>
   <component name="VcsManagerConfiguration">
     <MESSAGE value="&#10;- [Common] Thêm model Auction và AuctionStatus.&#10;- [Server] Áp dụng Observer Pattern để chuẩn bị bắn thông báo giá mới về Client.&#10;- [Server] Sử dụng ReentrantLock theo từng ID phiên đấu giá trong hàm placeBid() để xử lý tranh chấp (Concurrent Bidding), tránh Lost Update và Race Condition.&#10;- [Server] Đảm bảo mở Lock trước khi notify để tránh nghẽn luồng mạng và Deadlock." />
-    <option name="LAST_COMMIT_MESSAGE" value="&#10;- [Common] Thêm model Auction và AuctionStatus.&#10;- [Server] Áp dụng Observer Pattern để chuẩn bị bắn thông báo giá mới về Client.&#10;- [Server] Sử dụng ReentrantLock theo từng ID phiên đấu giá trong hàm placeBid() để xử lý tranh chấp (Concurrent Bidding), tránh Lost Update và Race Condition.&#10;- [Server] Đảm bảo mở Lock trước khi notify để tránh nghẽn luồng mạng và Deadlock." />
+    <MESSAGE value="Thêm 1 số xử lý exception" />
+    <option name="LAST_COMMIT_MESSAGE" value="Thêm 1 số xử lý exception" />
+  </component>
+  <component name="github-copilot-workspace">
+    <instructionFileLocations>
+      <option value=".github/instructions" />
+      <option value=".github/instructions" />
+    </instructionFileLocations>
+    <promptFileLocations>
+      <option value=".github/prompts" />
+      <option value=".github/prompts" />
+    </promptFileLocations>
   </component>
 </project>
