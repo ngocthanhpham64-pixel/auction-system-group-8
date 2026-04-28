@@ -2,8 +2,8 @@ package vn.edu.vnu.uet.group8.common.dto;
 
 import java.io.Serializable;
 import java.math.BigDecimal;
-import java.util.Map;
 import java.time.Instant;
+import java.util.Map;
 
 import vn.edu.vnu.uet.group8.common.entity.Item;
 import vn.edu.vnu.uet.group8.common.enums.ItemCategory;
@@ -17,10 +17,8 @@ import vn.edu.vnu.uet.group8.common.interfaces.SpecAccessor;
  */
 public class ItemDTO implements Serializable, SpecAccessor {
 
-  private final static long serialVersionUID = 1L;
-
   private String itemId;
-  private String name;
+  private String title;
   private String description;
   private ItemCategory category;
   private ItemStatus status;
@@ -30,19 +28,24 @@ public class ItemDTO implements Serializable, SpecAccessor {
   private Instant endTime;
   private Map<String, String> specs;  // JSON đã được parse
 
+  @Override
+  public Map<String, String> getRawSpecs() {
+    return this.specs;
+  }
+
   // Chuyển từ Entity → DTO (dùng ở Server trước khi gửi)
-    public static ItemDTO from(Item item) {
-        ItemDTO dto = new ItemDTO();
-        dto.itemId       = item.getId();
-        dto.name         = item.getName();
-        dto.description  = item.getDescription();
-        dto.category     = item.getCategory();
-        dto.status       = item.getStatus();
-        dto.currentPrice = item.getCurrentPrice();
-        dto.startingPrice= item.getStartingPrice();
-        dto.sellerId     = item.getSellerId();
-        dto.endTime      = item.getEndTime();
-        dto.specs        = item.getSpecs();
-        return dto;
-    }
+  public static ItemDTO from(Item item) {
+      ItemDTO dto = new ItemDTO();
+      dto.itemId       = item.getId();
+      dto.title        = item.getTitle();
+      dto.description  = item.getDescription();
+      dto.category     = item.getCategory();
+      dto.status       = item.getStatus();
+      dto.currentPrice = item.getCurrentPrice();
+      dto.startingPrice= item.getStartingPrice();
+      dto.sellerId     = item.getSellerId();
+      dto.endTime      = item.getEndTime();
+      dto.specs        = item.getRawSpecs();
+      return dto;
+  }
 }

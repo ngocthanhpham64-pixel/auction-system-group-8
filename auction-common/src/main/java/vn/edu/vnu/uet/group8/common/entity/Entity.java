@@ -1,67 +1,103 @@
 package vn.edu.vnu.uet.group8.common.entity;
 
-import java.io.Serializable; //Đây là thư viện để chuẩn hóa việc chuyển dữ liệu thành bit để di chuyển qua mạng
 import java.time.Instant;
 import java.util.Objects;
-import java.util.UUID; // Thư viện này giúp ta tạo được id với 128 bit và chia làm 32 bit mỗi phần là tổng 4 phần khiến xác suất trùng lặp giữa 2 id là gần bằng 0
 
 /**
-   * Lớp trừu tượng cơ sở cho tất cả các thực thể trong hệ thống.
-   * Cung cấp các thuộc tính định danh và quản lý trạng thái cơ bản.
-   */
-public abstract class Entity implements Serializable {
-
-  private static final long serialVersionUID = 1L; // Đây là mã để giúp sever biết khi gặp xung đột client gửi thông tin khác với sever thì máy chủ sẽ tự xử lý theo dữ liệu trong bản 1 này
-  
-  private String id;
+ * Lớp trừu tượng cơ sở — Passive Entity.
+ *
+ * Không tự sinh ID, không tự gán thời gian.
+ * Mọi giá trị đều đến từ bên ngoài:
+ *   - Tạo mới  → Service/Factory truyền vào (id = 0, chờ DB)
+ *   - Load DB  → DAO.mapRow() truyền vào (id = giá trị thật từ DB)
+ */
+public abstract class Entity {
+  // int thay vì String UUID
+  // 0 = chưa được lưu vào DB (transient state), nghĩa là trong DB tự tạo id theo int
+  private int id;
   private Instant createdAt;
   private boolean isDeleted = false; // Này để tránh việc sau này khi xóa một vật thể nào đó không gây lỗi cho toàn bộ hệ thống còn lại (như xóa user thì không bị ảnh hưởng lịch sử giao dịch của toàn bộ server, chỉ thay đổi trạng thái không mất dữ liệu)
 
+  // ════════════════════════════════════════════════════
+  // Chỉ có MỘT constructor — nhận tất cả từ bên ngoài
+  // Không có constructor rỗng, không tự sinh UUID
+  // ════════════════════════════════════════════════════
 
   /**
-   * Khởi tạo thực thể mới với ID ngẫu nhiên và thời gian hiện tại.
+   * Dùng cho cả hai trường hợp:
+   *
+   * TẠO MỚI (chưa có trong DB):
+   *   id        = 0          ← quy ước "chưa có ID"
+   *   createdAt = Instant.now() ← Service truyền vào
+   *   isDeleted = false
+   *
+   * LOAD TỪ DB (đã có trong DB):
+   *   id        = giá trị thật từ ResultSet
+   *   createdAt = giá trị thật từ ResultSet
+   *   isDeleted = giá trị thật từ ResultSet
    */
-  public Entity() { // Constructor khởi tạo với người mới
-    this.id = UUID.randomUUID().toString();
-    this.createdAt = Instant.now();
-    this.isDeleted = false;
-  }
-
-  /**
-   * Khởi tạo thực thể với các giá trị cụ thể, thường dùng khi nạp dữ liệu từ database.
-   */
-  public Entity(String id, Instant createdAt, boolean isDeleted) { // Dùng cho trường hợp ta muốn khởi động lại toàn bộ hệ thống, toàn bộ dữ liệu cũ sẽ được nạp qua hàm này để lấy lại toàn bộ thông tin người dùng
-    this.id = id;
-    this.createdAt = createdAt;
+  protected Entity(int id, Instant createdAt, boolean isDeleted) {
+    this.id        = id;
+    this.createdAt = Objects.requireNonNull(createdAt,
+        "createdAt không được null");
     this.isDeleted = isDeleted;
-  } 
-
-  public String getId() {
-    return id;
   }
 
-  public void setId(String id) {
-    this.id = id;
+  // ════════════════════════════════════════════════════
+  // ID MANAGEMENT
+  // ════════════════════════════════════════════════════
+  
+  /**
+   * Gọi MỘT LẦN DUY NHẤT sau khi INSERT thành công.
+   * DAO lấy generated key từ DB rồi gọi method này.
+   *
+   * Sau khi set xong, không cho phép đổi nữa.
+   */
+  public void assignId(int generatedId) {
+    if (this.id != 0)
+      throw new IllegalStateException(
+        "ID đã được gán, không thể gán lại. "
+        + "id hiện tại = " + this.id);
+    if (generatedId <= 0)
+      throw new IllegalArgumentException(
+        "ID từ DB phải là số nguyên dương");
+    this.id = generatedId;
+  }
+
+  /** Kiểm tra xem đã được lưu chưa */
+  public boolean isPersisted() {
+    return id > 0;
+  }
+
+  // ════════════════════════════════════════════════════
+  // GETTERS + SOFT DELETE
+  // ════════════════════════════════════════════════════
+
+  public int getId() {
+    return id;
   }
 
   public Instant getCreatedAt() {
     return createdAt;
   }
 
-  public void setCreatedAt(Instant createdAt) {
-    this.createdAt = createdAt;
-  }
-
   public boolean isDeleted() {
     return isDeleted;
   }
 
-  public void setDeleted(boolean deleted) {
-    isDeleted = deleted;
+  // 
+  public void markAsDeleted() {
+    this.isDeleted = true;
   }
 
+  public void restore() {
+    this.isDeleted = false;
+  }
+  
+  // ════════════════════════════════════════════════════
+  // OVERRIDE
+  // ════════════════════════════════════════════════════
 
-  // Các hàm dưới này Overwrite để sau dễ dùng
   @Override 
   public boolean equals(Object o) {
     if (this == o) {

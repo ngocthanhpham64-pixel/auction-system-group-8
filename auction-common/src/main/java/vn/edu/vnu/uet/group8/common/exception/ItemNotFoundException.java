@@ -9,7 +9,7 @@ public class ItemNotFoundException extends AuctionException {
      * Khởi tạo ngoại lệ khi truy vấn Item thất bại.
      * @param itemId ID của vật phẩm không tồn tại.
      */
-  public ItemNotFoundException(String itemId) {
+  public ItemNotFoundException(int itemId) {
     super("Không tìm thấy mặt hàng với ID: " + itemId);
   }
 }

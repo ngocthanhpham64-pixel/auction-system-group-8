@@ -1,0 +1,13 @@
+# Loại bỏ thư mục build của Maven
+target/
+
+# Loại bỏ các file log
+*.log
+
+# Loại bỏ các file cấu hình riêng của IDE (IntelliJ, Eclipse, VS Code)
+.idea/
+*.iml
+.settings/
+.project
+.classpath
+.vscode/

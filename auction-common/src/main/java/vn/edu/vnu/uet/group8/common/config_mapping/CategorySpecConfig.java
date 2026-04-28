@@ -1,13 +1,45 @@
 package vn.edu.vnu.uet.group8.common.config_mapping;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.ArrayList;
 
 import vn.edu.vnu.uet.group8.common.enums.ItemCategory;
 import vn.edu.vnu.uet.group8.common.enums.SpecKey;
-
-import static vn.edu.vnu.uet.group8.common.enums.SpecKey.*;
+import static vn.edu.vnu.uet.group8.common.enums.SpecKey.AREA_M2;
+import static vn.edu.vnu.uet.group8.common.enums.SpecKey.BATHROOMS;
+import static vn.edu.vnu.uet.group8.common.enums.SpecKey.BEDROOMS;
+import static vn.edu.vnu.uet.group8.common.enums.SpecKey.BRAND;
+import static vn.edu.vnu.uet.group8.common.enums.SpecKey.CERTIFICATE;
+import static vn.edu.vnu.uet.group8.common.enums.SpecKey.COLOR;
+import static vn.edu.vnu.uet.group8.common.enums.SpecKey.CONDITION;
+import static vn.edu.vnu.uet.group8.common.enums.SpecKey.COUNTRY_ORIGIN;
+import static vn.edu.vnu.uet.group8.common.enums.SpecKey.ENGINE_CC;
+import static vn.edu.vnu.uet.group8.common.enums.SpecKey.ERA;
+import static vn.edu.vnu.uet.group8.common.enums.SpecKey.FACING_DIRECTION;
+import static vn.edu.vnu.uet.group8.common.enums.SpecKey.FLOORS;
+import static vn.edu.vnu.uet.group8.common.enums.SpecKey.FUEL_TYPE;
+import static vn.edu.vnu.uet.group8.common.enums.SpecKey.GENDER;
+import static vn.edu.vnu.uet.group8.common.enums.SpecKey.LAND_TYPE;
+import static vn.edu.vnu.uet.group8.common.enums.SpecKey.LEGAL_STATUS;
+import static vn.edu.vnu.uet.group8.common.enums.SpecKey.LICENSE_PLATE_CITY;
+import static vn.edu.vnu.uet.group8.common.enums.SpecKey.LOCATION_CITY;
+import static vn.edu.vnu.uet.group8.common.enums.SpecKey.LOCATION_DISTRICT;
+import static vn.edu.vnu.uet.group8.common.enums.SpecKey.MATERIAL;
+import static vn.edu.vnu.uet.group8.common.enums.SpecKey.MILEAGE_KM;
+import static vn.edu.vnu.uet.group8.common.enums.SpecKey.MODEL;
+import static vn.edu.vnu.uet.group8.common.enums.SpecKey.OS;
+import static vn.edu.vnu.uet.group8.common.enums.SpecKey.PROVENANCE;
+import static vn.edu.vnu.uet.group8.common.enums.SpecKey.RAM_GB;
+import static vn.edu.vnu.uet.group8.common.enums.SpecKey.RARITY;
+import static vn.edu.vnu.uet.group8.common.enums.SpecKey.SCREEN_SIZE_INCH;
+import static vn.edu.vnu.uet.group8.common.enums.SpecKey.SIZE;
+import static vn.edu.vnu.uet.group8.common.enums.SpecKey.STORAGE_GB;
+import static vn.edu.vnu.uet.group8.common.enums.SpecKey.STYLE;
+import static vn.edu.vnu.uet.group8.common.enums.SpecKey.TRANSMISSION;
+import static vn.edu.vnu.uet.group8.common.enums.SpecKey.VEHICLE_MAKE;
+import static vn.edu.vnu.uet.group8.common.enums.SpecKey.VEHICLE_YEAR;
+import static vn.edu.vnu.uet.group8.common.enums.SpecKey.WARRANTY_MONTHS;
 
 /**
  * Cấu hình các đặc tính (Specifications) cho từng danh mục hàng hóa trong hệ thống đấu giá.
@@ -39,10 +71,6 @@ public class CategorySpecConfig {
       ItemCategory.ANTIQUES, new CategorySpec(
           List.of(CONDITION, ERA, COUNTRY_ORIGIN),
           List.of(PROVENANCE, CERTIFICATE, RARITY, MATERIAL)
-      ),
-      ItemCategory.SERVICES, new CategorySpec(
-          List.of(SERVICE_DURATION, SERVICE_LOCATION),
-          List.of(SERVICE_SESSIONS, DELIVERY_METHOD)
       ),
       ItemCategory.FASHION, new CategorySpec(
           List.of(CONDITION, SIZE, GENDER),
