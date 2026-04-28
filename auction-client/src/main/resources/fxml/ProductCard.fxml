@@ -10,58 +10,77 @@
 <?import javafx.scene.layout.StackPane?>
 <?import javafx.scene.layout.VBox?>
 <?import javafx.scene.text.Font?>
+<?import java.net.URL?>
 
 <VBox alignment="CENTER" minWidth="-Infinity" prefHeight="363.0" prefWidth="220.0" spacing="10.0"
       styleClass="product-card"
-      stylesheets="@../css/style.css"
+      style="-fx-background-color: white; -fx-background-radius: 10; -fx-padding: 15; -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.1), 5, 0, 0, 0);"
       xmlns="http://javafx.com/javafx/25" xmlns:fx="http://javafx.com/fxml/1"
       fx:controller="com.example.hellofx.ProductCardController">
-   <children>
-      <StackPane fx:id="imageContainer" prefHeight="150.0" prefWidth="200.0"
-                 styleClass="image-container">
-         <children>
-            <ImageView fx:id="productImage" fitHeight="149.0" fitWidth="115.0" pickOnBounds="true" preserveRatio="true">
-               <image>
-                  <Image url="@Ip17promax.png" />
-               </image>
-            </ImageView>
-            <Label alignment="BOTTOM_RIGHT" minWidth="-Infinity" prefHeight="24.0" prefWidth="78.0" style="-fx-background-color: rgba(0, 0, 0, 0.6); -fx-text-fill: white; -fx-padding: 3 8 3 8; -fx-background-radius: 15; -fx-font-weight: bold;" text="02:35:00" StackPane.alignment="TOP_RIGHT" />
-         </children>
-      </StackPane>
-      <Label fx:id="productName" style="-fx-font-size: 16px; -fx-font-weight: bold; -fx-text-fill: #222222;" text="Iphone 17 Pro Max">
-         <font>
-            <Font size="18.0" />
-         </font>
-      </Label>
-      <Label prefHeight="18.0" prefWidth="190.0" style="-fx-font-size: 12px; -fx-text-fill: #777777;" text="màn hình OLED 6.9 inch, chip A19 Pro 3nm mạnh mẽ, RAM 12GB và hệ thống 3 camera sau 48MP (Fusion Main, Ultra Wide, Telephoto) hỗ trợ zoom quang 8x" textFill="#0000009a" wrapText="true" />
-      <HBox prefHeight="100.0" prefWidth="200.0">
-         <children>
-            <Label minWidth="-Infinity" style="-fx-text-fill: #666666; -fx-font-size: 13px;" text="Giá khởi điểm " />
-            <Region prefHeight="200.0" prefWidth="200.0" HBox.hgrow="ALWAYS" />
-            <Label alignment="CENTER_RIGHT" minWidth="-Infinity" style="-fx-text-fill: #555555; -fx-font-size: 13px;" text="45.000.000đ" />
-         </children>
-      </HBox>
-      <HBox prefHeight="100.0" prefWidth="200.0">
-         <children>
-            <Label minWidth="-Infinity" prefHeight="18.0" prefWidth="72.0" style="-fx-text-fill: #666666; -fx-font-size: 13px;" text="Giá hiện tại" />
-            <Region prefHeight="200.0" prefWidth="200.0" HBox.hgrow="ALWAYS" />
-            <Label fx:id="currentPrice" alignment="CENTER_RIGHT" minWidth="-Infinity" style="-fx-font-size: 16px; -fx-font-weight: bold; -fx-text-fill: #E53935;" text="50.000.000đ" />
-         </children>
-      </HBox>
-      <HBox prefHeight="100.0" prefWidth="200.0">
-         <children>
-            <Label minWidth="-Infinity" prefHeight="19.0" prefWidth="79.0" style="-fx-text-fill: #666666; -fx-font-size: 13px;" text="Lượt đấu giá " />
-            <Region prefHeight="24.0" prefWidth="52.0" HBox.hgrow="ALWAYS" />
-            <Label alignment="CENTER_RIGHT" minWidth="-Infinity" prefHeight="18.0" prefWidth="70.0" style="-fx-text-fill: #1976D2; -fx-underline: true; -fx-cursor: hand;" text="Xem chi tiết " textFill="#1e1a1a" />
-         </children>
-      </HBox>
-      <VBox prefHeight="200.0" prefWidth="100.0" spacing="10.0">
-         <children>
-            <Button maxWidth="1.7976931348623157E308" mnemonicParsing="false" style="-fx-background-color: #f41717; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 8; -fx-padding: 10;" text="Đặt giá ngay " textFill="#f41717" />
-         </children>
-      </VBox>
-   </children>
-   <padding>
-      <Insets bottom="20.0" left="20.0" right="20.0" top="20.0" />
-   </padding>
+
+    <stylesheets>
+        <URL value="@../css/tokens.css"/>
+        <URL value="@../css/components.css"/>
+        <URL value="@../css/layout.css"/>
+    </stylesheets>
+
+    <children>
+        <StackPane fx:id="imageContainer" prefHeight="150.0" prefWidth="200.0" styleClass="image-container">
+            <children>
+                <ImageView fx:id="productImage" fitHeight="149.0" fitWidth="115.0" pickOnBounds="true" preserveRatio="true">
+                    <image>
+                        <Image url="@Ip17promax.png"/>
+                    </image>
+                </ImageView>
+                <Label alignment="BOTTOM_RIGHT" minWidth="-Infinity" prefHeight="24.0" prefWidth="78.0"
+                       style="-fx-background-color: rgba(0, 0, 0, 0.6); -fx-text-fill: white; -fx-padding: 3 8 3 8; -fx-background-radius: 15; -fx-font-weight: bold;"
+                       text="02:35:00" StackPane.alignment="TOP_RIGHT"/>
+            </children>
+        </StackPane>
+
+        <Label fx:id="productName" styleClass="text-bold" style="-fx-font-size: 16px;" text="Iphone 17 Pro Max">
+            <font><Font size="18.0"/></font>
+        </Label>
+
+        <Label prefHeight="18.0" prefWidth="190.0" styleClass="text-muted" style="-fx-font-size: 12px;"
+               text="màn hình OLED 6.9 inch, chip A19 Pro 3nm mạnh mẽ, RAM 12GB và hệ thống 3 camera sau 48MP (Fusion Main, Ultra Wide, Telephoto) hỗ trợ zoom quang 8x"
+               wrapText="true"/>
+
+        <HBox prefHeight="100.0" prefWidth="200.0">
+            <children>
+                <Label minWidth="-Infinity" styleClass="text-muted" style="-fx-font-size: 13px;" text="Giá khởi điểm "/>
+                <Region prefHeight="200.0" prefWidth="200.0" HBox.hgrow="ALWAYS"/>
+                <Label alignment="CENTER_RIGHT" minWidth="-Infinity" style="-fx-text-fill: #555; -fx-font-size: 13px;" text="45.000.000đ"/>
+            </children>
+        </HBox>
+
+        <HBox prefHeight="100.0" prefWidth="200.0">
+            <children>
+                <Label minWidth="-Infinity" prefHeight="18.0" prefWidth="72.0" styleClass="text-muted" style="-fx-font-size: 13px;" text="Giá hiện tại"/>
+                <Region prefHeight="200.0" prefWidth="200.0" HBox.hgrow="ALWAYS"/>
+                <Label fx:id="currentPrice" alignment="CENTER_RIGHT" minWidth="-Infinity"
+                       styleClass="text-orange-bold" style="-fx-font-size: 16px;" text="50.000.000đ"/>
+            </children>
+        </HBox>
+
+        <HBox prefHeight="100.0" prefWidth="200.0">
+            <children>
+                <Label minWidth="-Infinity" prefHeight="19.0" prefWidth="79.0" styleClass="text-muted" style="-fx-font-size: 13px;" text="Lượt đấu giá "/>
+                <Region prefHeight="24.0" prefWidth="52.0" HBox.hgrow="ALWAYS"/>
+                <Label alignment="CENTER_RIGHT" minWidth="-Infinity" prefHeight="18.0" prefWidth="70.0"
+                       style="-fx-text-fill: #F97316; -fx-underline: true; -fx-cursor: hand; -fx-font-size: 12px;"
+                       text="Xem chi tiết "/>
+            </children>
+        </HBox>
+
+        <VBox prefHeight="200.0" prefWidth="100.0" spacing="10.0">
+            <children>
+                <Button maxWidth="1.7976931348623157E308" mnemonicParsing="false"
+                        styleClass="btn-primary" style="-fx-padding: 10;" text="Đặt giá ngay"/>
+            </children>
+        </VBox>
+    </children>
+    <padding>
+        <Insets bottom="20.0" left="20.0" right="20.0" top="20.0"/>
+    </padding>
 </VBox>

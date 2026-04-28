@@ -2,60 +2,56 @@
 <?import javafx.scene.layout.*?>
 <?import javafx.scene.control.*?>
 <?import javafx.geometry.Insets?>
+<?import java.net.URL?>
 
 <VBox xmlns:fx="http://javafx.com/fxml/1"
       fx:controller="vn.edu.vnu.uet.group8.client.controller.ExploreController"
-      style="-fx-background-color: #F8F8F8;"
+      styleClass="app-bg"
       spacing="0">
+
+    <stylesheets>
+        <URL value="@../css/tokens.css"/>
+        <URL value="@../css/components.css"/>
+        <URL value="@../css/layout.css"/>
+    </stylesheets>
 
     <!-- TIÊU ĐỀ + BỘ LỌC -->
     <VBox style="-fx-background-color: white; -fx-border-color: #F0F0F0; -fx-border-width: 0 0 1 0;">
         <padding><Insets top="20" bottom="16" left="24" right="24"/></padding>
 
-        <Label text="Tất cả phiên đấu giá"
-               style="-fx-font-size: 20px; -fx-font-weight: bold; -fx-text-fill: #1a1a1a; -fx-padding: 0 0 16 0;"/>
+        <Label text="Tất cả phiên đấu giá" styleClass="h2" style="-fx-padding: 0 0 16 0;"/>
 
         <!-- Bộ lọc -->
         <HBox spacing="10" alignment="CENTER_LEFT" style="-fx-padding: 0 0 12 0;">
-            <ComboBox fx:id="cbCategory" promptText="Tất cả danh mục"
-                      prefWidth="240"
+            <ComboBox fx:id="cbCategory" promptText="Tất cả danh mục" prefWidth="240"
                       style="-fx-border-color: #E0E0E0; -fx-border-radius: 8; -fx-background-radius: 8; -fx-font-size: 13px;"/>
-            <ComboBox fx:id="cbPrice" promptText="Tất cả mức giá"
-                      prefWidth="240"
+            <ComboBox fx:id="cbPrice" promptText="Tất cả mức giá" prefWidth="240"
                       style="-fx-border-color: #E0E0E0; -fx-border-radius: 8; -fx-background-radius: 8; -fx-font-size: 13px;"/>
-            <Button text="Bộ lọc nâng cao" onAction="#onAdvancedFilter"
-                    style="-fx-background-color: white; -fx-border-color: #E0E0E0; -fx-border-radius: 8; -fx-background-radius: 8; -fx-font-size: 13px; -fx-cursor: hand; -fx-padding: 8 16;"/>
+            <Button text="Bộ lọc nâng cao" onAction="#onAdvancedFilter" styleClass="btn-secondary"/>
         </HBox>
 
         <!-- Tags -->
         <HBox spacing="8" alignment="CENTER_LEFT">
-            <Button fx:id="btnTagOpen" text="Đang mở" onAction="#onTagClick"
-                    style="-fx-background-color: #1a1a1a; -fx-text-fill: white; -fx-background-radius: 20; -fx-font-size: 12px; -fx-cursor: hand; -fx-padding: 5 16;"/>
-            <Button text="Sắp kết thúc" onAction="#onTagClick"
-                    style="-fx-background-color: white; -fx-border-color: #E0E0E0; -fx-border-radius: 20; -fx-font-size: 12px; -fx-cursor: hand; -fx-padding: 5 16;"/>
-            <Button text="Giá cao nhất" onAction="#onTagClick"
-                    style="-fx-background-color: white; -fx-border-color: #E0E0E0; -fx-border-radius: 20; -fx-font-size: 12px; -fx-cursor: hand; -fx-padding: 5 16;"/>
-            <Button text="Mới nhất" onAction="#onTagClick"
-                    style="-fx-background-color: white; -fx-border-color: #E0E0E0; -fx-border-radius: 20; -fx-font-size: 12px; -fx-cursor: hand; -fx-padding: 5 16;"/>
+            <Button fx:id="btnTagOpen" text="Đang mở" onAction="#onTagClick" styleClass="tag-active"/>
+            <Button text="Sắp kết thúc" onAction="#onTagClick" styleClass="tag-inactive"/>
+            <Button text="Giá cao nhất" onAction="#onTagClick" styleClass="tag-inactive"/>
+            <Button text="Mới nhất" onAction="#onTagClick" styleClass="tag-inactive"/>
         </HBox>
     </VBox>
 
     <!-- KẾT QUẢ + SẮP XẾP -->
     <HBox alignment="CENTER_LEFT" style="-fx-padding: 12 24 12 24;">
-        <Label fx:id="lblResultCount" text="Hiển thị 8 kết quả"
-               style="-fx-font-size: 13px; -fx-text-fill: #888;"/>
+        <Label fx:id="lblResultCount" text="Hiển thị 8 kết quả" styleClass="label-info"/>
         <Region HBox.hgrow="ALWAYS"/>
-        <Label text="Sắp xếp:" style="-fx-font-size: 13px; -fx-text-fill: #888; -fx-padding: 0 8 0 0;"/>
+        <Label text="Sắp xếp:" styleClass="label-info" style="-fx-padding: 0 8 0 0;"/>
         <ComboBox fx:id="cbSort" promptText="Sắp kết thúc" prefWidth="160"
                   style="-fx-border-color: #E0E0E0; -fx-border-radius: 8; -fx-background-radius: 8; -fx-font-size: 13px;"/>
     </HBox>
 
     <!-- DANH SÁCH SẢN PHẨM -->
-    <ScrollPane VBox.vgrow="ALWAYS" fitToWidth="true"
-                style="-fx-background-color: transparent; -fx-background: transparent; -fx-border-color: transparent;">
+    <ScrollPane VBox.vgrow="ALWAYS" fitToWidth="true" styleClass="scrollpane-clean">
         <content>
-            <FlowPane fx:id="productContainer"
-                      hgap="16" vgap="16"
+            <FlowPane fx:id="productContainer" hgap="16" vgap="16"
                       style="-fx-padding: 0 24 24 24; -fx-background-color: #F8F8F8;"/>
         </content>
     </ScrollPane>
@@ -63,19 +59,14 @@
     <!-- PHÂN TRANG -->
     <HBox alignment="CENTER" spacing="6"
           style="-fx-background-color: white; -fx-padding: 14; -fx-border-color: #F0F0F0; -fx-border-width: 1 0 0 0;">
-        <Button text="Trước"
-                style="-fx-background-color: white; -fx-border-color: #E0E0E0; -fx-border-radius: 8; -fx-background-radius: 8; -fx-font-size: 13px; -fx-cursor: hand; -fx-padding: 7 14;"/>
+        <Button text="Trước" styleClass="btn-secondary"/>
         <Button fx:id="btnPage1" text="1"
                 style="-fx-background-color: #F97316; -fx-text-fill: white; -fx-border-radius: 8; -fx-background-radius: 8; -fx-font-size: 13px; -fx-font-weight: bold; -fx-cursor: hand; -fx-padding: 7 13;"/>
-        <Button text="2"
-                style="-fx-background-color: white; -fx-border-color: #E0E0E0; -fx-border-radius: 8; -fx-background-radius: 8; -fx-font-size: 13px; -fx-cursor: hand; -fx-padding: 7 13;"/>
-        <Button text="3"
-                style="-fx-background-color: white; -fx-border-color: #E0E0E0; -fx-border-radius: 8; -fx-background-radius: 8; -fx-font-size: 13px; -fx-cursor: hand; -fx-padding: 7 13;"/>
-        <Label text="..." style="-fx-font-size: 13px; -fx-text-fill: #888; -fx-padding: 7 4;"/>
-        <Button text="10"
-                style="-fx-background-color: white; -fx-border-color: #E0E0E0; -fx-border-radius: 8; -fx-background-radius: 8; -fx-font-size: 13px; -fx-cursor: hand; -fx-padding: 7 13;"/>
-        <Button text="Sau"
-                style="-fx-background-color: white; -fx-border-color: #E0E0E0; -fx-border-radius: 8; -fx-background-radius: 8; -fx-font-size: 13px; -fx-cursor: hand; -fx-padding: 7 14;"/>
+        <Button text="2" styleClass="btn-secondary"/>
+        <Button text="3" styleClass="btn-secondary"/>
+        <Label text="..." styleClass="label-info" style="-fx-padding: 7 4;"/>
+        <Button text="10" styleClass="btn-secondary"/>
+        <Button text="Sau" styleClass="btn-secondary"/>
     </HBox>
 
 </VBox>
