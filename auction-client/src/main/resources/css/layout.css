@@ -1,0 +1,165 @@
+/* ==========================================
+   AUCTIVA LAYOUT
+   Class CSS cho header, sidebar, navigation
+   ========================================== */
+
+/* === APP BACKGROUND === */
+.app-bg {
+    -fx-background-color: #F8F8F8;
+}
+
+.app-bg-light {
+    -fx-background-color: #F5F5F5;
+}
+
+/* === SCROLLPANE === */
+.scrollpane-clean {
+    -fx-background-color: transparent;
+    -fx-background: transparent;
+    -fx-border-color: transparent;
+}
+
+.scrollpane-clean > .viewport {
+    -fx-background-color: transparent;
+}
+
+/* === DIVIDER === */
+.divider-h {
+    -fx-background-color: #F0F0F0;
+}
+
+.divider-v {
+    -fx-background-color: #E0E0E0;
+}
+
+/* === HEADER === */
+.app-header {
+    -fx-background-color: white;
+    -fx-border-color: #F0F0F0;
+    -fx-border-width: 0 0 1 0;
+}
+
+.header-link {
+    -fx-background-color: transparent;
+    -fx-text-fill: #444;
+    -fx-font-size: 13px;
+    -fx-font-weight: bold;
+    -fx-background-radius: 8;
+    -fx-padding: 8 14;
+    -fx-cursor: hand;
+}
+
+.header-link:hover {
+    -fx-background-color: #F5F5F5;
+}
+
+.header-link-active {
+    -fx-background-color: #FFF3EB;
+    -fx-text-fill: #F97316;
+    -fx-font-size: 13px;
+    -fx-font-weight: bold;
+    -fx-background-radius: 8;
+    -fx-padding: 8 14;
+    -fx-cursor: hand;
+}
+
+.header-link-live {
+    -fx-background-color: transparent;
+    -fx-text-fill: #E03030;
+    -fx-font-size: 13px;
+    -fx-font-weight: bold;
+    -fx-background-radius: 8;
+    -fx-padding: 8 14;
+    -fx-cursor: hand;
+}
+
+.header-link-live:hover {
+    -fx-background-color: #FFF0F0;
+}
+
+/* === HAMBURGER === */
+.hamburger-btn {
+    -fx-background-color: white;
+    -fx-text-fill: #1E3A6E;
+    -fx-border-color: #E0E0E0;
+    -fx-border-radius: 10;
+    -fx-background-radius: 10;
+    -fx-font-size: 16px;
+    -fx-padding: 8 12;
+    -fx-cursor: hand;
+}
+
+.hamburger-btn:hover {
+    -fx-background-color: #F5F5F5;
+    -fx-border-color: #F97316;
+}
+
+/* === LOGO TEXT === */
+.logo-title {
+    -fx-font-size: 14px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #1E3A6E;
+}
+
+.logo-title-lg {
+    -fx-font-size: 20px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #1E3A6E;
+}
+
+.logo-subtitle {
+    -fx-font-size: 8px;
+    -fx-text-fill: #F97316;
+    -fx-font-weight: bold;
+}
+
+.logo-subtitle-muted {
+    -fx-font-size: 9px;
+    -fx-text-fill: #888;
+}
+
+/* === SIDEBAR === */
+.app-sidebar {
+    -fx-background-color: white;
+    -fx-border-color: #F0F0F0;
+    -fx-border-width: 0 1 0 0;
+}
+
+.nav-item {
+    -fx-background-color: transparent;
+    -fx-text-fill: #666;
+    -fx-font-size: 12px;
+    -fx-background-radius: 10;
+    -fx-padding: 10 14;
+    -fx-cursor: hand;
+    -fx-alignment: CENTER_LEFT;
+}
+
+.nav-item:hover {
+    -fx-background-color: #F5F5F5;
+}
+
+.nav-item-active {
+    -fx-background-color: #FFF3EB;
+    -fx-text-fill: #F97316;
+    -fx-font-weight: bold;
+    -fx-font-size: 12px;
+    -fx-background-radius: 10;
+    -fx-padding: 10 14;
+    -fx-cursor: hand;
+    -fx-alignment: CENTER_LEFT;
+}
+
+.nav-item-logout {
+    -fx-background-color: #FFF0F0;
+    -fx-text-fill: #E03030;
+    -fx-font-size: 12px;
+    -fx-background-radius: 10;
+    -fx-padding: 10 14;
+    -fx-cursor: hand;
+    -fx-alignment: CENTER_LEFT;
+}
+
+.nav-item-logout:hover {
+    -fx-background-color: #FFE5E5;
+}

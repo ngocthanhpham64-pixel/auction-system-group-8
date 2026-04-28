@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.geometry.Insets?>
+
+<VBox xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="vn.edu.vnu.uet.group8.client.controller.ProfileController"
+      style="-fx-background-color: #F8F8F8;"
+      spacing="0">
+
+    <ScrollPane fitToWidth="true" VBox.vgrow="ALWAYS"
+                style="-fx-background-color: transparent; -fx-background: transparent; -fx-border-color: transparent;">
+        <content>
+            <VBox spacing="16" style="-fx-padding: 24;">
+
+                <!-- HEADER CAM -->
+                <HBox style="-fx-background-color: #F97316; -fx-background-radius: 12; -fx-padding: 24;"
+                      alignment="CENTER_LEFT" spacing="20">
+
+                    <!-- Avatar -->
+                    <Label fx:id="lblAvatar" text="N"
+                           style="-fx-background-color: white; -fx-text-fill: #F97316; -fx-font-size: 24px; -fx-font-weight: bold; -fx-background-radius: 50; -fx-min-width: 64; -fx-min-height: 64; -fx-alignment: CENTER;"/>
+
+                    <!-- Thông tin -->
+                    <VBox spacing="4" HBox.hgrow="ALWAYS">
+                        <Label fx:id="lblName" text="Nguyễn Văn A"
+                               style="-fx-font-size: 20px; -fx-font-weight: bold; -fx-text-fill: white;"/>
+                        <Label fx:id="lblEmail" text="nguyenvana@email.com"
+                               style="-fx-font-size: 13px; -fx-text-fill: rgba(255,255,255,0.8);"/>
+                        <Label fx:id="lblJoinDate" text="Tham gia tháng 3/2024"
+                               style="-fx-font-size: 12px; -fx-text-fill: rgba(255,255,255,0.6);"/>
+                    </VBox>
+
+                    <!-- Nút -->
+                    <HBox spacing="8">
+                        <Button text="Cài đặt" onAction="#onSettings"
+                                style="-fx-background-color: rgba(255,255,255,0.2); -fx-text-fill: white; -fx-border-color: rgba(255,255,255,0.4); -fx-border-radius: 8; -fx-background-radius: 8; -fx-font-size: 12px; -fx-cursor: hand; -fx-padding: 7 14;"/>
+                        <Button text="Đăng xuất" onAction="#onLogout"
+                                style="-fx-background-color: rgba(255,255,255,0.2); -fx-text-fill: white; -fx-border-color: rgba(255,255,255,0.4); -fx-border-radius: 8; -fx-background-radius: 8; -fx-font-size: 12px; -fx-cursor: hand; -fx-padding: 7 14;"/>
+                    </HBox>
+                </HBox>
+
+                <!-- THỐNG KÊ -->
+                <HBox spacing="12">
+                    <VBox style="-fx-background-color: white; -fx-background-radius: 12; -fx-border-color: #EEEEEE; -fx-border-radius: 12; -fx-padding: 16;" alignment="CENTER" HBox.hgrow="ALWAYS">
+                        <Label text="Tổng lượt đấu giá"
+                               style="-fx-font-size: 11px; -fx-text-fill: #888; -fx-padding: 0 0 6 0;"/>
+                        <Label fx:id="lblTotalBids" text="234"
+                               style="-fx-font-size: 26px; -fx-font-weight: bold; -fx-text-fill: #1a1a1a;"/>
+                    </VBox>
+                    <VBox style="-fx-background-color: white; -fx-background-radius: 12; -fx-border-color: #EEEEEE; -fx-border-radius: 12; -fx-padding: 16;" alignment="CENTER" HBox.hgrow="ALWAYS">
+                        <Label text="Đấu giá thành công"
+                               style="-fx-font-size: 11px; -fx-text-fill: #888; -fx-padding: 0 0 6 0;"/>
+                        <Label fx:id="lblWonBids" text="45"
+                               style="-fx-font-size: 26px; -fx-font-weight: bold; -fx-text-fill: #22C55E;"/>
+                    </VBox>
+                    <VBox style="-fx-background-color: white; -fx-background-radius: 12; -fx-border-color: #EEEEEE; -fx-border-radius: 12; -fx-padding: 16;" alignment="CENTER" HBox.hgrow="ALWAYS">
+                        <Label text="Đang tham gia"
+                               style="-fx-font-size: 11px; -fx-text-fill: #888; -fx-padding: 0 0 6 0;"/>
+                        <Label fx:id="lblActiveBids" text="12"
+                               style="-fx-font-size: 26px; -fx-font-weight: bold; -fx-text-fill: #F97316;"/>
+                    </VBox>
+                    <VBox style="-fx-background-color: white; -fx-background-radius: 12; -fx-border-color: #EEEEEE; -fx-border-radius: 12; -fx-padding: 16;" alignment="CENTER" HBox.hgrow="ALWAYS">
+                        <Label text="Đánh giá trung bình"
+                               style="-fx-font-size: 11px; -fx-text-fill: #888; -fx-padding: 0 0 6 0;"/>
+                        <Label fx:id="lblRating" text="4.8"
+                               style="-fx-font-size: 26px; -fx-font-weight: bold; -fx-text-fill: #1a1a1a;"/>
+                    </VBox>
+                </HBox>
+
+                <!-- SỐ DƯ TÀI KHOẢN -->
+                <HBox style="-fx-background-color: white; -fx-background-radius: 12; -fx-border-color: #EEEEEE; -fx-border-radius: 12; -fx-padding: 16;"
+                      alignment="CENTER_LEFT">
+                    <VBox>
+                        <Label text="Số dư tài khoản"
+                               style="-fx-font-size: 12px; -fx-text-fill: #888; -fx-padding: 0 0 4 0;"/>
+                        <Label fx:id="lblBalance" text="50.000.000 đ"
+                               style="-fx-font-size: 22px; -fx-font-weight: bold; -fx-text-fill: #1a1a1a;"/>
+                    </VBox>
+                    <Region HBox.hgrow="ALWAYS"/>
+                    <Button text="Nạp tiền" onAction="#onDeposit"
+                            style="-fx-background-color: #F97316; -fx-text-fill: white; -fx-font-size: 13px; -fx-font-weight: bold; -fx-background-radius: 10; -fx-padding: 10 20; -fx-cursor: hand;"/>
+                </HBox>
+
+                <!-- LỊCH SỬ ĐẤU GIÁ -->
+                <VBox style="-fx-background-color: white; -fx-background-radius: 12; -fx-border-color: #EEEEEE; -fx-border-radius: 12; -fx-padding: 16;" spacing="14">
+
+                    <!-- Tab filter -->
+                    <HBox spacing="8">
+                        <Button fx:id="btnTabActive" text="Đang tham gia" onAction="#onTabActive"
+                                style="-fx-background-color: #1a1a1a; -fx-text-fill: white; -fx-background-radius: 20; -fx-font-size: 12px; -fx-cursor: hand; -fx-padding: 6 16;"/>
+                        <Button fx:id="btnTabWon" text="Đã thắng" onAction="#onTabWon"
+                                style="-fx-background-color: white; -fx-border-color: #E0E0E0; -fx-border-radius: 20; -fx-font-size: 12px; -fx-cursor: hand; -fx-padding: 6 16;"/>
+                        <Button fx:id="btnTabLost" text="Đã thua" onAction="#onTabLost"
+                                style="-fx-background-color: white; -fx-border-color: #E0E0E0; -fx-border-radius: 20; -fx-font-size: 12px; -fx-cursor: hand; -fx-padding: 6 16;"/>
+                    </HBox>
+
+                    <!-- Danh sách -->
+                    <VBox fx:id="bidHistoryList" spacing="10"/>
+
+                </VBox>
+
+            </VBox>
+        </content>
+    </ScrollPane>
+</VBox>

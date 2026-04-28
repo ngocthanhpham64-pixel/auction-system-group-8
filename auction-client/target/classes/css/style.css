@@ -1,0 +1,117 @@
+.login-card {
+    -fx-background-color: #15151E;
+    -fx-border-color: #2A2A3E;
+    -fx-border-radius: 14;
+    -fx-background-radius: 14;
+    -fx-padding: 36 32 36 32;
+}
+
+.logo-text {
+    -fx-text-fill: #D4A853;
+    -fx-font-size: 22px;
+    -fx-font-weight: bold;
+}
+
+.text-muted {
+    -fx-text-fill: #555566;
+    -fx-font-size: 12px;
+}
+
+.tab-container {
+    -fx-background-color: #1E1E2E;
+    -fx-background-radius: 8;
+    -fx-padding: 3 3 3 3;
+}
+
+.tab-btn {
+    -fx-background-color: transparent;
+    -fx-text-fill: #555566;
+    -fx-font-size: 13px;
+    -fx-background-radius: 6;
+    -fx-cursor: hand;
+}
+
+.tab-btn-active {
+    -fx-background-color: #D4A853;
+    -fx-text-fill: #0F0F13;
+    -fx-font-size: 13px;
+    -fx-font-weight: bold;
+    -fx-background-radius: 6;
+    -fx-cursor: hand;
+}
+
+.form-label {
+    -fx-text-fill: #AAAACC;
+    -fx-font-size: 11px;
+}
+
+.form-input {
+    -fx-background-color: #1E1E2E;
+    -fx-border-color: #2A2A3E;
+    -fx-border-radius: 8;
+    -fx-background-radius: 8;
+    -fx-text-fill: #E0E0F0;
+    -fx-font-size: 13px;
+    -fx-padding: 10 12 10 12;
+}
+
+.form-input:focused {
+    -fx-border-color: #D4A853;
+}
+
+.btn-primary {
+    -fx-background-color: #D4A853;
+    -fx-text-fill: #0F0F13;
+    -fx-font-size: 14px;
+    -fx-font-weight: bold;
+    -fx-background-radius: 8;
+    -fx-cursor: hand;
+    -fx-padding: 11 0 11 0;
+}
+
+.btn-primary:hover {
+    -fx-background-color: #F0C070;
+}
+
+.link-text {
+    -fx-text-fill: #D4A853;
+    -fx-font-size: 11px;
+    -fx-cursor: hand;
+}
+
+.error-text {
+    -fx-text-fill: #E03030;
+    -fx-font-size: 12px;
+}
+
+.nav-btn {
+    -fx-background-color: transparent;
+    -fx-text-fill: #AAAACC;
+    -fx-font-size: 13px;
+    -fx-alignment: CENTER_LEFT;
+    -fx-padding: 10 12 10 12;
+    -fx-background-radius: 8;
+    -fx-cursor: hand;
+}
+
+.nav-btn:hover {
+    -fx-background-color: #1E1E2E;
+    -fx-text-fill: #E0E0F0;
+}
+/* === ProductCard hover effects === */
+.product-card {
+    -fx-cursor: hand;
+    -fx-transition: all 0.2s ease;
+}
+
+.product-card:hover {
+    -fx-effect: dropshadow(three-pass-box, rgba(249,115,22,0.25), 14, 0, 0, 5);
+    -fx-translate-y: -3;
+    -fx-border-color: #F97316;
+    -fx-border-width: 1;
+    -fx-border-radius: 10;
+}
+
+.image-container {
+    -fx-background-radius: 8;
+}
