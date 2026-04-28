@@ -39,7 +39,6 @@
                                     style="-fx-background-color: white; -fx-background-radius: 50; -fx-font-size: 14px; -fx-cursor: hand; -fx-padding: 4 8; -fx-min-width: 32; -fx-min-height: 32;"/>
                              <Button text="⤴" onAction="#onShare"
                                     style="-fx-background-color: white; -fx-background-radius: 50; -fx-font-size: 14px; -fx-cursor: hand; -fx-padding: 4 8; -fx-min-width: 32; -fx-min-height: 32;"/>
-</HBox>
                         </HBox>
                     </StackPane>
 
