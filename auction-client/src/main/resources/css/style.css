@@ -1,74 +1,20 @@
-/* Tổng thể ứng dụng */
-.root {
-    -fx-background-color: #0f0f13;
-    -fx-font-family: "Segoe UI", Arial, sans-serif;
 }
 
-/* --- SIDEBAR --- */
-.sidebar {
-    -fx-background-color: #1a1a24;
-    -fx-padding: 20 15 20 15;
-    -fx-border-color: transparent #2a2a35 transparent transparent;
-    -fx-border-width: 1;
-}
-
-.sidebar-title {
-    -fx-text-fill: #e8c68c;
-    -fx-font-size: 20px;
     -fx-font-weight: bold;
 }
 
-.sidebar-btn {
     -fx-background-color: transparent;
-    -fx-text-fill: #a0a0ab;
-    -fx-alignment: center-left;
-    -fx-padding: 10 15 10 15;
     -fx-font-size: 14px;
     -fx-cursor: hand;
 }
 
-.sidebar-btn:hover, .sidebar-btn-active {
-    -fx-background-color: #2a2a35;
-    -fx-text-fill: #e8c68c;
     -fx-background-radius: 8;
 }
 
-/* --- CARD SẢN PHẨM --- */
 .product-card {
-    -fx-background-color: #21212e;
-    -fx-background-radius: 12;
-    -fx-padding: 15;
-    -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.3), 10, 0, 0, 5);
-}
-
-.product-card:hover {
-    -fx-background-color: #2a2a35;
     -fx-cursor: hand;
 }
 
-.card-title {
-    -fx-text-fill: white;
-    -fx-font-size: 16px;
-    -fx-font-weight: bold;
 }
 
-.card-category {
-    -fx-text-fill: #8a8a9a;
-    -fx-font-size: 12px;
-}
-
-.card-price {
-    -fx-text-fill: #e8c68c;
-    -fx-font-size: 16px;
-    -fx-font-weight: bold;
-}
-
-/* Badge (LIVE / HOT) */
-.badge-live {
-    -fx-background-color: #ff4757;
-    -fx-text-fill: white;
-    -fx-padding: 3 8 3 8;
-    -fx-background-radius: 10;
-    -fx-font-size: 10px;
-    -fx-font-weight: bold;
 }

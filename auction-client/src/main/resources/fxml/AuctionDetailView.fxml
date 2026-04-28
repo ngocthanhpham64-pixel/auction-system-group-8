@@ -33,12 +33,13 @@
                                StackPane.alignment="TOP_LEFT">
                             <StackPane.margin><Insets top="8" left="8"/></StackPane.margin>
                         </Label>
-                        <HBox spacing="6" StackPane.alignment="TOP_RIGHT">
-                            <StackPane.margin><Insets top="8" right="8"/></StackPane.margin>
-                            <Button text="♥" onAction="#onFavorite"
-                                    style="-fx-background-color: white; -fx-background-radius: 50; -fx-font-size: 14px; -fx-cursor: hand; -fx-padding: 4 8;"/>
-                            <Button text="⤴" onAction="#onShare"
-                                    style="-fx-background-color: white; -fx-background-radius: 50; -fx-font-size: 14px; -fx-cursor: hand; -fx-padding: 4 8;"/>
+                        <HBox spacing="6" StackPane.alignment="TOP_RIGHT" maxWidth="-Infinity" maxHeight="-Infinity">
+                             <StackPane.margin><Insets top="8" right="8"/></StackPane.margin>
+                             <Button text="♥" onAction="#onFavorite"
+                                    style="-fx-background-color: white; -fx-background-radius: 50; -fx-font-size: 14px; -fx-cursor: hand; -fx-padding: 4 8; -fx-min-width: 32; -fx-min-height: 32;"/>
+                             <Button text="⤴" onAction="#onShare"
+                                    style="-fx-background-color: white; -fx-background-radius: 50; -fx-font-size: 14px; -fx-cursor: hand; -fx-padding: 4 8; -fx-min-width: 32; -fx-min-height: 32;"/>
+</HBox>
                         </HBox>
                     </StackPane>
 
