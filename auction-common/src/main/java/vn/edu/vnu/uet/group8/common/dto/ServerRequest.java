@@ -1,10 +1,12 @@
 package vn.edu.vnu.uet.group8.common.dto;
 
-
 import vn.edu.vnu.uet.group8.common.enums.ActionType;
-
-import java.util.Locale;
 import java.util.UUID;
+
+/**
+ * Yêu cầu từ client-> server
+ * Immutable, dùng Builder.
+ */
 
 public final class ServerRequest {
     private final String requestId;// Mã định danh duy nhất cho mỗi request(dùng UUID tạo tự động)

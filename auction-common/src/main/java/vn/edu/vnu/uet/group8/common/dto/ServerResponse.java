@@ -1,6 +1,9 @@
 package vn.edu.vnu.uet.group8.common.dto;
 
-import java.util.Locale;
+/**
+ * Phản hồi từ server -> client
+ * requestId dùng để ghép với yêu cầu gốc.
+ */
 
 public final class ServerResponse {
     private final String requestId; // sao chép lại requestId từ request gốc. CLient gửi request có requestId, server trả về response với cùng resquestId để client biết response này dành chp request nào
