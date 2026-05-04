@@ -1,9 +1,8 @@
-package vn.edu.vnu.uet.group8.client.network;
+package vn.edu.vnu.uet.group8.client.networking;
 
 import javafx.application.Platform;
 import vn.edu.vnu.uet.group8.common.dto.ServerResponse;
 
-import java.time.Instant;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
