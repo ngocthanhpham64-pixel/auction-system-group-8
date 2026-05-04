@@ -1,4 +1,5 @@
 package vn.edu.vnu.uet.group8.client.networking;
+<<<<<<< Updated upstream
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -89,10 +90,68 @@ public final class AuctionClient {
         socket = new Socket(host, port);
 
         // Dùng BufferedOutputStream để tăng hiệu suất (giảm số lần write system call)
+=======
+import com.google.gson.Gson;
+import javafx.application.Platform;
+import vn.edu.vnu.uet.group8.client.model.ClientModel;
+import vn.edu.vnu.uet.group8.client.util.AlertUtil;
+import vn.edu.vnu.uet.group8.client.util.SceneManager;
+import vn.edu.vnu.uet.group8.common.dto.ServerRequest;
+import vn.edu.vnu.uet.group8.common.dto.ServerResponse;
+
+import java.io.*;
+import java.net.Socket;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicBoolean;
+
+/**
+ * AuctionClient - Singleton quản lý kết nối TCP tới server
+ * Chịu trách nhiệm:
+ *  Kết nối/ngắt kết nối tới server
+ *  Gửi ServerRequest dạng JSON qua Socket
+ *  Nhận ServerResponse trong background và chuyển cho ResponseDispatcher
+ */
+public final class AuctionClient {
+    private static final AuctionClient INSTANCE = new AuctionClient();//Singleton
+    private final Gson gson = new Gson();
+    private final AtomicBoolean connected = new AtomicBoolean(false);
+    private final ExecutorService readerExecutor = Executors.newSingleThreadExecutor(r->{
+        Thread t = new Thread(r,"auction-reader");
+        t.setDaemon(true);
+        return t;
+    });
+    private Socket socket;
+    private DataOutputStream out;
+    private DataInputStream in;
+    private Future<?> readerFuture; // để hủy task cũ khi reconnect
+
+    private AuctionClient(){}
+
+    public static AuctionClient getInstance(){
+        return INSTANCE;
+    }
+    /**
+     * Kết nối tới server.
+     * Nếu đã kết nối thì không làm gì.
+     * Nếu có kết nối cũ, sẽ đóng trước.
+     *
+     * @param host địa chỉ IP hoặc hostname của server
+     * @param port cổng TCP
+     * @throws IOException lỗi khi tạo socket
+     */
+    public void connect(String host,int port) throws IOException{
+        if(connected.get()) return;
+        disconnect(); // dọn dẹp kết nối cũ tránh rò rỉ
+
+        socket = new Socket(host, port);
+>>>>>>> Stashed changes
         out = new DataOutputStream(new BufferedOutputStream(socket.getOutputStream()));
         in = new DataInputStream(new BufferedInputStream(socket.getInputStream()));
 
         connected.set(true);
+<<<<<<< Updated upstream
         LOGGER.info("Connected to server at " + host + ":" + port);
 
         // Khởi tạo thread pool đơn luồng để lắng nghe response từ server
@@ -271,3 +330,83 @@ public final class AuctionClient {
         return resp;
     }
 }
+=======
+        startListening();
+    }
+    /**
+     * Gửi một ServerRequest lên server.
+     * Phương thức này thread-safe nhờ synchronized lên out.
+     *
+     * @param request yêu cầu cần gửi
+     * @throws IllegalStateException nếu chưa kết nối
+     */
+    public void sendRequest(ServerRequest request){
+        if(!connected.get()) throw new IllegalStateException("Not connected to server");
+        String json = gson.toJson(request);
+        synchronized (out){
+            try{
+                out.writeUTF(json);
+                out.flush(); // đảm bảo gửi ngay, không nằm trong buffer
+            } catch(IOException e){
+                handleDisconnect(e);
+            }
+        }
+    }
+    /**
+     * Bắt đầu luồng nền để đọc phản hồi từ server.
+     * Hủy task cũ(nếu có) trước khi tạo task mới
+     */
+    private void startListening(){
+        // Nếu đã có reader đang chạy(do reconnect chưa kịp chốt), thì hủy nó
+        if(readerFuture != null && !readerFuture.isDone()){
+            readerFuture.cancel(true);
+        }
+        readerFuture = readerExecutor.submit(()->{
+            try{
+                while(connected.get()){
+                    String json = in.readUTF();
+                    ServerResponse response = gson.fromJson(json,ServerResponse.class);
+                    ResponseDispatcher.dispatch(response);
+                }
+            } catch(IOException e){
+                handleDisconnect(e);
+            }
+        });
+    }
+    /** Xử lý sự cố mất kết nối hoặc lối I/O.
+     * Đảm bảo chỉ xử lý một lần
+     * Nếu người dùng đã đăng nhập, sẽ clear session và chuyển về màn hình login.
+     *
+     * @param e nguyên nhân lỗi
+     */
+    private void handleDisconnect(Exception e){
+        if(!connected.compareAndSet(true,false)) return; // chỉ xử lý một lần
+        Platform.runLater(() -> {
+            AlertUtil.showError("Mất kết nối server: " + e.getMessage());
+            // Chỉ redirect nếu thực sự đã đăng nhập, tránh reload login nhiều lần
+            if (ClientModel.getInstance().isLoggedIn()) {
+                ClientModel.getInstance().clearSession();
+                SceneManager.switchTo("login.fxml");
+            }
+        });
+    }
+    /**
+     * Ngắt kết nối chủ động.
+     * Đóng socket, set cờ connected = false.
+     * Không shutdown executor vì nó dùng lại cho lần connect tiếp theo.
+     */
+    public void disconnect() {
+        connected.set(false);
+        if (socket != null && !socket.isClosed()) {
+            try {
+                socket.close();
+            } catch (IOException ignored) {
+                // bỏ qua, vì đã cố gắng đóng
+            }
+        }
+    }
+    public boolean isConnected(){
+        return connected.get();
+    }
+}
+>>>>>>> Stashed changes

@@ -1,5 +1,7 @@
 package vn.edu.vnu.uet.group8.common.entity;
 
+import vn.edu.vnu.uet.group8.common.enums.UserRole;
+
 import java.math.BigDecimal;
 import java.time.Instant;
 
@@ -64,7 +66,6 @@ public class User {
   public BigDecimal getBalance()        { return balance; }
   public Instant getCreatedAt()         { return createdAt; }
   public boolean isDeleted()            { return isDeleted; }
-
   public static class Builder {
     private final String username, email, encryptedPassword;
     private String fullName, phone;

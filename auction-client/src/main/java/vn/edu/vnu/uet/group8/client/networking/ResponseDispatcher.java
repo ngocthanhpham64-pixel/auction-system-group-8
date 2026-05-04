@@ -2,14 +2,29 @@ package vn.edu.vnu.uet.group8.client.networking;
 
 import javafx.application.Platform;
 import vn.edu.vnu.uet.group8.common.dto.ServerResponse;
+<<<<<<< Updated upstream
 
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
+=======
+import vn.edu.vnu.uet.group8.common.dto.AuctionStatusDTO;
+import vn.edu.vnu.uet.group8.client.controller.AuctionDetailController;
+import vn.edu.vnu.uet.group8.client.controller.LiveAuctionController;
+
+import com.google.gson.Gson;
+import javafx.application.Platform;
+import vn.edu.vnu.uet.group8.common.dto.ServerResponse;
+
+import java.util.List;
+import java.util.ArrayList;
+import java.util.concurrent.ConcurrentHashMap;
+>>>>>>> Stashed changes
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
+<<<<<<< Updated upstream
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -51,10 +66,30 @@ public final class ResponseDispatcher {
      * Daemon thread tự kết thúc khi JVM shutdown - không cần shutdown thủ công
      */
     private static final ScheduledExecutorService cleaner = Executors.newSingleThreadScheduledExecutor(r->{
+=======
+
+/**
+ * ResponseDispatcher - Điều phối phản hồi từ server.
+ *  One-shot callback: Đăng ký theo requestId, tự động xóa sau khi dùng hoặc timeout
+ *  Broadcast: đăng kí lắng nghe theo eventType
+ *  Scheduler dọn dẹp callback hết hạn
+ */
+public final class ResponseDispatcher {
+    // One-shot callbacks
+    private static final ConcurrentHashMap<String, Consumer<ServerResponse>> callbacks = new ConcurrentHashMap<>();
+    private static final ConcurrentHashMap<String, Long> callbackTimestamps = new ConcurrentHashMap<>();
+    private static final long CALLBACK_TIMEOUT_MS = 30_000;// 30 giây
+
+    // Broadcast listeners(theo eventType)
+    private static final ConcurrentHashMap<String,List<Consumer<ServerResponse>>> broadcastListeners = new ConcurrentHashMap<>();
+    // Cleanup scheduler callback hết hạn
+    private static final ScheduledExecutorService clear = Executors.newSingleThreadScheduledExecutor(r->{
+>>>>>>> Stashed changes
         Thread t = new Thread(r,"dispatcher-cleaner");
         t.setDaemon(true);
         return t;
     });
+<<<<<<< Updated upstream
     // Khởi chạy cleaner ngay khi class được load
     // Chạy mỗi 10 giây, bắt đầu sau 10 giây đầu tiên
     static {
@@ -192,3 +227,92 @@ public final class ResponseDispatcher {
             }
         }
     }
+=======
+    static {
+        cleaner.scheduleAtFixedRate(ResponseDispatcher::evictExpiredCallbacks, 10, 10, TimeUnit.SECONDS);
+    }
+    private ResponseDispatcher (){}
+    // API for one-shot callbacks
+    public static void register(String requestId,Consumer<ServerResponse> callback){
+        if(requestId == null || callback == null) return;
+        callbacks.put(requestId,callback);
+        callbackTimestamps.put(requestId,System.currentTimeMillis());
+    }
+    // API for broadcast
+    public static void subscribe(String eventType,Consumer<ServerResponse>listener){
+        if(eventType == null || listener == null) return;
+        broadcastListeners.computeIfAbsent(eventType,k->new ArrayList<>()).add(listener);
+    }
+    public static void unsubscribe(String eventType,Consumer<ServerResponse> listener){
+        if(eventType == null || listener == null) return;
+        List<Consumer<ServerResponse>> list = broadcastListeners.get(eventType);
+        if (list != null) list.remove(listener);
+    }
+    // Core dispatch
+    public static void dispatch(ServerResponse response){
+        if(response == null) return ;
+
+        String reqId = response.getRequestId();
+
+        // 1. One-shot callback(nếu có )
+        if (reqId != null){
+            Consumer<ServerResponse> cb = callbacks.remove(reqId);
+            callbackTimestamps.remove(reqId);
+            if(cb != null) {
+                Platform.runLater(()->{
+                    try {cb.accept(response);}
+                    catch(Exception e) {e.printStackTrace();}
+                });
+                return ;
+            }
+        }
+        // 2. Nếu không phải one-shott, gửi broadcast cho tất cả listener đăng ký
+        // Dựa vào loại dữ liệu trong response để xác định eventType
+        String eventType = determineEventType(response);
+        if(eventType != null){
+            List<Consumer<ServerResponse>> listeners  = broadcastListeners.get(eventType);
+            if(listeners != null){
+                // Copy để tránh ConcurrentModification
+                List<Consumer<ServerResponse>> copy = new ArrayList<>(listeners);
+                Platform.runLater(()->{
+                    for(Consumer<ServerResponse> listener: copy){
+                        try{
+                            listener.accept(response);
+                        } catch(Exception e){
+                            e.printStackTrace();
+                        }
+                    }
+                });
+            }
+        }
+        // 3. Ngoài ra, vẫn giữ broadcast cứng cho AuctionStatusDTO( tương thích ngược)
+        if(response.getData() instanceof AuctionStatusDTO){
+            AuctionStatusDTO status = (AuctionStatusDTO) response.getData();
+            AuctionDetailController.onAuctionStatus(status);
+            LiveAuctionController.onAuctionStatus(status);
+        }
+    }
+    /**
+     * Xác định eventType dựa vào nội dung response
+     * Có thẻ mở rộng thêm các loại khác
+     */
+    private static String determineEventType(ServerResponse response){
+        Object data = response.getData();
+        if(data instanceof AuctionStatusDTO) return "auction_update";
+        // if (data instanceof NotificationDTO) return "notification";
+        return null;
+    }
+    /**
+     * Xóa các callback quá timeout .*/
+     private static void evictExpiredCallbacks(){
+         long now = System.currentTimeMillis();
+         callbackTimestamps.entrySet().removeIf(entry->{
+             if((now - entry.getValue())> CALLBACK_TIMEOUT_MS){
+                 callbacks.remove(entry.getKey());
+                 return true;
+             }
+             return false;
+         });
+     }
+}
+>>>>>>> Stashed changes
