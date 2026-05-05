@@ -1,4 +1,4 @@
-package vn.edu.vnu.uet.group8.common.utilclass;
+package vn.edu.vnu.uet.group8.server.util;
 
 import org.mindrot.jbcrypt.BCrypt;
 

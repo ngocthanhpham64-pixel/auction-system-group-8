@@ -5,6 +5,8 @@ import java.sql.*;
 import java.time.Instant;
 import java.util.*;
 import java.util.stream.Collectors;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import vn.edu.vnu.uet.group8.common.entity.UserAdmin;
 import vn.edu.vnu.uet.group8.common.entity.UserMember;
@@ -13,10 +15,13 @@ import vn.edu.vnu.uet.group8.common.enums.UserRole;
 import vn.edu.vnu.uet.group8.common.enums.UserStatus;
 import vn.edu.vnu.uet.group8.common.exception.UserNotFoundException;
 import vn.edu.vnu.uet.group8.server.dao.DatabaseConnection;
-import vn.edu.vnu.uet.group8.common.utilclass.PasswordUtil;
+import vn.edu.vnu.uet.group8.server.util.PasswordUtil;
 import vn.edu.vnu.uet.group8.common.enums.AdminLevel;
+import vn.edu.vnu.uet.group8.common.enums.PaymentMethod;
 
 public class UserDAO {
+  private static final Logger log = LoggerFactory.getLogger(UserDAO.class);
+
   private Connection getConn() throws SQLException {
     return DatabaseConnection.getInstance().getConnection();
   }
@@ -25,6 +30,7 @@ public class UserDAO {
   //
   // Dùng Reconstructor thay vì setter rời rạc.
   // Reconstructor không validate logic — tin tưởng DB.
+  // Có 2 mapRow , 1 cái để đổ dữ liệu đủ 1 cái để xem profile người khác
   // ═══════════════════════════════════════════════════
 
   private User mapRow(ResultSet rs) throws SQLException {
@@ -55,7 +61,7 @@ public class UserDAO {
           .isDeleted(isDeleted)
           .username(username)
           .email(email)
-          .fullName(fullName)
+          .fullname(fullName)
           .encryptedPassword(encryptedPassword)
           .status(status)
           .lastLogin(lastLogin)
@@ -79,7 +85,7 @@ public class UserDAO {
         .roles(roles)
         .lastLogin(lastLogin)
         .balance(balance)
-        .fullName(fullName)
+        .fullname(fullName)
         .phone(rs.getString("phone"))
         .address(rs.getString("address"))
         .sellerRating(rs.getBigDecimal("seller_rating"))
@@ -102,73 +108,71 @@ public class UserDAO {
   public void insert(User user) throws SQLException {
     String sql = """
         INSERT INTO users
-          (username, email, password_hash,
-            full_name, phone,
-            roles, status, balance,
-            admin_level, address,
-            is_deleted, created_at,
-            last_login_at, avatar_url,
-            total_bids_placed, total_items_sold,
-            seller_rating)
-        VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+          (username, email, password_hash,        -- 1, 2, 3
+          full_name, phone, roles,               -- 4, 5, 6
+          status, balance, admin_level,          -- 7, 8, 9
+          address, is_deleted, created_at,       -- 10, 11, 12
+          last_login_at, avatar_url,             -- 13, 14
+          total_bids_placed, total_items_sold,   -- 15, 16
+          seller_rating)                         -- 17
+        VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
         """;
 
-    // Lastlogin, avatarUrl, totalBidsPlaced,
-    // totalItemsSold, sellerRating 
-
-    try (PreparedStatement ps = getConn().prepareStatement(
-          sql, Statement.RETURN_GENERATED_KEYS)) {
-    // ── Trường chung ─────────────────────────────
+    try (Connection conn = getConn();
+        PreparedStatement ps = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+      
+      // ── Nhóm 1: Các trường chung ───────────────────────
       ps.setString(1, user.getUsername());
       ps.setString(2, user.getEmail());
       ps.setString(3, user.getEncryptedPassword());
-
-      // ── Trường đặc thù theo loại User ────────────
-      if (user instanceof UserMember m) {
-          ps.setString(4, m.getFullName());
-          ps.setString(5, m.getPhone());
-          ps.setString(6, serializeRoles(m.getRoles()));
-          ps.setBigDecimal(8, m.getBalance());
-          ps.setNull(9, Types.VARCHAR);    // admin_level
-          ps.setString(10, m.getAddress());
-          ps.setNull(11, Types.VARCHAR);   // avatar_url
-          ps.setNull(12, Types.INTEGER);   // total_bids_placed
-          ps.setNull(13, Types.INTEGER);   // total_items_sold
-          ps.setNull(14, Types.NUMERIC);   // seller_rating
-      } else if (user instanceof UserAdmin a) {
-          ps.setNull(4, Types.VARCHAR);    // full_name
-          ps.setNull(5, Types.VARCHAR);    // phone
-          ps.setString(6, serializeRoles(
-              Set.of(UserRole.ADMIN)));
-          ps.setBigDecimal(8, BigDecimal.ZERO);
-          ps.setString(9, a.getAdminLevel().name());
-          ps.setNull(10, Types.VARCHAR);
-          ps.setNull(11, Types.VARCHAR);
-          ps.setNull(12, Types.INTEGER);
-          ps.setNull(13, Types.INTEGER);
-          ps.setNull(14, Types.NUMERIC);
-      }
-
       ps.setString(7, user.getStatus().name());
       ps.setBoolean(11, user.isDeleted());
       ps.setTimestamp(12, Timestamp.from(user.getCreatedAt()));
+      
+      // Mặc định null khi tạo mới
+      ps.setNull(13, Types.TIMESTAMP); // last_login_at
+      ps.setNull(14, Types.VARCHAR);   // avatar_url
+      
+      // ── Nhóm 2: Phân nhánh Member vs Admin ────────────
+      if (user instanceof UserMember m) {
+        ps.setString(4, m.getFullname());    // full_name
+        ps.setString(5, m.getPhone());
+        ps.setString(6, serializeRoles(m.getRoles()));
+        ps.setBigDecimal(8, m.getBalance());
+        ps.setNull(9, Types.VARCHAR); // admin_level
+        ps.setString(10, m.getAddress());
+        ps.setInt(15, 0);   // total_bids_placed
+        ps.setInt(16, 0);   // total_items_sold
+        ps.setBigDecimal(17, BigDecimal.ZERO);   // seller_rating
+        
+      } else if (user instanceof UserAdmin a) {
+        ps.setNull(4, Types.VARCHAR);
+        ps.setNull(5, Types.VARCHAR);
+        ps.setString(6, serializeRoles(Set.of(UserRole.ADMIN)));
+        ps.setBigDecimal(8, BigDecimal.ZERO);
+        ps.setString(9, a.getAdminLevel().name());
+        ps.setNull(10, Types.VARCHAR);
+        ps.setNull(15, Types.INTEGER);
+        ps.setNull(16, Types.INTEGER);
+        ps.setNull(17, Types.NUMERIC);
+      }
 
       ps.executeUpdate();
 
       // ── Gán ID từ DB về Entity ───────────────────
       // assignId() chỉ được gọi đúng 1 lần sau INSERT
       try (ResultSet keys = ps.getGeneratedKeys()) {
-          if (keys.next()) {
-            user.assignId(keys.getInt(1));
-          } else {
-            throw new SQLException(
-                "INSERT thành công nhưng không lấy được "
-                + "generated key cho user: "
-                + user.getUsername());
-          }
+        if (keys.next()) {
+          user.assignId(keys.getInt(1));
+        } else {
+          throw new SQLException(
+              "INSERT thành công nhưng không lấy được "
+              + "generated key cho user: "
+              + user.getUsername());
         }
       }
     }
+  }
 
   /**
    * Tìm theo ID — trả Optional để tầng Service tự quyết định
@@ -239,10 +243,25 @@ public class UserDAO {
         """;
 
     try (PreparedStatement ps = getConn().prepareStatement(sql)) {
-        ps.setString(1, user.getFullName());
+        ps.setString(1, user.getFullname());
         ps.setString(2, user.getPhone());
-        ps.setString(3, user.getAvatarUrl());
-        ps.setString(4, user.getAddress());
+        
+        // AvatarUrl: DB cho phép null, nhưng nếu user xóa thì ta lưu null hoặc rỗng.
+        // Trong entity UserMember của bạn, avatarUrl luôn được gán là "" (rỗng) nếu null,
+        // nên ta cứ lưu thẳng getAvatarUrl().
+        if (user.getAvatarUrl() == null || user.getAvatarUrl().isBlank()) {
+          ps.setNull(3, Types.VARCHAR);
+        } else {
+          ps.setString(3, user.getAvatarUrl());
+        }
+
+        // Address: Nếu rỗng thì lưu NULL vào DB để tiết kiệm dung lượng
+        if (user.getAddress() == null || user.getAddress().isBlank()) {
+          ps.setNull(4, Types.VARCHAR);
+        } else {
+          ps.setString(4, user.getAddress());
+        }
+        
         ps.setInt(5, user.getId());
         ps.executeUpdate();
     }
@@ -411,6 +430,95 @@ public class UserDAO {
     }
   }
 
+  /**
+   * Lưu lịch sử giao dịch VÀ cộng tiền vào ví trong cùng 1 SQL transaction.
+   * <p>Đây là điểm duy nhất đảm bảo tính nguyên tử (atomicity):
+   * cả hai thao tác thành công hoặc cả hai rollback cùng nhau.
+   *
+   * @param transactionId ID duy nhất của giao dịch (chống nạp đúp)
+   * @param userId        ID người dùng
+   * @param amount        Số tiền cần nạp
+   * @return BigDecimal   Số dư mới nhất sau khi nạp
+   * @throws SQLException Nếu có lỗi Database hoặc lỗi toàn vẹn dữ liệu
+   */
+  public BigDecimal insertTransactionAndUpdateBalance(
+      String transactionId, int userId, BigDecimal amount, PaymentMethod paymentMethod) throws SQLException {
+
+    final String insertTxSql =
+        "INSERT INTO payment_transaction (transaction_id, user_id, amount, transaction_type, created_at) "
+            + "VALUES (?, ?, ?, ?, NOW())";
+
+    final String updateSql =
+        "UPDATE users SET balance = balance + ? "
+            + "WHERE user_id = ? AND is_deleted = false AND balance + ? >= 0";
+
+    final String selectSql = 
+        "SELECT balance FROM users WHERE user_id = ? AND is_deleted = false";
+
+    Connection conn = getConn();
+    boolean originalAutoCommit = conn.getAutoCommit();
+
+    try {
+      conn.setAutoCommit(false);
+
+      // Bước 1: Ghi nhận lịch sử giao dịch
+      try (PreparedStatement psInsert = conn.prepareStatement(insertTxSql)) {
+        psInsert.setString(1, transactionId);
+        psInsert.setInt(2, userId);
+        psInsert.setBigDecimal(3, amount);
+        psInsert.setString(4, paymentMethod.name());
+        psInsert.executeUpdate();
+      }
+
+      // Bước 2: Cập nhật số dư một cách an toàn
+      try (PreparedStatement psUpdate = conn.prepareStatement(updateSql)) {
+        psUpdate.setBigDecimal(1, amount);
+        psUpdate.setInt(2, userId);
+        psUpdate.setBigDecimal(3, amount);
+
+        int affectedRows = psUpdate.executeUpdate();
+        if (affectedRows == 0) {
+          // Xuống dòng ngoại lệ để tránh vượt quá 100 ký tự
+          throw new SQLException(
+              "Giao dịch thất bại: Tài khoản không hợp lệ hoặc đã bị khóa (ID: " + userId + ")");
+        }
+      }
+
+      // Bước 3: Lấy số dư mới nhất
+      try (PreparedStatement psSelect = conn.prepareStatement(selectSql)) {
+        psSelect.setInt(1, userId);
+        try (ResultSet rs = psSelect.executeQuery()) {
+          if (rs.next()) {
+            BigDecimal newBalance = rs.getBigDecimal("balance");
+            conn.commit();
+            return newBalance;
+          } else {
+            throw new SQLException(
+                "Lỗi hệ thống: Không đọc được dữ liệu sau update (ID: " + userId + ")");
+          }
+        }
+      }
+
+    } catch (SQLException e) {
+      try {
+        conn.rollback();
+      } catch (SQLException rollbackEx) {
+        log.error("Rollback thất bại cho transactionId: "
+                + transactionId
+                + " - "
+                + rollbackEx.getMessage());
+      }
+      throw e;
+
+    } finally {
+      try {
+        conn.setAutoCommit(originalAutoCommit);
+      } catch (SQLException ex) {
+        log.error("Không thể khôi phục trạng thái AutoCommit cho userId: " + userId, ex);
+      }
+    }
+  }
+
   // ═══════════════════════════════════════════════════
   // PHẦN 4 — NGHIỆP VỤ ĐẶC THÙ
   // ═══════════════════════════════════════════════════
@@ -420,10 +528,10 @@ public class UserDAO {
    * Trả Optional.empty() cho cả "email không tồn tại" lẫn "sai mật khẩu"
    * — tránh lộ thông tin "email này có trong hệ thống không".
    */
-  public Optional<User> authenticate(String email, String plainPassword)
+  public Optional<User> authenticate(String username, String plainPassword)
           throws SQLException {
             
-    Optional<User> opt = findByEmail(email);
+    Optional<User> opt = findByUsername(username);
     if (opt.isEmpty()) return Optional.empty();
 
     User user = opt.get();
@@ -470,10 +578,44 @@ public class UserDAO {
     try (PreparedStatement ps = getConn().prepareStatement(sql)) {
       ps.setString(1, username.trim().toLowerCase());
       try (ResultSet rs = ps.executeQuery()) {
-          return rs.next() && rs.getBoolean(1);
+        return rs.next() && rs.getBoolean(1);
       }
     }
   }
+
+  public boolean existsByPhone(String phone) throws SQLException {
+    String sql = """
+        SELECT EXISTS(
+            SELECT 1 FROM users
+            WHERE phone      = ?
+              AND is_deleted  = false
+        )
+        """;
+
+    try (PreparedStatement ps = getConn().prepareStatement(sql)) {
+      ps.setString(1, phone.trim());
+      try (ResultSet rs = ps.executeQuery()) {
+        return rs.next() && rs.getBoolean(1);
+      }
+    }
+  }
+  
+  public boolean existsTransaction(String transactionId) throws SQLException {
+    String sql = """
+        SELECT EXISTS(
+            SELECT 1 FROM payment_transaction
+            WHERE transaction_id = ?
+        )
+        """;
+
+    try (PreparedStatement ps = getConn().prepareStatement(sql)) {
+      ps.setString(1, transactionId);
+      try (ResultSet rs = ps.executeQuery()) {
+        return rs.next() && rs.getBoolean(1);
+      }
+    }
+  }
+              
 
   public List<UserMember> findAllSellers() throws SQLException {
     String sql = """

@@ -12,7 +12,7 @@ import vn.edu.vnu.uet.group8.common.enums.UserStatus;
  * Lớp trừu tượng cơ sở cho tất cả các người dùng trên hệ thống.
  * Cung cấp các thuộc tính định danh và quản lý người dùng trên hệ thống.
  */
-public abstract class User extends Entity {
+public abstract sealed class User extends Entity permits UserAdmin, UserMember{
 
   // ── Immutable sau khi tạo ────────────────────────────
   // Những field này không được phép thay đổi sau khi user đăng ký
@@ -21,7 +21,7 @@ public abstract class User extends Entity {
   
   // ── Mutable có kiểm soát ─────────────────────────────
   // Những field này thay đổi qua method có validation
-  private String fullName;
+  private String fullname;
   private String encryptedPassword;
   private UserStatus status;
   private Instant lastLogin;
@@ -37,7 +37,7 @@ public abstract class User extends Entity {
         false,
         b.username,
         b.email,
-        b.fullName,
+        b.fullname,
         b.encryptedPassword,
         UserStatus.ACTIVE,
         b.roles,
@@ -51,14 +51,14 @@ public abstract class User extends Entity {
    * Không validate — tin tưởng dữ liệu đã hợp lệ từ DB.
    */
   protected User(int id, Instant createdAt, boolean isDeleted,
-                String username, String email, String fullName,
+                String username, String email, String fullname,
                 String encryptedPassword, UserStatus status,
                 Set<UserRole> roles, Instant lastLogin
                 ) {
     super(id, createdAt, isDeleted);
     this.username          = username;
     this.email             = email;
-    this.fullName          = fullName;
+    this.fullname          = fullname;
     this.encryptedPassword = encryptedPassword;
     this.status            = status;
     this.roles             = roles.isEmpty()
@@ -82,7 +82,7 @@ public abstract class User extends Entity {
     private final String encryptedPassword; // Đã hash BCrypt trước khi vào đây
 
     // Optional — có giá trị mặc định
-    private String fullName          = "";
+    private String fullname          = "";
     private Set<UserRole> roles      = EnumSet.of(UserRole.BIDDER);
 
     /**
@@ -117,7 +117,7 @@ public abstract class User extends Entity {
     }
     
     public B fullname(String fullname) {
-      this.fullName = fullname != null ? fullname.trim() : "";
+      this.fullname = fullname != null ? fullname.trim() : "";
       return self();
     }
 
@@ -151,8 +151,8 @@ public abstract class User extends Entity {
     return lastLogin;
   }
 
-  public String getFullName() {
-    return fullName;
+  public String getFullname() {
+    return fullname;
   }
 
   public UserStatus getStatus() {
@@ -171,8 +171,8 @@ public abstract class User extends Entity {
   /**
    * Chỉ cập nhật họ tên — thông tin profile không nhạy cảm.
    */
-  public void setFullName(String fullName) {
-    this.fullName = fullName;
+  public void setFullname(String fullname) {
+    this.fullname = fullname;
   }
 
    /**
