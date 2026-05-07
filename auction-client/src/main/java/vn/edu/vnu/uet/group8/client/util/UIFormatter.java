@@ -14,7 +14,7 @@ import java.util.Locale;
  *  - Thời gian: Chuyển Instant từ UTC sang múi giờ Asia
  */
 public class UIFormatter {
-    private static final ZoneId ZONE_VIETNAM = ZoneId.of("Asia/Ha_Noi");
+    private static final ZoneId ZONE_VIETNAM = ZoneId.of("Asia/Ho_Chi_Minh");
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("HH:mm:ss dd/MM/yyyy");
     private static final NumberFormat CURRENCY_FORMAT = NumberFormat.getCurrencyInstance(new Locale("vi","VN"));
 

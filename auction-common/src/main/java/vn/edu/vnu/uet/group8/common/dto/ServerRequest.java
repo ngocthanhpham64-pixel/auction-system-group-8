@@ -40,7 +40,7 @@ public final class ServerRequest <T>{
 
     /**
      *
-     * @return true nếu request đến từ user đã đăng nhập(có userId và token hợp lệ)
+     * @return true nếu request đến từ user đã đăng nhập(có userId và regist token hợp lệ)
      */
     public boolean isAuthenticated(){
         return userId != null && userId>0 && token != null;

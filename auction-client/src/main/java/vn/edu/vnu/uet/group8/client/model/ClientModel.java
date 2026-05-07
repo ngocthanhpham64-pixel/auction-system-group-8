@@ -4,6 +4,7 @@ import javafx.application.Platform;
 import javafx.beans.property.*;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
+import vn.edu.vnu.uet.group8.common.dto.LoginResponse;
 import vn.edu.vnu.uet.group8.common.entity.Item;
 import vn.edu.vnu.uet.group8.common.entity.User;
 import vn.edu.vnu.uet.group8.common.dto.NotificationDTO;
@@ -21,7 +22,7 @@ import java.util.List;
 public class ClientModel {
     private static final ClientModel INSTANCE = new ClientModel();
 
-    private final ObjectProperty<User> currentUser = new SimpleObjectProperty<>();
+    private final ObjectProperty<LoginResponse> currentUser = new SimpleObjectProperty<>();
     private final ListProperty<Item> auctionItems = new SimpleListProperty<>(FXCollections.observableArrayList());
     private final ListProperty<NotificationDTO> notifications = new SimpleListProperty<>(FXCollections.observableArrayList());
     private final ListProperty<Item> favoriteItems = new SimpleListProperty<>(FXCollections.observableArrayList());
@@ -39,7 +40,7 @@ public class ClientModel {
      * Cập nhật người dùng hiện tại
      * @param user đối tượng User mới(có thể null khi logout)
      */
-    public void setCurrentUser(User user) { runOnFX(()->currentUser.set(user));}
+    public void setCurrentUser(LoginResponse user) { runOnFX(()->currentUser.set(user));}
 
     /**
      * Cập nhật danh sách sản phẩm đang đấu giá.
@@ -193,8 +194,8 @@ public class ClientModel {
         });
     }
     // Getter và properties( cho UI binding)
-    public User getCurrentUser(){return currentUser.get();}
-    public ObjectProperty<User> currentUserProperty(){ return currentUser;}
+    public LoginResponse getCurrentUser(){return currentUser.get();}
+    public ObjectProperty<LoginResponse> currentUserProperty(){ return currentUser;}
     public ObservableList<Item> getAuctionItems(){return auctionItems.get();}
     public ListProperty<Item> auctionItemsProperty(){return auctionItems;}
     public ObservableList<NotificationDTO> getNotifications(){return notifications.get();}
