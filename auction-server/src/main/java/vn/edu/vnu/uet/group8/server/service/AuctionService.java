@@ -13,6 +13,17 @@ public class AuctionService {
   // Quản lý danh sách phiên đấu giá
   private final Map <String, Auction> auctions = new ConcurrentHashMap<>();
 
+  private static volatile AuctionService instance;
+
+  public static AuctionService getInstance() {
+    if (instance == null) {
+      synchronized (AuctionService.class) {
+        if (instance == null) instance = new AuctionService();
+      }
+    }
+    return instance;
+  }
+
   // Quản lý LOCK riêng cho TỪNG phiên đấu giá (Fine-grained locking)
   private final Map<String, ReentrantLock> auctionLocks = new ConcurrentHashMap<>();
 
@@ -95,5 +106,9 @@ public class AuctionService {
     }
 
     return isSuccess;
+  }
+
+  public Auction getAuction(String auctionId) {
+    return auctions.get(auctionId);   // trả null nếu không tìm thấy
   }
 }
