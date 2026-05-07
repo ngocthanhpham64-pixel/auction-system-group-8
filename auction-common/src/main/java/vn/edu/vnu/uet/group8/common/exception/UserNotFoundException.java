@@ -4,6 +4,8 @@ package vn.edu.vnu.uet.group8.common.exception;
  * Ngoại lệ được ném ra khi không tìm thấy thông tin người dùng trong hệ thống.
  */
 public class UserNotFoundException extends RuntimeException {
+  private int userId;
+
   /**
    * Khởi tạo ngoại lệ với thông báo chi tiết.
    * @param message Nội dung thông báo lỗi (ví dụ: "Không tìm thấy username: thanh_uet")
@@ -21,7 +23,12 @@ public class UserNotFoundException extends RuntimeException {
   }
 
   public UserNotFoundException(int userId) {
-      super("Không tìm thấy người dùng với ID: " + userId);
+    super("Không tìm thấy người dùng với id=" + userId);
+    this.userId = userId;
+  }
+
+  public int getUserId() {
+    return userId;
   }
 }
 

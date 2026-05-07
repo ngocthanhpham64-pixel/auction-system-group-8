@@ -8,7 +8,7 @@ import vn.edu.vnu.uet.group8.common.enums.AdminLevel;
 import vn.edu.vnu.uet.group8.common.enums.UserRole;
 import vn.edu.vnu.uet.group8.common.enums.UserStatus;
 
-public class UserAdmin extends User {
+public final class UserAdmin extends User {
   private AdminLevel adminLevel;
 
   private UserAdmin(Builder b) {
@@ -17,7 +17,7 @@ public class UserAdmin extends User {
   }
 
   private UserAdmin(Reconstructor r) {
-    super(r.id, r.createdAt, r.isDeleted, r.username, r.email, r.fullName,
+    super(r.id, r.createdAt, r.isDeleted, r.username, r.email, r.fullname,
           r.encryptedPassword, r.status, r.roles, r.lastLogin);
     this.adminLevel = r.adminLevel;
   }
@@ -35,7 +35,7 @@ public class UserAdmin extends User {
     private Boolean isDeleted;
     private String username;
     private String email;
-    private String fullName;
+    private String fullname;
     private String encryptedPassword;
     private UserStatus status;
     private Set<UserRole> roles;
@@ -57,8 +57,8 @@ public class UserAdmin extends User {
     public Reconstructor email(String v) {
       this.email = v; return this;
     }
-    public Reconstructor fullName(String v) {
-      this.fullName = v; return this;
+    public Reconstructor fullname(String v) {
+      this.fullname = v; return this;
     }
     public Reconstructor encryptedPassword(String v) {
       this.encryptedPassword = v; return this;
@@ -168,6 +168,4 @@ public class UserAdmin extends User {
   public boolean canApproveItem() {
     return true;
   }
-
-
 }

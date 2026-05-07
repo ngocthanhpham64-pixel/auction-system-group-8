@@ -8,7 +8,7 @@ import vn.edu.vnu.uet.group8.common.enums.UserRole;
 import vn.edu.vnu.uet.group8.common.enums.UserStatus;
 // import vn.edu.vnu.uet.group8.common.exception.InsufficientBalanceException;
 
-public class UserMember extends User {
+public final class UserMember extends User {
   private String phone;
   private String address;
   private String avatarUrl;
@@ -23,7 +23,7 @@ public class UserMember extends User {
     addRole(UserRole.BIDDER);
     this.phone = b.phone;
     this.address = b.address;
-    this.avatarUrl = b.avatarUrl;
+    this.avatarUrl = b.avatarUrl == null ? "" : b.avatarUrl;
     this.totalBidsPlaced = b.totalBidsPlaced;
     this.totalItemsSold = b.totalItemsSold;
     this.sellerRating = b.sellerRating;
@@ -31,7 +31,7 @@ public class UserMember extends User {
   }
 
   private UserMember(Reconstructor r) {
-    super(r.id, r.createdAt, r.isDeleted, r.username, r.email, r.fullName,
+    super(r.id, r.createdAt, r.isDeleted, r.username, r.email, r.fullname,
           r.encryptedPassword, r.status, r.roles, r.lastLogin);
     this.phone = r.phone;
     this.address = r.address;
@@ -46,9 +46,12 @@ public class UserMember extends User {
     return new Reconstructor();
   }
 
+  public static Builder builder(String username, String email, String encryptedPassword) {
+    return new Builder(username, email, encryptedPassword);
+  }
 
   // ════════════════════════════════════════════════════
-  // CONSTRUCTOR
+  // RECONSTRUCTOR
   // ════════════════════════════════════════════════════
 
   public static class Reconstructor {
@@ -58,7 +61,7 @@ public class UserMember extends User {
     private Instant createdAt;
     private Boolean isDeleted;
     private String username;
-    private String fullName;        // nullable — user chưa điền
+    private String fullname;        // nullable
     private String encryptedPassword;
     private String email;
     private UserStatus status;
@@ -66,7 +69,7 @@ public class UserMember extends User {
     private Instant lastLogin;      // nullable — chưa login lần nào
     private BigDecimal balance;
     private String phone;           
-    private String address;         
+    private String address;         // nullable       
     private String avatarUrl;       // nullable
     private int totalBidsPlaced;    // nullable
     private int totalItemsSold;     // nullable
@@ -103,8 +106,8 @@ public class UserMember extends User {
     public Reconstructor balance(BigDecimal v) {
       this.balance = v; return this;
     }
-    public Reconstructor fullName(String v) {
-      this.fullName = v; return this;
+    public Reconstructor fullname(String v) {
+      this.fullname = v; return this;
     }
     public Reconstructor phone(String v) {
       this.phone = v; return this;
@@ -141,17 +144,17 @@ public class UserMember extends User {
       requireNonNull(roles,             "roles");
       requireNonNull(balance,           "balance");
       requireNonNull(phone,             "phone");
-      // lastLogin, fullName, sellerRating, avatarUrl,
-      // totalBidsPlaced, totalItemsSold → nullable, không check
+      // lastLogin, sellerRating, avatarUrl, fullname,
+      // totalBidsPlaced, totalItemsSold, address → nullable, không check
 
       return new UserMember(this); // constructor private nhận Reconstructor
     }
 
     private void requireNonNull(Object value, String fieldName) {
-        if (value == null)
-            throw new IllegalStateException(
-                "Reconstructor thiếu field bắt buộc: [" + fieldName + "]. "
-                + "Kiểm tra lại UserDAO.mapRow()");
+      if (value == null)
+          throw new IllegalStateException(
+              "Reconstructor thiếu field bắt buộc: [" + fieldName + "]. "
+              + "Kiểm tra lại UserDAO.mapRow()");
     }
 }
   // ════════════════════════════════════════════════════
@@ -159,6 +162,7 @@ public class UserMember extends User {
   // ════════════════════════════════════════════════════
   public static class Builder extends User.Builder<Builder> {
     // Optional
+    private String fullname;
     private String phone    = "";
     private String address  = "";
     private String avatarUrl= "";
@@ -171,34 +175,36 @@ public class UserMember extends User {
       super(username, email, encryptedPassword);
     }
 
+    public Builder fullName(String fullname) {
+      this.fullname = fullname == null ? "" : fullname.trim();
+      return this;
+    }
+
     public Builder phone(String phone) {
-      if (phone != null && !phone.isBlank()) {
-        throw new IllegalArgumentException(
-          "Phone không được trống");
-      }
+      checkRequiredString(phone, "Phone không được trống");
       this.phone = phone;
       return this;
     }
 
     public Builder address(String address) {
-      if (address != null && !address.isBlank()) {
-        throw new IllegalArgumentException(
-          "Address không được trống");
-      }
       this.address = address;
       return this;
     }
 
     public Builder avatarUrl(String avatarUrl) {
-      if (avatarUrl != null && !avatarUrl.isBlank()) {
-        this.avatarUrl = "";
-      }
-      this.avatarUrl = avatarUrl;
+      this.avatarUrl = avatarUrl == null ? "" : avatarUrl;
       return this;
     }
 
     public Builder balance() {
       this.balance = BigDecimal.ZERO;
+      return this;
+    }
+
+    public Builder balance(BigDecimal balance) {
+      if (balance != null && balance.compareTo(BigDecimal.ZERO) >= 0) {
+        this.balance = balance;
+      }
       return this;
     }
 
@@ -219,7 +225,21 @@ public class UserMember extends User {
 
     @Override
     public UserMember build() {
+      requireNonNull(phone, "phone");
       return new UserMember(this);
+    }
+
+    private void checkRequiredString(String str, String massage) {
+      if (str == null || str.isBlank()) {
+        throw new IllegalArgumentException(massage);
+      }
+    }
+
+    private void requireNonNull(Object value, String fieldName) {
+      if (value == null)
+          throw new IllegalStateException(
+              "User thiếu field bắt buộc: [" + fieldName + "]. "
+              + "Hãy kiểm tra lại");
     }
   }
 
@@ -242,7 +262,7 @@ public class UserMember extends User {
     return totalBidsPlaced;
   }
 
-  public int gettotalItemsSold() {
+  public int getTotalItemsSold() {
     return totalItemsSold;
   }
 
@@ -258,18 +278,11 @@ public class UserMember extends User {
   // SETTERS
   // ════════════════════════════════════════════════════
   public void setAddress(String address) {
-    if (address == null || address.isBlank()) {
-      throw new IllegalArgumentException(
-        "Address không được trống");
-    }
     this.address = address != null ? address.trim() : "";
   }
 
   public void setPhone(String phone) {
-    if (phone == null || phone.isBlank()) {
-      throw new IllegalArgumentException(
-        "Số điện thoại không được để trống");
-    }
+    checkRequiredString(phone, "Số điện thoại không được để trống");
     this.phone = phone != null ? phone.trim() : "";
   }
 
@@ -311,8 +324,21 @@ public class UserMember extends User {
   // }
 
   // ════════════════════════════════════════════════════
+  // Các hàm HELPER
+  // ════════════════════════════════════════════════════
+  private void checkRequiredString(String str, String massage) {
+    if (str == null || str.isBlank()) {
+      throw new IllegalArgumentException(massage);
+    }
+  }
+  // ════════════════════════════════════════════════════
   // OVERRIDE từ User
   // ════════════════════════════════════════════════════
+  @Override
+  public void setFullname(String fullname) {
+    checkRequiredString(fullname, "Họ tên không được trống");
+    super.setFullname(fullname);
+  }
   @Override
   public boolean isAdmin() {
     return false;
@@ -331,7 +357,7 @@ public class UserMember extends User {
         return "MemberUser{" +
                "id='"        + getId()      + '\'' +
                ", username='" + getUsername() + '\'' +
-               ", fullName='" + getFullName()   + '\'' +
+               ", fullName='" + getFullname()   + '\'' +
                ", status="   + getStatus() +
                ", roles="    + getRoles()  +
                '}';

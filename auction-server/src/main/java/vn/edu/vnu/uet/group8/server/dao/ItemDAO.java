@@ -43,8 +43,11 @@ public class ItemDAO {
         .condition(parseCondition(rs.getString("condition_type")))
         .startingPrice(rs.getBigDecimal("starting_price"))
         .currentPrice(rs.getBigDecimal("current_price"))
+        .startTime(toInstant(rs.getTimestamp("start_time")))
         .endTime(toInstant(rs.getTimestamp("end_time")))
+        .bidCount(rs.getInt("bid_count"))
         .specs(parseSpecs(rs.getString("specs")))
+        .highestBidderId(rs.getInt("highest_bidder_id"))
         .build();
   }
 
@@ -63,8 +66,9 @@ public class ItemDAO {
           (seller_id, title, description, category,
             status, condition_type,
             starting_price, current_price,
-            end_time, is_deleted, created_at, specs)
-        VALUES (?,?,?,?,?,?,?,?,?,?,?,?)
+            start_time, end_time, is_deleted, created_at, specs,
+            highest_bidder_id)
+        VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)
         """;
 
     try (PreparedStatement ps = getConn().prepareStatement(
@@ -84,18 +88,23 @@ public class ItemDAO {
 
       ps.setBigDecimal(7,  item.getStartingPrice());
       ps.setBigDecimal(8,  item.getCurrentPrice());
-
-      // endTime nullable — UPCOMING chưa cần set
-      if (item.getEndTime() != null)
-        ps.setTimestamp(9, Timestamp.from(item.getEndTime()));
-      else
-        ps.setNull(9, Types.TIMESTAMP);
-
-      ps.setBoolean(10,    item.isDeleted());
-      ps.setTimestamp(11,  Timestamp.from(item.getCreatedAt()));
+      ps.setTimestamp(9, Timestamp.from(item.getStartTime()));
+      ps.setTimestamp(10, Timestamp.from(item.getEndTime()));
+      ps.setBoolean(11,    item.isDeleted());
+      ps.setTimestamp(12,  Timestamp.from(item.getCreatedAt()));
 
       // Map<String,String> → JSON string
-      ps.setString(12, serializeSpecs(item.getSpecs()));
+      if (item.getSpecs() == null || item.getSpecs().isEmpty()) {
+        ps.setNull(13, Types.VARCHAR);
+      } else {
+        ps.setString(13, serializeSpecs(item.getSpecs()));
+      }
+
+      if (item.getHighestBidderId() != null) {
+        ps.setInt(14, item.getHighestBidderId());
+      } else {
+        ps.setNull(14, Types.INTEGER);
+      }
 
       ps.executeUpdate();
 
@@ -251,15 +260,17 @@ public class ItemDAO {
   // ═══════════════════════════════════════════════════
 
   /**
-   * Nâng giá sau khi có bid mới.
+   * Nâng giá sau khi có bid mới, đồng thời cập nhật người đặt giá cao nhất.
    * Dùng điều kiện current_price < ? để tránh race condition:
    * nếu 2 bid đến cùng lúc, chỉ bid cao hơn giá hiện tại thắng.
    */
-  public void updateCurrentPrice(int itemId, BigDecimal newPrice)
+  public void updateCurrentBid(int itemId, Integer bidderId, BigDecimal newPrice)
           throws SQLException {
     String sql = """
         UPDATE item
-        SET current_price = ?
+        SET current_price = ?,
+            highest_bidder_id = ?,
+            bid_count = bid_count + 1
         WHERE item_id       = ?
           AND current_price  < ?
           AND status         = 'ACTIVE'
@@ -268,14 +279,16 @@ public class ItemDAO {
 
     try (PreparedStatement ps = getConn().prepareStatement(sql)) {
       ps.setBigDecimal(1, newPrice);
-      ps.setInt(2, itemId);
-      ps.setBigDecimal(3, newPrice);
+      ps.setInt(2, bidderId);
+      ps.setInt(3, itemId);
+      ps.setBigDecimal(4, newPrice);
 
       int affected = ps.executeUpdate();
       if (affected == 0)
         throw new IllegalStateException(
           "Không thể cập nhật giá. Item không ACTIVE "
           + "hoặc đã có giá cao hơn. itemId=" + itemId
+          + "hoặc bidderId không tồn tại. bidderId=" + bidderId
           + ", newPrice=" + newPrice);
     }
   }

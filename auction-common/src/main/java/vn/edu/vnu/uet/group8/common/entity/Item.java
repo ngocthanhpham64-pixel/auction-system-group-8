@@ -16,7 +16,7 @@ import vn.edu.vnu.uet.group8.common.interfaces.SpecAccessor;
    * Lớp trừu tượng cơ sở cho tất cả các mặt hàng trên hệ thống.
    * Cung cấp các thuộc tính định danh và quản lý mặt hàng trên hệ thống.
    */
-public class Item extends Entity implements SpecAccessor {
+public final class Item extends Entity implements SpecAccessor {
 
   // ── Immutable sau khi tạo ────────────────────────────
   // Những field này không được phép thay đổi sau khi item được tạo
@@ -33,6 +33,9 @@ public class Item extends Entity implements SpecAccessor {
   private ItemCondition condition;
   private Instant endTime;
   private Map<String, String> specs;
+  private Integer highestBidderId;
+  private Instant startTime;
+  private int bidCount;
 
   /**
    * Constructor mặc định cho Item mới.
@@ -51,6 +54,9 @@ public class Item extends Entity implements SpecAccessor {
     this.specs         = b.specs != null
                           ? new HashMap<>(b.specs)
                           : new HashMap<>();
+    this.highestBidderId = b.highestBidderId;
+    this.startTime     = b.startTime;
+    this.bidCount      = 0;
   }
 
   /**
@@ -85,6 +91,9 @@ public class Item extends Entity implements SpecAccessor {
     this.specs          = r.specs != null
                           ? new HashMap<>(specs)
                           : new HashMap<>();
+    this.highestBidderId = r.highestBidderId;
+    this.startTime      = r.startTime;
+    this.bidCount       = r.bidCount;
   }
 
   public static Reconstructor reconstructor() {
@@ -109,7 +118,13 @@ public class Item extends Entity implements SpecAccessor {
     private ItemCategory category;
     private Instant endTime;
     private Map<String, String> specs;
+    private Integer highestBidderId;
+    private Instant startTime;
+    private int bidCount;
 
+    public Reconstructor highestBidderId(int v) {
+      this.highestBidderId = v; return this;
+    }
     public Reconstructor id(int id) {
       this.id = id; return this;
     }
@@ -149,6 +164,12 @@ public class Item extends Entity implements SpecAccessor {
     public Reconstructor specs(Map<String, String> v) {
       this.specs = v; return this;
     }
+    public Reconstructor startTime(Instant v) {
+      this.startTime = v; return this;
+    }
+    public Reconstructor bidCount(int v) {
+      this.bidCount = v; return this;
+    }
 
     public Item build() {
       requireNonNull(id, "id");
@@ -161,7 +182,8 @@ public class Item extends Entity implements SpecAccessor {
       requireNonNull(sellerId, "sellerId");
       requireNonNull(category, "category");
       requireNonNull(specs, "specs");
-
+      requireNonNull(startTime, "startTime");
+      requireNonNull(bidCount, "bidCount");
       return new Item(this);
     }
 
@@ -183,29 +205,24 @@ public class Item extends Entity implements SpecAccessor {
     private final ItemCategory category;
     private final BigDecimal startingPrice;
     private Instant endTime;
+    private Instant startTime;
+    private Integer bidCount;
 
     //Optional
     private String description        = "";
     private ItemCondition condition   = ItemCondition.USED;
     private Map<String, String> specs = new HashMap();
+    private Integer highestBidderId;
 
     /**
      * Những thứ bắt buộc trước
      */
-  public Builder(int sellerId, String title, ItemCategory category, BigDecimal startingPrice, Instant endTime) {
-      if (sellerId <= 0)
-        throw new IllegalArgumentException("sellerId không tồn tại");
-      if (title == null || title.isBlank())
-        throw new IllegalArgumentException("Tiêu đề item không được trống");
-      if (title.length() > 200)
-        throw new IllegalArgumentException("Tiêu đề không được vượt quá 200 ký tự");
-      if (category == null)
-        throw new IllegalArgumentException("Category không được null");
-      if (startingPrice == null || startingPrice.compareTo(BigDecimal.ZERO) < 0)
-        throw new IllegalArgumentException("Giá khởi điểm không được âm");
-      if (endTime == null && endTime.isBefore(Instant.now())) {
-        throw new IllegalArgumentException("Thời gian kết thúc phải ở tương lai");
-      }
+    public Builder(int sellerId, String title, ItemCategory category, BigDecimal startingPrice, Instant endTime) {
+      checkRequiredNum(sellerId, 1, "sellerId không tồn tại");
+      checkRequiredString(title, "Tiêu đề item không được trống");
+      checkRequiredString(category.name(), "Category không được null");
+      checkRequiredNum(startingPrice.intValue(), 0, "Giá khởi điểm không được âm");
+      checkTime(endTime, "Thời gian kết thúc phải ở tương lai");
       this.sellerId       = sellerId;
       this.title          = title.trim();
       this.category       = category;
@@ -243,10 +260,57 @@ public class Item extends Entity implements SpecAccessor {
       return this;
     }
 
+    public Builder highestBidderId() {
+      this.highestBidderId = null;
+      return this;
+    }
+
+    public Builder startTime(Instant startTime) {
+      this.startTime = startTime;
+      return this;
+    }
+
+    public Builder bidCount(Integer bidCount) {
+      this.bidCount = bidCount == null ? 0 : bidCount;
+      return this;
+    }
+
     public Item build() {
+      requireNonNull(sellerId, "Không thể thiếu ID người bán");
+      requireNonNull(title, "Tiêu đề không được để trống");
+      requireNonNull(category, "Danh mục không được để trống");
+      requireNonNull(startingPrice, "Giá khởi điểm không được để trống");
+      requireNonNull(endTime, "Thời gian kết thúc không được để trống");
+      requireNonNull(startTime, "Thời gian bắt đầu không được để trống");
       return new Item(this);
     }
+
+    private void checkRequiredNum(int num, int min, String message) {
+      if (num < min) {
+        throw new IllegalArgumentException(message);
+      }
+    }
+
+    private void checkRequiredString(String str, String massage) {
+      if (str == null || str.isBlank()) {
+        throw new IllegalArgumentException(massage);
+      }
+    }
+
+    private void checkTime(Instant endTime, String massage) {
+      if (endTime == null || endTime.isBefore(Instant.now())) {
+        throw new IllegalArgumentException(massage);
+      }
+    }
+
+    private void requireNonNull(Object value, String fieldName) {
+      if (value == null)
+          throw new IllegalStateException(
+              "User thiếu field bắt buộc: [" + fieldName + "]. "
+              + "Hãy kiểm tra lại");
+    }
   }
+
 
   // ════════════════════════════════════════════════════
   // GETTERS
@@ -290,6 +354,18 @@ public class Item extends Entity implements SpecAccessor {
     return Collections.unmodifiableMap(specs);
   }
 
+  public Integer getHighestBidderId() {
+    return highestBidderId;
+  }
+  
+  public Instant getStartTime() {
+    return startTime;
+  }
+
+  public int getBidCount() {
+    return bidCount;
+  }
+
   // ════════════════════════════════════════════════════
   // SPEC HELPERS — interface SpecAccessor
   // ════════════════════════════════════════════════════\
@@ -331,9 +407,8 @@ public class Item extends Entity implements SpecAccessor {
    * Sau khi ACTIVE thì không cho sửa nữa (tránh gian lận).
    */
   public void setDescription(String description) {
-    if (description == null || description.isBlank()) {
-      throw new IllegalArgumentException("Mô tả không được trống");
-    }
+    checkRequiredString(description, "Mô tả không được trống");
+  
     if (status == ItemStatus.ACTIVE || status == ItemStatus.SOLD) {
       throw new IllegalStateException("Không thể sửa mô tả khi item đang đấu giá hoặc đã bán");
     }
@@ -354,6 +429,13 @@ public class Item extends Entity implements SpecAccessor {
   }
 
   /**
+   * Tăng thêm số lượng bid khi có người mới đặt
+   */
+  public void incrementBidCount() {
+    this.bidCount++;
+  }
+
+  /**
    * Cập nhật giá hiện tại khi có bid mới.
    * Chỉ AuctionService gọi method này — không để UI gọi trực tiếp.
    * Giá mới phải cao hơn giá hiện tại.
@@ -362,10 +444,17 @@ public class Item extends Entity implements SpecAccessor {
     if (status != ItemStatus.ACTIVE) {
       throw new IllegalStateException("Chỉ có thể cập nhật giá khi item đang ACTIVE");
     }
+
+    // checkRequiredNum(newPrice, currentPrice, "Giá mới (" + newPrice + ") phải cao hơn giá hiện tại (" + currentPrice + ")");
     if (newPrice == null || newPrice.compareTo(currentPrice) <= 0) {
       throw new IllegalStateException("Giá mới (" + newPrice + ") phải cao hơn giá hiện tại (" + currentPrice + ")");
     }
     this.currentPrice = newPrice;
+  }
+
+  public void setHighestBidderId(int bidderId) {
+    checkRequiredNum(bidderId, 1, "ID người đặt giá không tồn tại");
+    this.highestBidderId = bidderId;
   }
 
   /**
@@ -378,8 +467,7 @@ public class Item extends Entity implements SpecAccessor {
    *   ACTIVE   → CANCELLED  (admin can thiệp)
    */
   public boolean transitionStatus(ItemStatus from, ItemStatus to) {
-    this.status = to;
-    return switch (from) {
+    boolean isValid = switch (from) {
       case UPCOMING     -> to == ItemStatus.ACTIVE
                         || to == ItemStatus.CANCELLED;
       case ACTIVE       -> to == ItemStatus.SOLD
@@ -388,6 +476,10 @@ public class Item extends Entity implements SpecAccessor {
       // SOLD, ENDED_NO_BID, CANCELLED là trạng thái cuối
       default           -> false;
     };
+    if (isValid) {
+      this.status = to;
+    }
+    return isValid;
   }
 
   /**
@@ -431,6 +523,33 @@ public class Item extends Entity implements SpecAccessor {
     Instant windows = endTime.minusSeconds((long) minutes * 60);
     return Instant.now().isAfter(windows);
   }
+
+  // ════════════════════════════════════════════════════
+  // VALIDATION
+  // ════════════════════════════════════════════════════
+  private void checkRequiredNum(int num, int min, String message) {
+    if (num <= min) {
+      throw new IllegalArgumentException(message);
+    }
+  }
+
+  // private void checkRequiredNum(BigDecimal num, BigDecimal min, String message) {
+  //   if (num.compareTo(min) <= 0) {
+  //     throw new IllegalArgumentException(message);
+  //   }
+  // }
+
+  private void checkRequiredString(String str, String massage) {
+    if (str == null || str.isBlank()) {
+      throw new IllegalArgumentException(massage);
+    }
+  }
+
+  // private void checkTime(Instant endTime, String massage) {
+  //   if (endTime == null && endTime.isBefore(Instant.now())) {
+  //     throw new IllegalArgumentException(massage);
+  //   }
+  // }
 
   // ════════════════════════════════════════════════════
   // OVERRIDE
