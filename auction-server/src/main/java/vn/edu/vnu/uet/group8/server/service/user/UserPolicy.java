@@ -115,6 +115,16 @@ public final class UserPolicy {
     return null;
   }
 
+  /**
+   * Validate số tiền rút - trả null nếu 
+   */
+  public static String validateWithdrawAmount(BigDecimal amount) {
+    checkTopUpAmount(amount);
+    checkTopUpAmount(amount, TOPUP_MIN_AMOUNT, TOPUP_MAX_AMOUNT, 
+        "Số tiền rút phải từ " + TOPUP_MIN_AMOUNT + " đến " + TOPUP_MAX_AMOUNT);
+    return null;
+  }
+
   // ════════════════════════════════════════════════════
   // HELPER CÁC HÀM NGHIỆP VỤ
   // ════════════════════════════════════════════════════

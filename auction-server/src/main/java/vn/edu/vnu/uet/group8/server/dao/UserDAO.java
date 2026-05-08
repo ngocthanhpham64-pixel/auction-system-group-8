@@ -5,6 +5,9 @@ import java.sql.*;
 import java.time.Instant;
 import java.util.*;
 import java.util.stream.Collectors;
+
+import javax.naming.spi.DirStateFactory.Result;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -18,6 +21,7 @@ import vn.edu.vnu.uet.group8.server.dao.DatabaseConnection;
 import vn.edu.vnu.uet.group8.server.util.PasswordUtil;
 import vn.edu.vnu.uet.group8.common.enums.AdminLevel;
 import vn.edu.vnu.uet.group8.common.enums.PaymentMethod;
+import vn.edu.vnu.uet.group8.common.exception.InsufficientBalanceException;
 
 public class UserDAO {
   private static final Logger log = LoggerFactory.getLogger(UserDAO.class);
@@ -315,29 +319,31 @@ public class UserDAO {
    * Cộng/trừ balance — để DB tính toán, tránh race condition.
    * delta > 0: nạp tiền | delta < 0: trừ tiền.
    */
-  public void updateBalance(int userId, BigDecimal delta)
-          throws SQLException {
-    String sql = """
-        UPDATE users
-        SET balance = balance + ?
-        WHERE user_id     = ?
-          AND is_deleted   = false
-          AND balance + ?  >= 0
-        """;
+  // public void updateBalance(
+  //   int userId, BigDecimal delta) 
+  //         throws SQLException {
 
-    try (PreparedStatement ps = getConn().prepareStatement(sql)) {
-      ps.setBigDecimal(1, delta);
-      ps.setInt(2, userId);
-      ps.setBigDecimal(3, delta);
+  //   String sql = """
+  //       UPDATE users
+  //       SET balance = balance + ?
+  //       WHERE user_id     = ?
+  //         AND is_deleted   = false
+  //         AND balance + ?  >= 0
+  //       """;
 
-      int affected = ps.executeUpdate();
-      if (affected == 0)
-        throw new IllegalStateException(
-            "Số dư không đủ hoặc user không tồn tại. "
-            + "userId=" + userId
-            + ", delta=" + delta);
-    }
-  }
+  //   try (PreparedStatement ps = getConn().prepareStatement(sql)) {
+  //     ps.setBigDecimal(1, delta);
+  //     ps.setInt(2, userId);
+  //     ps.setBigDecimal(3, delta);
+
+  //     int affected = ps.executeUpdate();
+  //     if (affected == 0)
+  //       throw new IllegalStateException(
+  //           "Số dư không đủ hoặc user không tồn tại. "
+  //           + "userId=" + userId
+  //           + ", delta=" + delta);
+  //   }
+  // }
 
   /**
    * Đổi mật khẩu — hash tại đây, không nhận hash từ bên ngoài.
@@ -431,7 +437,7 @@ public class UserDAO {
   }
 
   /**
-   * Lưu lịch sử giao dịch VÀ cộng tiền vào ví trong cùng 1 SQL transaction.
+   * Lưu lịch sử giao dịch VÀ thưc hiện giao dịch vào ví trong cùng 1 SQL transaction.
    * <p>Đây là điểm duy nhất đảm bảo tính nguyên tử (atomicity):
    * cả hai thao tác thành công hoặc cả hai rollback cùng nhau.
    *
@@ -439,25 +445,49 @@ public class UserDAO {
    * @param userId        ID người dùng
    * @param amount        Số tiền cần nạp
    * @return BigDecimal   Số dư mới nhất sau khi nạp
+   * @throws InsufficientBalanceException nếu số dư không đủ hoặc lỗi liên quan tới tài khoản
    * @throws SQLException Nếu có lỗi Database hoặc lỗi toàn vẹn dữ liệu
    */
   public BigDecimal insertTransactionAndUpdateBalance(
-      String transactionId, int userId, BigDecimal amount, PaymentMethod paymentMethod) throws SQLException {
+      String transactionId, int userId, BigDecimal amount, PaymentMethod paymentMethod) 
+        throws SQLException {
 
-    final String insertTxSql =
-        "INSERT INTO payment_transaction (transaction_id, user_id, amount, transaction_type, created_at) "
-            + "VALUES (?, ?, ?, ?, NOW())";
+    final String insertTxSql = """
+        INSERT INTO payment_transaction
+          (transaction_id, user_id, amount, transaction_type, created_at)
+          VALUES (?, ?, ?, ?, NOW())
+        """;
 
-    final String updateSql =
-        "UPDATE users SET balance = balance + ? "
-            + "WHERE user_id = ? AND is_deleted = false AND balance + ? >= 0";
+    final String updateSql = """
+        UPDATE users
+        SET balance = balance + ?
+        WHERE user_id      = ?
+          AND is_deleted   = false
+          AND balance + ? >= 0
+        """;
 
-    final String selectSql = 
-        "SELECT balance FROM users WHERE user_id = ? AND is_deleted = false";
+    final String selectSql = """
+        SELECT balance
+        FROM users
+        WHERE user_id   = ?
+          AND is_deleted = false
+        """;
 
     Connection conn = getConn();
     boolean originalAutoCommit = conn.getAutoCommit();
 
+    if (existsTransaction(transactionId)) {
+      try (PreparedStatement psSelect = conn.prepareStatement(selectSql)) {
+        psSelect.setInt(1, userId);
+        try (ResultSet rs = psSelect.executeQuery()) {
+          if (rs.next()) {
+            BigDecimal balance = rs.getBigDecimal("balance");
+            return balance;
+          }
+        }
+      }
+    }
+    
     try {
       conn.setAutoCommit(false);
 
@@ -478,9 +508,8 @@ public class UserDAO {
 
         int affectedRows = psUpdate.executeUpdate();
         if (affectedRows == 0) {
-          // Xuống dòng ngoại lệ để tránh vượt quá 100 ký tự
-          throw new SQLException(
-              "Giao dịch thất bại: Tài khoản không hợp lệ hoặc đã bị khóa (ID: " + userId + ")");
+          throw new InsufficientBalanceException(
+              "Giao dịch thất bại: Tài khoản không hợp lệ (ID: " + userId + ")");
         }
       }
 
@@ -515,6 +544,12 @@ public class UserDAO {
         conn.setAutoCommit(originalAutoCommit);
       } catch (SQLException ex) {
         log.error("Không thể khôi phục trạng thái AutoCommit cho userId: " + userId, ex);
+      } finally {
+        try {
+          conn.close();
+        } catch (SQLException ex) {
+          log.error("Không thể đóng kết nối cho userId: " + userId, ex);
+        }
       }
     }
   }

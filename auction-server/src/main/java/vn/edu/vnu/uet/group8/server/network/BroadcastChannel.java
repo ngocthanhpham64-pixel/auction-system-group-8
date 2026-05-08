@@ -1,8 +1,7 @@
-package vn.edu.vnu.uet.group8.server.service;
+package vn.edu.vnu.uet.group8.server.network;
 
-import vn.edu.vnu.uet.group8.common.dto.response.AuctionEndedBroadcastResponse;
 import vn.edu.vnu.uet.group8.common.dto.response.PriceUpdateBroadcastResponse;
-import vn.edu.vnu.uet.group8.common.dto.response.ServerResponse;
+import vn.edu.vnu.uet.group8.common.dto.response.AuctionEndedBroadcastResponse;
 
 /**
  * Interface làm cầu nối giữa Service layer và Network layer.
@@ -12,19 +11,20 @@ import vn.edu.vnu.uet.group8.common.dto.response.ServerResponse;
  *
  * Network layer implement interface này theo cách riêng của mình.
  */
-public interface BidObserver {
+public interface BroadcastChannel {
+
   /**
-   * Gửi {@link ServerResponse} đến TẤT CẢ client đang kết nối.
+   * Gửi thông báo giá mới đến TẤT CẢ client đang kết nối.
    * Network layer tự lọc client nào đang xem item này.
    *
-   * @param ServerResponse dữ liệu cần gửi — đã đóng gói trong DTO
+   * @param broadcast dữ liệu cần gửi — đã đóng gói trong DTO
    */
-  void broadcastPriceUpdate(ServerResponse response);
+  void broadcastPriceUpdate(PriceUpdateBroadcastResponse broadcast);
 
   /**
    * Gửi thông báo phiên đấu giá kết thúc.
    *
    * @param broadcast dữ liệu kết thúc phiên
    */
-  void broadcastAuctionEnded(ServerResponse response);
+  void broadcastAuctionEnded(AuctionEndedBroadcastResponse broadcast);
 }

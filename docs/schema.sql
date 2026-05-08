@@ -112,26 +112,8 @@ CREATE TABLE IF NOT EXISTS item (
     -- Giá trị khớp với ItemCategory enum trong Java
     category        VARCHAR(50)     NOT NULL,
 
-    -- UPCOMING | ACTIVE | SOLD | CANCELLED | ENDED_NO_BID
-    status          VARCHAR(20)     NOT NULL DEFAULT 'UPCOMING',
-
     -- NEW | USED | REFURBISHED — tách thành cột thật vì hay filter
     condition_type  VARCHAR(20)     NULL,
-
-    -- ── Giá ───────────────────────────────────────────────────
-    -- DECIMAL(15,2): tối đa 999,999,999,999,999.99 VND — đủ dùng
-    starting_price  DECIMAL(15,2)   NOT NULL,
-    current_price   DECIMAL(15,2)   NOT NULL,
-
-    -- Đếm số lượt bid — tách thành cột để hiển thị nhanh
-    -- không cần COUNT(*) từ bảng bid_transaction mỗi lần
-    bid_count       INT             NOT NULL DEFAULT 0,
-
-    -- ── Thời gian đấu giá ─────────────────────────────────────
-    -- Lưu UTC — anti-sniping service so sánh với Instant.now()
-    start_time      DATETIME        NOT NULL,
-    end_time        DATETIME        NOT NULL,
-    created_at      DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     -- ── Specs linh hoạt (Hybrid) ──────────────────────────────
     -- Chỉ chứa dữ liệu hiển thị — không cần filter hay index
@@ -139,8 +121,8 @@ CREATE TABLE IF NOT EXISTS item (
     -- NULL được phép: category OTHER có thể không có specs
     specs           JSON            NULL,
 
+    created_at      DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
     is_deleted      BOOLEAN         NOT NULL DEFAULT FALSE,
-    highest_bidder_id INT           NULL,
 
     -- ── Constraints ───────────────────────────────────────────
     PRIMARY KEY (item_id),
@@ -150,15 +132,67 @@ CREATE TABLE IF NOT EXISTS item (
         REFERENCES users (user_id)
         ON DELETE RESTRICT
         ON UPDATE CASCADE,
-        
-    CONSTRAINT fk_item_highest_bidder
+
+    CONSTRAINT chk_condition
+        CHECK (condition_type IS NULL
+            OR condition_type IN ('NEW','USED','REFURBISHED','LIKENEW','USED_AS_IS','DAMAGE')),
+
+    -- ── Indexes ───────────────────────────────────────────────
+    INDEX idx_seller_id         (seller_id),
+    INDEX idx_category          (category),
+    INDEX idx_created_at        (created_at)
+
+) ENGINE=InnoDB
+  DEFAULT CHARSET=utf8mb4
+  COLLATE=utf8mb4_unicode_ci;
+
+
+-- ================================================================
+-- BẢNG 3: auction_session
+-- Quản lý các phiên đấu giá của sản phẩm
+-- ================================================================
+
+CREATE TABLE IF NOT EXISTS auction_session (
+
+    -- ── Identity ──────────────────────────────────────────────
+    session_id      INT             NOT NULL AUTO_INCREMENT,
+    item_id         INT             NOT NULL,
+
+    -- ── Giá ───────────────────────────────────────────────────
+    starting_price  DECIMAL(15,2)   NOT NULL,
+    current_price   DECIMAL(15,2)   NOT NULL,
+
+    -- UPCOMING | ACTIVE | SOLD | CANCELLED | ENDED_NO_BID
+    status          VARCHAR(20)     NOT NULL DEFAULT 'UPCOMING',
+
+    -- Đếm số lượt bid
+    bid_count       INT             NOT NULL DEFAULT 0,
+
+    -- ── Thời gian đấu giá ─────────────────────────────────────
+    start_time      DATETIME        NOT NULL,
+    end_time        DATETIME        NOT NULL,
+    created_at      DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    is_deleted      BOOLEAN         NOT NULL DEFAULT FALSE,
+    highest_bidder_id INT           NULL,
+
+    -- ── Constraints ───────────────────────────────────────────
+    PRIMARY KEY (session_id),
+
+    CONSTRAINT fk_session_item
+        FOREIGN KEY (item_id)
+        REFERENCES item (item_id)
+        ON DELETE RESTRICT
+        ON UPDATE CASCADE,
+
+    CONSTRAINT fk_session_highest_bidder
         FOREIGN KEY (highest_bidder_id)
         REFERENCES users (user_id)
         ON DELETE SET NULL
         ON UPDATE CASCADE,
 
     CONSTRAINT chk_price_positive
-        CHECK (starting_price > 0 AND current_price > 0),
+        CHECK (starting_price >= 0 AND current_price >= 0),
 
     CONSTRAINT chk_current_gte_starting
         CHECK (current_price >= starting_price),
@@ -166,38 +200,23 @@ CREATE TABLE IF NOT EXISTS item (
     CONSTRAINT chk_time_order
         CHECK (end_time > start_time),
 
-    CONSTRAINT chk_status_item
+    CONSTRAINT chk_status_session
         CHECK (status IN (
             'UPCOMING','ACTIVE','SOLD','CANCELLED','ENDED_NO_BID')),
 
-    CONSTRAINT chk_condition
-        CHECK (condition_type IS NULL
-            OR condition_type IN ('NEW','USED','REFURBISHED')),
-
     -- ── Indexes ───────────────────────────────────────────────
-    -- Những query phổ biến nhất của hệ thống đấu giá:
-
-    -- "Lọc theo danh mục đang active"
-    INDEX idx_category_status   (category, status),
-
-    -- "Sort theo giá" — trang tìm kiếm
+    INDEX idx_status            (status),
     INDEX idx_current_price     (current_price),
-
-    -- "Sắp hết giờ" — anti-sniping + hiển thị countdown
     INDEX idx_end_time          (end_time),
-
-    -- "Item của seller X" — trang quản lý của người bán
-    INDEX idx_seller_id         (seller_id),
-
-    -- "Item mới nhất" — trang chủ
-    INDEX idx_created_at        (created_at)
+    INDEX idx_item_id           (item_id)
 
 ) ENGINE=InnoDB
   DEFAULT CHARSET=utf8mb4
   COLLATE=utf8mb4_unicode_ci;
 
+
 -- ================================================================
--- BẢNG 3: Lịch sử giao dịch tài chính
+-- BẢNG 4: payment_transaction
 -- ================================================================
 CREATE TABLE IF NOT EXISTS payment_transaction (
     transaction_id  VARCHAR(100)    NOT NULL,
@@ -225,7 +244,7 @@ CREATE TABLE IF NOT EXISTS payment_transaction (
   COLLATE=utf8mb4_unicode_ci;
 
 -- ================================================================
--- BẢNG 4: Đánh giá người bán (ratings)
+-- BẢNG 5: Đánh giá người bán (ratings)
 -- ================================================================
 CREATE TABLE IF NOT EXISTS ratings (
     rating_id       INT             NOT NULL AUTO_INCREMENT,
@@ -257,25 +276,25 @@ CREATE TABLE IF NOT EXISTS ratings (
   COLLATE=utf8mb4_unicode_ci;
 
 -- ================================================================
--- BẢNG 5: Lịch sử đặt giá (bid_transaction)
+-- BẢNG 6: Lịch sử đặt giá (bid_transaction)
 -- ================================================================
 CREATE TABLE IF NOT EXISTS bid_transaction (
     bid_id          INT             NOT NULL AUTO_INCREMENT,
-    item_id         INT             NOT NULL,
+    session_id      INT             NOT NULL,
     bidder_id       INT             NOT NULL,
     bid_amount      DECIMAL(15,2)   NOT NULL,
     created_at      DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     PRIMARY KEY (bid_id),
-    CONSTRAINT fk_bid_item
-        FOREIGN KEY (item_id) REFERENCES item (item_id)
+    CONSTRAINT fk_bid_session
+        FOREIGN KEY (session_id) REFERENCES auction_session (session_id)
         ON DELETE RESTRICT
         ON UPDATE CASCADE,
     CONSTRAINT fk_bid_bidder
         FOREIGN KEY (bidder_id) REFERENCES users (user_id)
         ON DELETE RESTRICT
-        ON UPDATE CASCADE
-    INDEX idx_item_bid (item_id, bid_amount DESC)
+        ON UPDATE CASCADE,
+    INDEX idx_session_bid (session_id, bid_amount DESC)
 ) ENGINE=InnoDB 
   DEFAULT CHARSET=utf8mb4 
   COLLATE=utf8mb4_unicode_ci;

@@ -1,10 +1,10 @@
 package vn.edu.vnu.uet.group8.common.dto.model;
 
-import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.Collections;
 import java.util.Map;
 
+import vn.edu.vnu.uet.group8.common.entity.AuctionSession;
 import vn.edu.vnu.uet.group8.common.entity.Item;
 import vn.edu.vnu.uet.group8.common.enums.ItemCategory;
 import vn.edu.vnu.uet.group8.common.enums.ItemCondition;
@@ -33,16 +33,9 @@ public class AuctionItemDTO {
     private String        title;
     private String        description;
     private ItemCategory  category;
-    private ItemStatus    status;
     private ItemCondition condition;  // NEW / USED / REFURBISHED
-
-    // ── Giá ──────────────────────────────────────────────
-    private BigDecimal startingPrice;
-    private BigDecimal currentPrice;
-    private int        bidCount;      // đếm số lượt bid, tránh JOIN bảng
-
-    // ── Thời gian ─────────────────────────────────────────
-    private Instant endTime;
+    private ItemStatus    status;
+    private Instant       endTime;
 
     // ── Người bán ─────────────────────────────────────────
     // sellerUsername thay vì sellerId — Client chỉ cần hiển thị tên,
@@ -69,20 +62,17 @@ public class AuctionItemDTO {
      * @param sellerUsername Tên người bán — Service tự query từ UserDAO
      * @param bidCount       Số lượt bid hiện tại
      */
-    public static AuctionItemDTO from(Item item,
+    public static AuctionItemDTO from(AuctionSession ac, Item item,
                                 String sellerUsername,
                                 int bidCount) {
       AuctionItemDTO dto = new AuctionItemDTO();
-      dto.itemId          = item.getId();
+      dto.itemId          = ac.getItemId();
       dto.title           = item.getTitle();
       dto.description     = item.getDescription();
       dto.category        = item.getCategory();
-      dto.status          = item.getStatus();
       dto.condition       = item.getCondition();
-      dto.startingPrice   = item.getStartingPrice();
-      dto.currentPrice    = item.getCurrentPrice();
-      dto.bidCount        = bidCount;
-      dto.endTime         = item.getEndTime();
+      dto.status          = ac.getStatus();
+      dto.endTime         = ac.getEndTime();
       dto.sellerUsername  = sellerUsername;
 
       // getRawSpecs() trả unmodifiableMap → copy ra để GSON serialize
@@ -96,8 +86,8 @@ public class AuctionItemDTO {
      * Overload tiện lợi khi không cần bidCount (hiển thị danh sách nhanh).
      * bidCount = 0 là giá trị mặc định.
      */
-    public static AuctionItemDTO from(Item item, String sellerUsername) {
-      return from(item, sellerUsername, 0);
+    public static AuctionItemDTO from(AuctionSession as, Item item, String sellerUsername) {
+      return from(as, item, sellerUsername, 0);
     }
 
     // ════════════════════════════════════════════════════
@@ -109,13 +99,10 @@ public class AuctionItemDTO {
     public String         getTitle()          { return title; }
     public String         getDescription()    { return description; }
     public ItemCategory   getCategory()       { return category; }
-    public ItemStatus     getStatus()         { return status; }
     public ItemCondition  getCondition()      { return condition; }
-    public BigDecimal     getStartingPrice()  { return startingPrice; }
-    public BigDecimal     getCurrentPrice()   { return currentPrice; }
-    public int            getBidCount()       { return bidCount; }
-    public Instant        getEndTime()        { return endTime; }
     public String         getSellerUsername() { return sellerUsername; }
+    public ItemStatus     getStatus()         { return status; }
+    public Instant        getEndTime()        { return endTime; }
 
     /**
      * Trả về toàn bộ specs map.
@@ -162,10 +149,10 @@ public class AuctionItemDTO {
       return endTime != null && Instant.now().isAfter(endTime);
     }
 
-    /** Giá đã tăng so với khởi điểm chưa */
-    public boolean hasBids() {
-      return bidCount > 0;
-    }
+    // /** Giá đã tăng so với khởi điểm chưa */
+    // public boolean hasBids() {
+    //   return bidCount > 0;
+    // }
 
     @Override
     public String toString() {
@@ -173,9 +160,6 @@ public class AuctionItemDTO {
               "itemId="     + itemId          +
               ", title='"   + title           + '\'' +
               ", category=" + category        +
-              ", status="   + status          +
-              ", price="    + currentPrice    +
-              ", endTime="  + endTime         +
               '}';
     }
 }
