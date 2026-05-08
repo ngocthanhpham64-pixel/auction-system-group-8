@@ -2,15 +2,20 @@
 .idea/
 *.iml
 
+# Eclipse
+.settings/
+.project
+.classpath
+
+# VS Code
+.vscode/
+
 # Maven build output
 target/
 
 # OS
 .DS_Store
 Thumbs.db
-
-# VS Code
-.vscode/
 
 # Logs
 *.log
