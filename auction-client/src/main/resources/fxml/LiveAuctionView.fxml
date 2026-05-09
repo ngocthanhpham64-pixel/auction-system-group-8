@@ -3,23 +3,29 @@
 <?import javafx.scene.control.*?>
 <?import javafx.scene.image.*?>
 <?import javafx.geometry.Insets?>
+<?import java.net.URL?>
 
 <VBox xmlns:fx="http://javafx.com/fxml/1"
       fx:controller="vn.edu.vnu.uet.group8.client.controller.LiveAuctionController"
-      style="-fx-background-color: #F8F8F8;"
+      styleClass="app-bg"
       spacing="0">
 
-    <ScrollPane fitToWidth="true" VBox.vgrow="ALWAYS"
-                style="-fx-background-color: transparent; -fx-background: transparent; -fx-border-color: transparent;">
+    <stylesheets>
+        <URL value="@../css/tokens.css"/>
+        <URL value="@../css/components.css"/>
+        <URL value="@../css/layout.css"/>
+    </stylesheets>
+
+    <ScrollPane fitToWidth="true" VBox.vgrow="ALWAYS" styleClass="scrollpane-clean">
         <content>
             <VBox spacing="14" style="-fx-padding: 20;">
 
                 <!-- BANNER ĐANG DIỄN RA -->
                 <HBox alignment="CENTER" spacing="6"
                       style="-fx-background-color: #FFE5E5; -fx-border-color: #FFB8B8; -fx-border-radius: 10; -fx-background-radius: 10; -fx-padding: 10 14;">
-                    <Label text="●" style="-fx-text-fill: #E03030; -fx-font-size: 9px;"/>
+                    <Label text="●" styleClass="text-danger" style="-fx-font-size: 9px;"/>
                     <Label text="ĐANG DIỄN RA - Phiên đấu giá trực tiếp"
-                           style="-fx-text-fill: #E03030; -fx-font-size: 12px; -fx-font-weight: bold;"/>
+                           styleClass="text-danger" style="-fx-font-size: 12px; -fx-font-weight: bold;"/>
                 </HBox>
 
                 <HBox spacing="14">
@@ -28,10 +34,10 @@
                     <VBox spacing="10" HBox.hgrow="ALWAYS">
 
                         <!-- Ảnh trực tiếp -->
-                        <StackPane style="-fx-background-color: #FFF3EB; -fx-background-radius: 12;" prefHeight="240">
+                        <StackPane styleClass="card-bg-orange" prefHeight="240">
                             <ImageView fx:id="imgLive" fitWidth="400" fitHeight="240" preserveRatio="true"/>
                             <HBox spacing="6" alignment="CENTER" StackPane.alignment="TOP_LEFT" maxWidth="-Infinity" maxHeight="-Infinity"
-                                  style="-fx-background-color: #E03030; -fx-background-radius: 6; -fx-padding: 3 10;">
+                                  styleClass="badge-live">
                                 <StackPane.margin><Insets top="10" left="10"/></StackPane.margin>
                                 <Label text="●" style="-fx-text-fill: white; -fx-font-size: 9px;"/>
                                 <Label text="TRỰC TIẾP" style="-fx-text-fill: white; -fx-font-size: 10px; -fx-font-weight: bold;"/>
@@ -44,52 +50,42 @@
                         </StackPane>
 
                         <!-- Thông tin sản phẩm -->
-                        <VBox style="-fx-background-color: white; -fx-border-color: #EEEEEE; -fx-border-radius: 12; -fx-background-radius: 12; -fx-padding: 14;" spacing="6">
-                            <Label fx:id="lblCategory" text="Đồng hồ cao cấp"
-                                   style="-fx-background-color: #F97316; -fx-text-fill: white; -fx-font-size: 9px; -fx-font-weight: bold; -fx-background-radius: 20; -fx-padding: 2 8;"
-                                   maxWidth="-Infinity"/>
+                        <VBox styleClass="card" spacing="6">
+                            <Label fx:id="lblCategory" text="Đồng hồ cao cấp" styleClass="badge-category" maxWidth="-Infinity"/>
                             <Label fx:id="lblProductName" text="Đồng Hồ Patek Philippe Nautilus Platinum"
-                                   wrapText="true"
-                                   style="-fx-font-size: 18px; -fx-font-weight: bold; -fx-text-fill: #1a1a1a;"/>
+                                   wrapText="true" styleClass="h3"/>
                             <Label fx:id="lblDescription" text="Đồng hồ Patek Philippe Nautilus phiên bản Platinum giới hạn, một trong những mẫu được săn đón nhất thế giới."
-                                   wrapText="true"
-                                   style="-fx-font-size: 12px; -fx-text-fill: #666;"/>
+                                   wrapText="true" styleClass="label-info"/>
                         </VBox>
 
                         <!-- Chat trực tiếp -->
-                        <VBox style="-fx-background-color: white; -fx-border-color: #EEEEEE; -fx-border-radius: 12; -fx-background-radius: 12; -fx-padding: 14;" spacing="10">
+                        <VBox styleClass="card" spacing="10">
                             <HBox alignment="CENTER_LEFT">
-                                <Label text="💬 Trò chuyện trực tiếp"
-                                       style="-fx-font-size: 13px; -fx-font-weight: bold; -fx-text-fill: #1a1a1a;"/>
+                                <Label text="💬 Trò chuyện trực tiếp" styleClass="section-title"/>
                                 <Region HBox.hgrow="ALWAYS"/>
-                                <Label fx:id="lblChatCount" text="6 tin nhắn"
-                                       style="-fx-font-size: 11px; -fx-text-fill: #888;"/>
+                                <Label fx:id="lblChatCount" text="6 tin nhắn" styleClass="text-muted"/>
                             </HBox>
 
-                            <ScrollPane prefHeight="160" fitToWidth="true"
-                                        style="-fx-background-color: transparent; -fx-background: transparent; -fx-border-color: transparent;">
+                            <ScrollPane prefHeight="160" fitToWidth="true" styleClass="scrollpane-clean">
                                 <content>
                                     <VBox fx:id="chatMessages" spacing="8">
 
-                                        <!-- Message: Admin -->
                                         <HBox spacing="8" alignment="TOP_LEFT">
-                                            <Label text="A"
-                                                   style="-fx-background-color: #FFE5E5; -fx-text-fill: #E03030; -fx-font-size: 10px; -fx-font-weight: bold; -fx-background-radius: 50; -fx-min-width: 26; -fx-min-height: 26; -fx-alignment: CENTER;"/>
+                                            <Label text="A" styleClass="avatar-chat"
+                                                   style="-fx-background-color: #FFE5E5; -fx-text-fill: #E03030;"/>
                                             <VBox spacing="2" HBox.hgrow="ALWAYS">
                                                 <HBox spacing="6" alignment="CENTER_LEFT">
                                                     <Label text="Admin" style="-fx-font-size: 11px; -fx-font-weight: bold;"/>
-                                                    <Label text="Admin" style="-fx-background-color: #F97316; -fx-text-fill: white; -fx-font-size: 8px; -fx-background-radius: 4; -fx-padding: 1 5;"/>
+                                                    <Label text="Admin" styleClass="badge-admin"/>
                                                     <Label text="10:30" style="-fx-font-size: 9px; -fx-text-fill: #888;"/>
                                                 </HBox>
-                                                <Label text="Chào mừng đến với phiên đấu giá!"
-                                                       style="-fx-font-size: 11px; -fx-text-fill: #444;"/>
+                                                <Label text="Chào mừng đến với phiên đấu giá!" style="-fx-font-size: 11px; -fx-text-fill: #444;"/>
                                             </VBox>
                                         </HBox>
 
-                                        <!-- Message: Collector88 -->
                                         <HBox spacing="8" alignment="TOP_LEFT">
-                                            <Label text="C"
-                                                   style="-fx-background-color: #E8F0FE; -fx-text-fill: #3B82F6; -fx-font-size: 10px; -fx-font-weight: bold; -fx-background-radius: 50; -fx-min-width: 26; -fx-min-height: 26; -fx-alignment: CENTER;"/>
+                                            <Label text="C" styleClass="avatar-chat"
+                                                   style="-fx-background-color: #E8F0FE; -fx-text-fill: #3B82F6;"/>
                                             <VBox spacing="2" HBox.hgrow="ALWAYS">
                                                 <HBox spacing="6" alignment="CENTER_LEFT">
                                                     <Label text="Collector88" style="-fx-font-size: 11px; -fx-font-weight: bold;"/>
@@ -99,10 +95,9 @@
                                             </VBox>
                                         </HBox>
 
-                                        <!-- Message: WatchLover -->
                                         <HBox spacing="8" alignment="TOP_LEFT">
-                                            <Label text="W"
-                                                   style="-fx-background-color: #F0FFF4; -fx-text-fill: #22C55E; -fx-font-size: 10px; -fx-font-weight: bold; -fx-background-radius: 50; -fx-min-width: 26; -fx-min-height: 26; -fx-alignment: CENTER;"/>
+                                            <Label text="W" styleClass="avatar-chat"
+                                                   style="-fx-background-color: #F0FFF4; -fx-text-fill: #22C55E;"/>
                                             <VBox spacing="2" HBox.hgrow="ALWAYS">
                                                 <HBox spacing="6" alignment="CENTER_LEFT">
                                                     <Label text="WatchLover" style="-fx-font-size: 11px; -fx-font-weight: bold;"/>
@@ -112,10 +107,9 @@
                                             </VBox>
                                         </HBox>
 
-                                        <!-- Message: LuxuryFan -->
                                         <HBox spacing="8" alignment="TOP_LEFT">
-                                            <Label text="L"
-                                                   style="-fx-background-color: #FFF8E1; -fx-text-fill: #D4A853; -fx-font-size: 10px; -fx-font-weight: bold; -fx-background-radius: 50; -fx-min-width: 26; -fx-min-height: 26; -fx-alignment: CENTER;"/>
+                                            <Label text="L" styleClass="avatar-chat"
+                                                   style="-fx-background-color: #FFF8E1; -fx-text-fill: #D4A853;"/>
                                             <VBox spacing="2" HBox.hgrow="ALWAYS">
                                                 <HBox spacing="6" alignment="CENTER_LEFT">
                                                     <Label text="LuxuryFan" style="-fx-font-size: 11px; -fx-font-weight: bold;"/>
@@ -125,10 +119,9 @@
                                             </VBox>
                                         </HBox>
 
-                                        <!-- Message: VIPBidder -->
                                         <HBox spacing="8" alignment="TOP_LEFT">
-                                            <Label text="V"
-                                                   style="-fx-background-color: #FFF3EB; -fx-text-fill: #F97316; -fx-font-size: 10px; -fx-font-weight: bold; -fx-background-radius: 50; -fx-min-width: 26; -fx-min-height: 26; -fx-alignment: CENTER;"/>
+                                            <Label text="V" styleClass="avatar-chat"
+                                                   style="-fx-background-color: #FFF3EB; -fx-text-fill: #F97316;"/>
                                             <VBox spacing="2" HBox.hgrow="ALWAYS">
                                                 <HBox spacing="6" alignment="CENTER_LEFT">
                                                     <Label text="VIPBidder" style="-fx-font-size: 11px; -fx-font-weight: bold;"/>
@@ -144,8 +137,7 @@
 
                             <!-- Input chat -->
                             <HBox spacing="6" style="-fx-padding: 10 0 0 0; -fx-border-color: #F0F0F0; -fx-border-width: 1 0 0 0;">
-                                <TextField fx:id="tfChatInput" promptText="Nhập tin nhắn..."
-                                           HBox.hgrow="ALWAYS"
+                                <TextField fx:id="tfChatInput" promptText="Nhập tin nhắn..." HBox.hgrow="ALWAYS"
                                            style="-fx-background-color: #F9F9F9; -fx-border-color: #E5E5E5; -fx-border-radius: 8; -fx-background-radius: 8; -fx-font-size: 11px; -fx-padding: 7 12;"/>
                                 <Button text="➤" onAction="#onSendMessage"
                                         style="-fx-background-color: #F97316; -fx-text-fill: white; -fx-font-size: 13px; -fx-background-radius: 8; -fx-padding: 7 14; -fx-cursor: hand;"/>
@@ -158,38 +150,31 @@
                     <VBox spacing="10" prefWidth="320">
 
                         <!-- Đồng hồ đếm ngược -->
-                        <VBox style="-fx-background-color: #FFF3EB; -fx-background-radius: 12; -fx-padding: 14;" alignment="CENTER" spacing="6">
-                            <Label text="⏱ Thời gian còn lại"
-                                   style="-fx-font-size: 11px; -fx-text-fill: #888;" maxWidth="Infinity" alignment="CENTER"/>
+                        <VBox styleClass="card-bg-orange" alignment="CENTER" spacing="6">
+                            <Label text="⏱ Thời gian còn lại" styleClass="text-muted" maxWidth="Infinity" alignment="CENTER"/>
                             <HBox alignment="CENTER" spacing="8">
                                 <VBox alignment="CENTER" style="-fx-background-color: white; -fx-background-radius: 8; -fx-border-color: #FFD4B8; -fx-border-radius: 8; -fx-padding: 8 14;">
-                                    <Label fx:id="lblMinutes" text="8"
-                                           style="-fx-font-size: 24px; -fx-font-weight: bold; -fx-text-fill: #E03030;"/>
-                                    <Label text="Phút" style="-fx-font-size: 9px; -fx-text-fill: #888;"/>
+                                    <Label fx:id="lblMinutes" text="8" style="-fx-font-size: 24px; -fx-font-weight: bold; -fx-text-fill: #E03030;"/>
+                                    <Label text="Phút" styleClass="text-muted-sm"/>
                                 </VBox>
                                 <VBox alignment="CENTER" style="-fx-background-color: white; -fx-background-radius: 8; -fx-border-color: #FFD4B8; -fx-border-radius: 8; -fx-padding: 8 14;">
-                                    <Label fx:id="lblSeconds" text="25"
-                                           style="-fx-font-size: 24px; -fx-font-weight: bold; -fx-text-fill: #E03030;"/>
-                                    <Label text="Giây" style="-fx-font-size: 9px; -fx-text-fill: #888;"/>
+                                    <Label fx:id="lblSeconds" text="25" style="-fx-font-size: 24px; -fx-font-weight: bold; -fx-text-fill: #E03030;"/>
+                                    <Label text="Giây" styleClass="text-muted-sm"/>
                                 </VBox>
                             </HBox>
                         </VBox>
 
                         <!-- Giá hiện tại -->
-                        <VBox style="-fx-background-color: white; -fx-border-color: #EEEEEE; -fx-border-radius: 12; -fx-background-radius: 12; -fx-padding: 14;" spacing="2">
-                            <Label text="Giá hiện tại" style="-fx-font-size: 10px; -fx-text-fill: #888;"/>
-                            <Label fx:id="lblCurrentPrice" text="1.860.000.000 đ"
-                                   style="-fx-font-size: 24px; -fx-font-weight: bold; -fx-text-fill: #F97316;"/>
-                            <Label fx:id="lblPriceChange" text="Tăng 10.000.000 đ so với lần trước"
-                                   style="-fx-font-size: 10px; -fx-text-fill: #888;"/>
+                        <VBox styleClass="card" spacing="2">
+                            <Label text="Giá hiện tại" styleClass="text-muted"/>
+                            <Label fx:id="lblCurrentPrice" text="1.860.000.000 đ" styleClass="price-large"/>
+                            <Label fx:id="lblPriceChange" text="Tăng 10.000.000 đ so với lần trước" styleClass="text-muted"/>
                         </VBox>
 
                         <!-- Đấu giá nhanh -->
-                        <VBox style="-fx-background-color: white; -fx-border-color: #EEEEEE; -fx-border-radius: 12; -fx-background-radius: 12; -fx-padding: 12;" spacing="8">
-                            <Label text="⚡ Đấu giá nhanh"
-                                   style="-fx-font-size: 11px; -fx-font-weight: bold; -fx-text-fill: #1a1a1a;"/>
-                            <TextField fx:id="tfBidAmount" promptText="1.870.000.000 đ"
-                                       style="-fx-background-color: #F5F5F5; -fx-border-color: #E0E0E0; -fx-border-radius: 8; -fx-background-radius: 8; -fx-font-size: 12px; -fx-padding: 8 12;"/>
+                        <VBox styleClass="card" spacing="8">
+                            <Label text="⚡ Đấu giá nhanh" styleClass="section-title" style="-fx-font-size: 11px;"/>
+                            <TextField fx:id="tfBidAmount" promptText="1.870.000.000 đ" styleClass="form-input-sm"/>
 
                             <GridPane hgap="6" vgap="6">
                                 <Button text="+10M" onAction="#onQuickBid1" GridPane.columnIndex="0" GridPane.rowIndex="0" maxWidth="Infinity"
@@ -206,63 +191,47 @@
                                 </columnConstraints>
                             </GridPane>
 
-                            <Button text="🔨 Đặt giá ngay" onAction="#onBidNow"
-                                    maxWidth="Infinity"
-                                    style="-fx-background-color: #E03030; -fx-text-fill: white; -fx-font-size: 13px; -fx-font-weight: bold; -fx-background-radius: 10; -fx-padding: 10; -fx-cursor: hand;"/>
+                            <Button text="🔨 Đặt giá ngay" onAction="#onBidNow" maxWidth="Infinity" styleClass="btn-danger"/>
                         </VBox>
 
                         <!-- Lịch sử đấu giá -->
-                        <VBox style="-fx-background-color: white; -fx-border-color: #EEEEEE; -fx-border-radius: 12; -fx-background-radius: 12; -fx-padding: 12;" spacing="6">
-                            <Label text="Lịch sử đấu giá trực tiếp"
-                                   style="-fx-font-size: 11px; -fx-font-weight: bold; -fx-text-fill: #1a1a1a; -fx-padding: 0 0 4 0;"/>
+                        <VBox styleClass="card" spacing="6">
+                            <Label text="Lịch sử đấu giá trực tiếp" styleClass="section-title" style="-fx-font-size: 11px; -fx-padding: 0 0 4 0;"/>
 
                             <VBox fx:id="bidHistory" spacing="5">
 
-                                <!-- Đang dẫn đầu -->
                                 <HBox style="-fx-background-color: #F0FFF4; -fx-background-radius: 8; -fx-padding: 8 10;" alignment="CENTER_LEFT">
                                     <VBox HBox.hgrow="ALWAYS" spacing="2">
-                                        <Label text="Người dùng 8432"
-                                               style="-fx-font-size: 11px; -fx-font-weight: bold; -fx-text-fill: #1a1a1a;"/>
-                                        <Label text="Đang dẫn đầu"
-                                               style="-fx-background-color: #22C55E; -fx-text-fill: white; -fx-font-size: 8px; -fx-background-radius: 4; -fx-padding: 1 5;" maxWidth="-Infinity"/>
+                                        <Label text="Người dùng 8432" styleClass="text-bold" style="-fx-font-size: 11px;"/>
+                                        <Label text="Đang dẫn đầu" styleClass="badge-success" maxWidth="-Infinity"/>
                                         <Label text="Vừa xong" style="-fx-font-size: 9px; -fx-text-fill: #888;"/>
                                     </VBox>
-                                    <Label text="1.860.000.000 đ"
-                                           style="-fx-font-size: 12px; -fx-font-weight: bold; -fx-text-fill: #1a1a1a;"/>
+                                    <Label text="1.860.000.000 đ" styleClass="text-bold" style="-fx-font-size: 12px;"/>
                                 </HBox>
 
-                                <!-- Bạn -->
                                 <HBox style="-fx-background-color: #E8F0FE; -fx-background-radius: 8; -fx-padding: 8 10;" alignment="CENTER_LEFT">
                                     <VBox HBox.hgrow="ALWAYS" spacing="2">
-                                        <Label text="Bạn"
-                                               style="-fx-font-size: 11px; -fx-font-weight: bold; -fx-text-fill: #1a1a1a;"/>
-                                        <Label text="Lượt của bạn"
-                                               style="-fx-background-color: #3B82F6; -fx-text-fill: white; -fx-font-size: 8px; -fx-background-radius: 4; -fx-padding: 1 5;" maxWidth="-Infinity"/>
+                                        <Label text="Bạn" styleClass="text-bold" style="-fx-font-size: 11px;"/>
+                                        <Label text="Lượt của bạn" styleClass="badge-info" maxWidth="-Infinity"/>
                                         <Label text="45 giây trước" style="-fx-font-size: 9px; -fx-text-fill: #888;"/>
                                     </VBox>
-                                    <Label text="1.840.000.000 đ"
-                                           style="-fx-font-size: 12px; -fx-font-weight: bold; -fx-text-fill: #1a1a1a;"/>
+                                    <Label text="1.840.000.000 đ" styleClass="text-bold" style="-fx-font-size: 12px;"/>
                                 </HBox>
 
-                                <!-- Người khác -->
                                 <HBox style="-fx-background-color: #FAFAFA; -fx-background-radius: 8; -fx-padding: 8 10;" alignment="CENTER_LEFT">
                                     <VBox HBox.hgrow="ALWAYS" spacing="2">
-                                        <Label text="Người dùng 5671"
-                                               style="-fx-font-size: 11px; -fx-font-weight: bold; -fx-text-fill: #1a1a1a;"/>
+                                        <Label text="Người dùng 5671" styleClass="text-bold" style="-fx-font-size: 11px;"/>
                                         <Label text="1 phút trước" style="-fx-font-size: 9px; -fx-text-fill: #888;"/>
                                     </VBox>
-                                    <Label text="1.830.000.000 đ"
-                                           style="-fx-font-size: 12px; -fx-font-weight: bold; -fx-text-fill: #1a1a1a;"/>
+                                    <Label text="1.830.000.000 đ" styleClass="text-bold" style="-fx-font-size: 12px;"/>
                                 </HBox>
 
                                 <HBox style="-fx-background-color: #FAFAFA; -fx-background-radius: 8; -fx-padding: 8 10;" alignment="CENTER_LEFT">
                                     <VBox HBox.hgrow="ALWAYS" spacing="2">
-                                        <Label text="Người dùng 9234"
-                                               style="-fx-font-size: 11px; -fx-font-weight: bold; -fx-text-fill: #1a1a1a;"/>
+                                        <Label text="Người dùng 9234" styleClass="text-bold" style="-fx-font-size: 11px;"/>
                                         <Label text="2 phút trước" style="-fx-font-size: 9px; -fx-text-fill: #888;"/>
                                     </VBox>
-                                    <Label text="1.820.000.000 đ"
-                                           style="-fx-font-size: 12px; -fx-font-weight: bold; -fx-text-fill: #1a1a1a;"/>
+                                    <Label text="1.820.000.000 đ" styleClass="text-bold" style="-fx-font-size: 12px;"/>
                                 </HBox>
 
                             </VBox>
