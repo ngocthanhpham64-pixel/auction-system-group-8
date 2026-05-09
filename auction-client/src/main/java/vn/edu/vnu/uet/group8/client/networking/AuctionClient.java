@@ -1,8 +1,5 @@
 package vn.edu.vnu.uet.group8.client.networking;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import java.time.Instant;
 import javafx.application.Platform;
 import vn.edu.vnu.uet.group8.common.dto.ServerRequest;
 import vn.edu.vnu.uet.group8.common.dto.ServerResponse;
@@ -11,18 +8,21 @@ import vn.edu.vnu.uet.group8.client.util.SessionManager;
 import vn.edu.vnu.uet.group8.client.model.ClientModel;
 import vn.edu.vnu.uet.group8.client.util.SceneManager;
 import vn.edu.vnu.uet.group8.client.util.AlertUtil;
+import vn.edu.vnu.uet.group8.common.util.GsonUtil;
 
 import java.io.*;
 import java.net.Socket;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
- * AuctionClient - Singleton quản lý kết nối Socket tới server.
+ * AuctionClient - Singleton quản lý kết nối     Socket tới server.
  * <p>
  * Chịu trách nhiệm:
  * - Duy trì một kết nối TCP socket tới server.
@@ -43,20 +43,17 @@ public final class AuctionClient {
     private Socket socket;
     private DataOutputStream out;
     private DataInputStream in;
-    private final Gson gson = new GsonBuilder()
-            .registerTypeAdapter(Instant.class, (com.google.gson.JsonSerializer<Instant>) (src, typeOfSrc, context) ->
-                    context.serialize(src.toString()))
-            .registerTypeAdapter(Instant.class, (com.google.gson.JsonDeserializer<Instant>) (json, typeOfT, context) ->
-                    Instant.parse(json.getAsString()))
-            .create();
-
     // Dùng AtomicBoolean thay cho boolean thường để thread-safe (đọc/ghi không bị race condition)
     private final AtomicBoolean connected = new AtomicBoolean(false);
-
+    // Thread pool
     private ExecutorService receiverExecutor;
+    private ScheduledExecutorService heartbeatExecutor;
 
     // Logger thay vì System.out/err - có timestamp, cấp độ log, dễ debug
     private static final Logger LOGGER = Logger.getLogger(AuctionClient.class.getName());
+
+    //Hearbeat interval (giây)
+    private static final int HEARTBEAT_INTERVAL_SEC = 30;
 
     //  PRIVATE CONSTRUCTOR (Singleton)
     private AuctionClient() {
@@ -68,7 +65,7 @@ public final class AuctionClient {
      * @param port server port (ví dụ 12345)
      * @throws IOException nếu không thể kết nối
      */
-    public void connect(String host, int port) throws IOException {
+    public  synchronized void connect(String host, int port) throws IOException {
         if (connected.get()) {
             LOGGER.info("Already connected, ignoring connect request.");
             return;
@@ -87,6 +84,8 @@ public final class AuctionClient {
             return t;
         });
         receiverExecutor.submit(this::listenLoop);
+        // Khởi động heartbeat định kỳ
+        startHeartbeat();
     }
 
     /**
@@ -99,8 +98,7 @@ public final class AuctionClient {
         if (!connected.get() || out == null) {
             LOGGER.warning("Cannot send request: not connected to server");
             if (callback != null) {
-                // Có thể tạo một response lỗi giả để callback biết, nhưng tạm thời chỉ log
-                callback.accept(createErrorResponse("Không có kết nối server"));
+                Platform.runLater(() -> callback.accept(ServerResponse.replyError("ERROR", request.getRequestId(),"Không có kết nối server")));
             }
             return;
         }
@@ -110,7 +108,7 @@ public final class AuctionClient {
             ResponseDispatcher.register(requestId, callback);
         }
         try {
-            String json = gson.toJson(request);
+            String json = GsonUtil.GSON.toJson(request);
             // Synchronized trên out để tránh 2 thread ghi xen kẽ làm hỏng JSON
             synchronized (out) {
                 out.writeUTF(json);
@@ -160,8 +158,8 @@ public final class AuctionClient {
         if (!connected.getAndSet(false)) {
             return; // đã ngắt rồi
         }
-
         LOGGER.info("Disconnecting from server...");
+        stopHeartbeat();
         try {
             if (in != null) in.close();
             if (out != null) out.close();
@@ -191,7 +189,7 @@ public final class AuctionClient {
         try {
             while (connected.get() && !socket.isClosed()) {
                 String json = in.readUTF();
-                ServerResponse response = gson.fromJson(json, ServerResponse.class);
+                ServerResponse response = GsonUtil.GSON.fromJson(json, ServerResponse.class);
                 // Chuyển response cho dispatcher xử lý (trên FX thread nếu cần)
                 ResponseDispatcher.dispatch(response);
             }
@@ -204,6 +202,30 @@ public final class AuctionClient {
         } finally {
             // Khi loop thoát, xử lý mất kết nối
             handleDisconnect(null);
+        }
+    }
+    /**
+     * Gửi gói tin PING định kỳ để giữ kết nối sống.*/
+    private void startHeartbeat(){
+        heartbeatExecutor = Executors.newSingleThreadScheduledExecutor(r->{
+            Thread t = new Thread(r,"heartbeat");
+            t.setDaemon(true);
+            return t;
+        });
+        heartbeatExecutor.scheduleAtFixedRate(()->{
+            if(connected.get()) {
+                try {
+                    ServerRequest<Void> ping = ServerRequest.anonymous(ActionType.HEARTBEAT);
+                    sendRequest(ping);
+                } catch (Exception e) {
+                    //Bảo vệ thread heartbeat, không để crash
+                }
+        }
+        },HEARTBEAT_INTERVAL_SEC,HEARTBEAT_INTERVAL_SEC, TimeUnit.SECONDS);
+    }
+    private void stopHeartbeat(){
+        if(heartbeatExecutor != null){
+            heartbeatExecutor.shutdownNow();
         }
     }
 
@@ -236,6 +258,7 @@ public final class AuctionClient {
         if (receiverExecutor != null) {
             receiverExecutor.shutdownNow();
         }
+        stopHeartbeat();
 
         // Cập nhật UI trên FX thread
         Platform.runLater(() -> {
@@ -247,22 +270,12 @@ public final class AuctionClient {
                 ClientModel.getInstance().clearSession();
                 SessionManager.logout(); // logout cũng xoá token, nhưng tránh gọi disconnect lại (đã ngắt)
                 // Đảm bảo chuyển scene (nếu chưa ở login)
-                SceneManager.switchTo("login.fxml");
+                SceneManager.switchTo(SceneManager.VIEW_LOGIN);
             } else {
                 // Chưa đăng nhập, chỉ đơn thuần mất kết nối, không cần alert
                 LOGGER.fine("Disconnected before login, no alert shown.");
             }
         });
-    }
-
-    /**
-     * Tạo một ServerResponse giả để báo lỗi không kết nối (dùng cho callback ngay lập tức).
-     */
-    private ServerResponse createErrorResponse(String message) {
-        return ServerResponse.broadcast("ERROR")
-                .success(false)
-                .message(message)
-                .build();
     }
 }
 

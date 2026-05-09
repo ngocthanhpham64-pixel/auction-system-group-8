@@ -29,6 +29,7 @@ public class ClientModel {
     private final IntegerProperty unreadNotificationCount = new SimpleIntegerProperty(0);
     private final BooleanProperty loggedIn = new SimpleBooleanProperty(false);
     private final ObjectProperty<Item> currentAuctionItem = new SimpleObjectProperty<>();
+    private final ObjectProperty<BigDecimal> balance = new SimpleObjectProperty<>(BigDecimal.ZERO);
     // Constructor private cho Singleton
     private ClientModel(){}
 
@@ -103,6 +104,9 @@ public class ClientModel {
                     .findFirst()
                     .ifPresent(item->item.setCurrentPrice(newPrice));
         });
+    }
+    public void updateBalance(BigDecimal newBalance){
+        runOnFX(()->balance.set(newBalance));
     }
     /**
      * Thêm một thông báo mới vào đầu danh sách(real-time)
@@ -202,11 +206,15 @@ public class ClientModel {
     public ListProperty<NotificationDTO> notificationsProperty(){ return notifications;}
     public ObservableList<Item> getFavoriteItems(){ return favoriteItems.get();}
     public ListProperty<Item> favoriteItemsProperty(){ return favoriteItems;}
+    public BigDecimal getBalance(){ return balance.get();}
     /**
      * @ return ReadOnlyIntegerProperty để binding số lượng yêu thích( ví dụ badge)
      */
     public ReadOnlyIntegerProperty favCountProperty(){
         return favoriteItems.sizeProperty();
+    }
+    public ReadOnlyObjectProperty<BigDecimal> balanceProperty(){
+        return balance;
     }
     /** Tiện ích lấy số lượng yêu thích (không binding)*/
     public int getFavCount(){ return favoriteItems.size();}

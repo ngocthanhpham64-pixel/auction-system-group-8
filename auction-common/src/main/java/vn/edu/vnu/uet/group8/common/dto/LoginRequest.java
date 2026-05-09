@@ -5,27 +5,27 @@ package vn.edu.vnu.uet.group8.common.dto;
  * Password được gửi ở dạng plaintext(chỉ qua socket, không log).
  */
 public final class LoginRequest {
-    private  final String email;
+    private  final String username;
     private  final String password;
 
-    private LoginRequest(String email,String password){
-        if(email == null || email.isBlank())
+    private LoginRequest(String username,String password){
+        if(username == null || username.isBlank())
             throw new IllegalArgumentException("Email không được trống");
         if(password == null || password.isEmpty()){
             throw new IllegalArgumentException("Password không đuợc trống");
         }
-        this.email = email.trim().toLowerCase();
+        this.username = username.trim().toLowerCase();
         this.password = password;
     }
     public static LoginRequest of(String email, String password){
         return new LoginRequest(email,password);
     }
 
-    public String getEmail(){return email;}
+    public String getEmail(){return username;}
     public String getPassword(){return password;}
 
     @Override
     public String toString(){
-        return "LoginRequest{email='" + email + "',password='[HIDDEN]'}";
+        return "LoginRequest{email='" + username + "',password='[HIDDEN]'}";
     }
 }

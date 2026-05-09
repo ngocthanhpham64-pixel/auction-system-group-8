@@ -16,6 +16,13 @@ public final class AuctionStatusDTO {
     private final Instant endTime;
     private final List<BidRecord> bidHistory;
 
+    private AuctionStatusDTO(){
+        this.itemId = 0;
+        this.currentPrice = null;
+        this.endTime = null;
+        this.bidHistory = null;
+    }
+
     public AuctionStatusDTO(int itemId,BigDecimal currentPrice,
                             Instant endTime, List<BidRecord> bidHistory){
         if(itemId <= 0)
@@ -42,6 +49,6 @@ public final class AuctionStatusDTO {
         return "AuctionStatusDTO{itemId=" + itemId
                 + ", currentPrice=" + currentPrice
                 + ", endTime=" + endTime
-                + ", bidHistorySize=" + bidHistory.size() + '}';
+                + ", bidHistorySize=" + (bidHistory != null ? bidHistory.size() : 0) + '}';
     }
 }

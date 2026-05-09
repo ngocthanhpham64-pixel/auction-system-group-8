@@ -51,7 +51,6 @@ public final class SessionManager {
     public static void logout(){
         clearSession();
         ClientModel.getInstance().clearSession();
-        AuctionClient.getInstance().disconnect();
         Platform.runLater(()->SceneManager.switchTo("login.fxml"));
     }
     //-----------Getter----------

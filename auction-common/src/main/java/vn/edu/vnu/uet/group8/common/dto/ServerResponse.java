@@ -1,6 +1,8 @@
 package vn.edu.vnu.uet.group8.common.dto;
 
 import com.google.gson.Gson;
+import vn.edu.vnu.uet.group8.common.util.GsonUtil;
+
 import java.time.Instant;
 
 /**
@@ -12,7 +14,7 @@ import java.time.Instant;
  */
 
 public final class ServerResponse {
-    private static final Gson GSON = new Gson();// Dùng cho getData, thread-safe
+    private static final Gson GSON = GsonUtil.GSON;
     private final String action;
     private final String eventType;// Dùng cho broadcast
     private final Instant timestamp;

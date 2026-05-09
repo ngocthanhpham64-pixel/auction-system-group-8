@@ -22,7 +22,25 @@ public final class SceneManager {
     private static final Logger LOGGER = Logger.getLogger(SceneManager.class.getName());
     private static Stage primaryStage;
     private static String defaultTitle = "Auctiva - Live Online Auction";
+    // Hằng số tên file FXML
 
+    /**
+     * Màn hình đăng nhập*/
+    public static final String VIEW_LOGIN = "login.fxml";
+
+    /**
+     * Màn hình chính (sau login)*/
+    public static final String VIEW_MAIN = "main.fxml";
+    // Có thể bổ sung thêm các fxml khác (nếu có)
+    public static final String VIEW_HOME = "home.fxml";
+    public static final String VIEW_EXPLORE = "explore.fxml";
+    public static final String VIEW_AUCTION_DETAIL = "auction_detail.fxml";
+    public static final String VIEW_LIVE_AUCTION = "live_auction.fxml";
+    public static final String VIEW_PROFILE = "profile.fxml";
+    public static final String VIEW_WALLET = "wallet.fxml";
+    public static final String VIEW_NOTIFICATIONS = "notifications.fxml";
+    public static final String VIEW_FAVORITES = "favorites.fxml";
+    public static final String VIEW_SETTINGS = "settings.fxml";
     private SceneManager(){}
 
     public static void init(Stage stage){
