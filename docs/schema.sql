@@ -48,6 +48,7 @@ CREATE TABLE IF NOT EXISTS users (
     -- DECIMAL thay vì DOUBLE để tránh lỗi floating point
     -- 15 chữ số tổng, 2 chữ số thập phân → đủ cho VND
     balance         DECIMAL(15,2)   NOT NULL DEFAULT 0.00,
+    frozen_balance  DECIMAL(15,2)   NOT NULL DEFAULT 0.00,
 
     -- NULL = chưa có ai đánh giá (khác với 0.0 = bị đánh giá xấu)
     seller_rating   DECIMAL(3,1)    NULL,
@@ -75,7 +76,7 @@ CREATE TABLE IF NOT EXISTS users (
 
     -- ── Validation ────────────────────────────────────────────
     CONSTRAINT chk_balance
-        CHECK (balance >= 0),
+        CHECK (balance >= 0 AND frozen_balance >= 0),
     CONSTRAINT chk_seller_rating
         CHECK (seller_rating IS NULL
             OR seller_rating BETWEEN 0.0 AND 5.0),

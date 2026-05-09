@@ -2,20 +2,22 @@ package vn.edu.vnu.uet.group8.server.service.auction;
 
 import java.math.BigDecimal;
 import java.sql.SQLException;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import vn.edu.vnu.uet.group8.common.entity.Item;
+
 import vn.edu.vnu.uet.group8.common.entity.AuctionSession;
-import vn.edu.vnu.uet.group8.common.entity.UserMember;
+import vn.edu.vnu.uet.group8.common.entity.Item;
 import vn.edu.vnu.uet.group8.common.entity.User;
+import vn.edu.vnu.uet.group8.common.entity.UserMember;
 import vn.edu.vnu.uet.group8.common.enums.ItemStatus;
 import vn.edu.vnu.uet.group8.common.exception.AuctionException;
 import vn.edu.vnu.uet.group8.common.exception.ItemNotFoundException;
 import vn.edu.vnu.uet.group8.common.exception.UserNotFoundException;
 import vn.edu.vnu.uet.group8.common.exception.ValidationException;
+import vn.edu.vnu.uet.group8.server.dao.AuctionSessionDAO;
 import vn.edu.vnu.uet.group8.server.dao.ItemDAO;
 import vn.edu.vnu.uet.group8.server.dao.UserDAO;
-import vn.edu.vnu.uet.group8.server.dao.AuctionSessionDAO;
 
 /**
  * Kiểm tra tính hợp lệ của một lần đặt giá.
