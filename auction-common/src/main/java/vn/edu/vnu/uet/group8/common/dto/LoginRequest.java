@@ -17,11 +17,11 @@ public final class LoginRequest {
         this.username = username.trim().toLowerCase();
         this.password = password;
     }
-    public static LoginRequest of(String email, String password){
-        return new LoginRequest(email,password);
+    public static LoginRequest of(String username, String password){
+        return new LoginRequest(username,password);
     }
 
-    public String getEmail(){return username;}
+    public String getUsername(){return username;}
     public String getPassword(){return password;}
 
     @Override

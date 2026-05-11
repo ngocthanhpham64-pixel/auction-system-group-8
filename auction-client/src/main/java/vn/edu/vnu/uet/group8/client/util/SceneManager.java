@@ -26,21 +26,20 @@ public final class SceneManager {
 
     /**
      * Màn hình đăng nhập*/
-    public static final String VIEW_LOGIN = "login.fxml";
+    public static final String VIEW_LOGIN = "LoginView.fxml";
 
     /**
      * Màn hình chính (sau login)*/
-    public static final String VIEW_MAIN = "main.fxml";
+    public static final String VIEW_MAIN = "MainLayout.fxml";
     // Có thể bổ sung thêm các fxml khác (nếu có)
-    public static final String VIEW_HOME = "home.fxml";
-    public static final String VIEW_EXPLORE = "explore.fxml";
-    public static final String VIEW_AUCTION_DETAIL = "auction_detail.fxml";
-    public static final String VIEW_LIVE_AUCTION = "live_auction.fxml";
-    public static final String VIEW_PROFILE = "profile.fxml";
-    public static final String VIEW_WALLET = "wallet.fxml";
-    public static final String VIEW_NOTIFICATIONS = "notifications.fxml";
-    public static final String VIEW_FAVORITES = "favorites.fxml";
-    public static final String VIEW_SETTINGS = "settings.fxml";
+    public static final String VIEW_EXPLORE = "ExploreView.fxml";
+    public static final String VIEW_AUCTION_DETAIL = "AuctionDetailView.fxml";
+    public static final String VIEW_LIVE_AUCTION = "LiveAuctionView.fxml";
+    public static final String VIEW_PROFILE = "ProfileView.fxml";
+    public static final String VIEW_WALLET = "WalletView.fxml";
+    public static final String VIEW_NOTIFICATIONS = "NotificationView.fxml";
+    public static final String VIEW_FAVORITES = "FavoriteView.fxml";
+    public static final String VIEW_SETTINGS = "SettingsView.fxml";
     private SceneManager(){}
 
     public static void init(Stage stage){

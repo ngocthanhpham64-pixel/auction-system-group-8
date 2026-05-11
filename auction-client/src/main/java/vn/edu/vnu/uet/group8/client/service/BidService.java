@@ -1,7 +1,5 @@
 package vn.edu.vnu.uet.group8.client.service;
 
-import com.google.gson.Gson;
-import com.google.gson.reflect.TypeToken;
 import vn.edu.vnu.uet.group8.client.networking.AuctionClient;
 import vn.edu.vnu.uet.group8.client.util.SessionManager;
 import vn.edu.vnu.uet.group8.common.dto.AutoBidRequest;
@@ -12,7 +10,6 @@ import vn.edu.vnu.uet.group8.common.dto.ServerRequest;
 import vn.edu.vnu.uet.group8.common.enums.ActionType;
 import vn.edu.vnu.uet.group8.common.util.GsonUtil;
 
-import java.lang.reflect.Type;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.function.Consumer;

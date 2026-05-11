@@ -6,7 +6,6 @@ import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import vn.edu.vnu.uet.group8.common.dto.LoginResponse;
 import vn.edu.vnu.uet.group8.common.entity.Item;
-import vn.edu.vnu.uet.group8.common.entity.User;
 import vn.edu.vnu.uet.group8.common.dto.NotificationDTO;
 
 import java.math.BigDecimal;

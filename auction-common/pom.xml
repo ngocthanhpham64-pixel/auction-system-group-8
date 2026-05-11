@@ -33,12 +33,7 @@
       <version>4.11</version>
       <scope>test</scope>
     </dependency>
-    <dependency>
-      <groupId>org.projectlombok</groupId>
-      <artifactId>lombok</artifactId>
-      <version>1.18.36</version> <!-- Luôn dùng version mới nhất ổn định -->
-      <scope>provided</scope>
-    </dependency>
+
   </dependencies>
 
   <build>

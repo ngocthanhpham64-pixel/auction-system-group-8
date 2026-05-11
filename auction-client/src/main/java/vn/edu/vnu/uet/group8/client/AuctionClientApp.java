@@ -3,31 +3,59 @@ package vn.edu.vnu.uet.group8.client;
 import javafx.application.Application;
 import javafx.stage.Stage;
 import vn.edu.vnu.uet.group8.client.networking.AuctionClient;
-import vn.edu.vnu.uet.group8.client.util.SceneManager;
 import vn.edu.vnu.uet.group8.client.util.AlertUtil;
+import vn.edu.vnu.uet.group8.client.util.SceneManager;
 
 /**
- * Ứng dụng khách hàng Auction.
- * Khởi tạo kết nối socket và hiển thị màn hình đăng nhập.
+ * Entry point ứng dụng Auctiva.
+ *
+ * <p>Thứ tự khởi động:
+ * <ol>
+ *   <li>Init SceneManager với primary stage.</li>
+ *   <li>Thử kết nối socket tới server — nếu thất bại vẫn mở app, không tắt.</li>
+ *   <li>Hiển thị màn hình đăng nhập.</li>
+ * </ol>
  */
 public class AuctionClientApp extends Application {
 
+    private static final String SERVER_HOST = "localhost";
+    private static final int    SERVER_PORT = 12345;
+
     @Override
     public void start(Stage primaryStage) {
+        // 1. Khởi tạo SceneManager
         SceneManager.init(primaryStage);
         primaryStage.setTitle("Auctiva - Live Online Auction");
         primaryStage.setMinWidth(1024);
         primaryStage.setMinHeight(700);
 
+        // 2. Kết nối server
+        // ✅ Fix: bỏ System.exit(1) — app vẫn mở dù server chưa chạy.
+        //    LoginController sẽ tự báo lỗi khi user bấm đăng nhập.
         try {
-            // Kết nối tới server (có thể đọc từ file cấu hình)
-                AuctionClient.getInstance().connect("localhost", 12345);
+            AuctionClient.getInstance().connect(SERVER_HOST, SERVER_PORT);
         } catch (Exception e) {
-            AlertUtil.showError("Cannot connect to server: " + e.getMessage());
-            System.exit(1);
+            AlertUtil.showWarning(
+                    "Không thể kết nối server tại "
+                            + SERVER_HOST + ":" + SERVER_PORT
+                            + "\n" + e.getMessage()
+                            + "\nKiểm tra server đã chạy chưa rồi thử lại."
+            );
+            // Tiếp tục mở app — không System.exit()
         }
 
-        SceneManager.switchTo("login.fxml");
+        // 3. Hiển thị màn hình đăng nhập
+        // ✅ Fix: file thực tế là "LoginView.fxml", không phải "login.fxml"
+        SceneManager.switchTo(SceneManager.VIEW_LOGIN);
+    }
+
+    /**
+     * ✅ Fix: JavaFX gọi stop() khi user đóng cửa sổ.
+     * Dọn socket trước khi JVM thoát, tránh thread daemon bị treo.
+     */
+    @Override
+    public void stop() {
+        AuctionClient.getInstance().disconnect();
     }
 
     public static void main(String[] args) {

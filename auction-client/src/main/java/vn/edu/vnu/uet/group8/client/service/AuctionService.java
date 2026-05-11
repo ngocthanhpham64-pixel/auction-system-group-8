@@ -1,6 +1,5 @@
 package vn.edu.vnu.uet.group8.client.service;
 
-import com.google.gson.reflect.TypeToken;
 import vn.edu.vnu.uet.group8.client.model.ClientModel;
 import vn.edu.vnu.uet.group8.client.networking.AuctionClient;
 import vn.edu.vnu.uet.group8.client.networking.ResponseDispatcher;
@@ -13,7 +12,6 @@ import vn.edu.vnu.uet.group8.common.entity.Item;
 import vn.edu.vnu.uet.group8.common.enums.ActionType;
 import vn.edu.vnu.uet.group8.common.util.GsonUtil;
 
-import java.lang.reflect.Type;
 import java.util.List;
 import java.util.function.Consumer;
 
@@ -26,7 +24,6 @@ public final class AuctionService {
      * eventType server push khi có bid mới hoặc trạng thái đấu giá thay đổi.
      */
     public static final String EVENT_AUCTION_STATUS = "auction_status";
-    private static final Type ITEM_LIST_TYPE = new TypeToken<List<Item>>(){}.getType();
     private AuctionService(){}
     /**
      * Tải toàn bộ item đang đấu giá từ server và lưu vào ClientModel.
@@ -48,7 +45,7 @@ public final class AuctionService {
             if(response.isSuccess()){
                 //Parse List<Item> bằng response data bằng GsonUtil
                 String json = GsonUtil.GSON.toJson(response.getData());
-                List<Item> items = GsonUtil.GSON.fromJson(json,ITEM_LIST_TYPE);
+                List<Item> items = GsonUtil.toList(response.getData(), Item.class);
                 ClientModel.getInstance().setAuctionItems(items);
             }
             if(onDone != null) onDone.run();

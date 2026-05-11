@@ -86,7 +86,7 @@
         <version>0.0.8</version>
         <configuration>
           <!-- ⚠️ BẮT BUỘC đúng tên class có phương thức main() -->
-          <mainClass>vn.edu.vnu.uet.group8.client.MainApp</mainClass>
+          <mainClass>vn.edu.vnu.uet.group8.client.AuctionClientApp</mainClass>
         </configuration>
       </plugin>
     </plugins>

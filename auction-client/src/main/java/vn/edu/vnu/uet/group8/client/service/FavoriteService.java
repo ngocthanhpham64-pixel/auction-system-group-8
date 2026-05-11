@@ -1,0 +1,97 @@
+package vn.edu.vnu.uet.group8.client.service;
+
+import vn.edu.vnu.uet.group8.client.model.ClientModel;
+import vn.edu.vnu.uet.group8.client.networking.AuctionClient;
+import vn.edu.vnu.uet.group8.client.util.SessionManager;
+import vn.edu.vnu.uet.group8.common.entity.Item;
+import vn.edu.vnu.uet.group8.common.enums.ActionType;
+import vn.edu.vnu.uet.group8.common.util.GsonUtil;
+
+import java.util.List;
+import java.util.function.Consumer;
+
+/**
+ * Service quản lý danh sách yêu thích của người dùng
+ * Tất cả callback đều chạy trên UI Thread (đảm bảo bởi AuctionClient)
+ */
+public final class FavoriteService {
+    private FavoriteService(){}
+    /**
+     * Tải toàn bộ danh sách yêu thích từ server và cập nhật ClientModel.
+     * @param onSuccess callback nhận danh sách Item yêu thích (chạy trên UI Thread)
+     * @param onFailure callback nhận thông báo lỗi
+     */
+    public static void loadAll(Consumer<List<Item>> onSuccess, Consumer<String> onFailure){
+        // Kiểm tra đăng nhập trước
+        if(!SessionManager.isLoggedIn()){
+            if(onFailure != null) onFailure.accept("Bạn cần đăng nhập");
+            return;
+        }
+        if(!AuctionClient.getInstance().isConnected()){
+            if(onFailure != null) onFailure.accept("Không có kết nối đến server");
+            return;
+        }
+        AuctionClient.getInstance().sendAuthenticatedRequest(
+                ActionType.FAVORITE_LIST,
+                null,
+                response -> {
+                    if (response.isSuccess()) {
+                        List<Item> items = GsonUtil.toList(response.getData(), Item.class);
+                        ClientModel.getInstance().setFavoriteItems(items);
+                        if (onSuccess != null) onSuccess.accept(items);
+                    } else {
+                        if (onFailure != null) onFailure.accept(response.getMessage());
+                    }
+                });
+    }
+    /**
+     * Thêm sản phẩm vào danh sách yêu thích
+     * Sau khi thành công, tự động reload danh sách để cập nhật ClientModel.
+     * @param itemId ID sản phẩm cần thêm
+     * @param onSuccess callback khi thành công (chạy trên UI Thread)
+     * @param onFailure callback nhận thông báo lỗi
+     */
+    public static void add(int itemId, Runnable onSuccess,Consumer<String> onFailure){
+        if(!SessionManager.isLoggedIn()){
+            if(onFailure != null)onFailure.accept("Bạn cần đăng nhập");
+            return;
+        }
+        AuctionClient.getInstance().sendAuthenticatedRequest(
+                ActionType.FAVORITE_ADD, itemId,
+                response -> {
+                    if(response.isSuccess()){
+                        //Reload toàn bộ danh sách để đồng bộ ClientModel
+                        loadAll(items ->{if(onSuccess != null) onSuccess.run();},
+                                onFailure
+                        );
+                    } else{
+                        if(onFailure != null) onFailure.accept(response.getMessage());
+                    }
+            });
+    }
+    /**
+     * Xóa sản phẩm khỏi danh sách yêu thích.
+     * Sau khi thành công, tự động reload danh sách để cập nhật ClientModel.
+     * @param itemId ID sản phẩm cần xóa
+     * @param onSuccess callback khi thành công (chạy trên UI Thread)
+     * @param onFailure callback nhận thông báo lỗi
+     */
+    public static void remove(int itemId, Runnable onSuccess, Consumer<String> onFailure){
+        if(!SessionManager.isLoggedIn()){
+            if(onFailure != null) onFailure.accept("Bạn cần đăng nhập");
+            return;
+        }
+        AuctionClient.getInstance().sendAuthenticatedRequest(
+                ActionType.FAVORITE_REMOVE, itemId,
+                response -> {
+                    if(response.isSuccess()){
+                        //Reload toàn bộ danh sách để đồng bộ ClientModel
+                        loadAll(items -> { if(onSuccess != null) onSuccess.run();},
+                                onFailure
+                        );
+                    } else{
+                        if(onFailure!= null) onFailure.accept(response.getMessage());
+                    }
+                });
+    }
+}
