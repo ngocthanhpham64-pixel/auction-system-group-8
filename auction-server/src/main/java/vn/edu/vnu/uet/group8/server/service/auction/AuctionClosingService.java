@@ -13,7 +13,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import vn.edu.vnu.uet.group8.common.entity.AuctionSession;
 import vn.edu.vnu.uet.group8.common.entity.Item;
-import vn.edu.vnu.uet.group8.common.enums.ItemStatus;
+import vn.edu.vnu.uet.group8.common.enums.SessionStatus;
 import vn.edu.vnu.uet.group8.server.dao.AuctionSessionDAO;
 import vn.edu.vnu.uet.group8.server.dao.BidTransactionDAO;
 import vn.edu.vnu.uet.group8.server.dao.BidTransactionDAO.LeaderInfo;
@@ -225,7 +225,7 @@ public class AuctionClosingService {
 
     // Bước 1: Chuyển trạng thái session → SOLD
     boolean transitioned =
-        session.transitionStatus(ItemStatus.ACTIVE, ItemStatus.SOLD);
+        session.transitionStatus(SessionStatus.ACTIVE, SessionStatus.SOLD);
 
     if (!transitioned) {
       logger.warn(
@@ -234,7 +234,7 @@ public class AuctionClosingService {
       return;
     }
 
-    sessionDAO.updateStatus(sessionId, ItemStatus.SOLD);
+    sessionDAO.updateStatus(sessionId, SessionStatus.SOLD);
 
     // Bước 2: Chuyển tiền cho seller
     // Tiền của winner đã bị trừ lúc placeBid()
@@ -279,7 +279,7 @@ public class AuctionClosingService {
 
     boolean transitioned =
         session.transitionStatus(
-            ItemStatus.ACTIVE, ItemStatus.ENDED_NO_BID);
+            SessionStatus.ACTIVE, SessionStatus.ENDED_NO_BID);
 
     if (!transitioned) {
       logger.warn(
@@ -288,7 +288,7 @@ public class AuctionClosingService {
       return;
     }
 
-    sessionDAO.updateStatus(sessionId, ItemStatus.ENDED_NO_BID);
+    sessionDAO.updateStatus(sessionId, SessionStatus.ENDED_NO_BID);
 
     logger.info(
         "Session ENDED_NO_BID: sessionId={}, itemId={}",

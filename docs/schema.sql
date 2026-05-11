@@ -116,6 +116,9 @@ CREATE TABLE IF NOT EXISTS item (
     -- NEW | USED | REFURBISHED — tách thành cột thật vì hay filter
     condition_type  VARCHAR(20)     NULL,
 
+    -- DRAFT | LISTED | SOLD ...
+    status          VARCHAR(20)     NOT NULL DEFAULT 'DRAFT',
+
     -- ── Specs linh hoạt (Hybrid) ──────────────────────────────
     -- Chỉ chứa dữ liệu hiển thị — không cần filter hay index
     -- Ví dụ: {"brand":"Apple","storage":"512GB","warranty":"12"}

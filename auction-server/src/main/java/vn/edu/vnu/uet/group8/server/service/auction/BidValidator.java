@@ -10,7 +10,7 @@ import vn.edu.vnu.uet.group8.common.entity.AuctionSession;
 import vn.edu.vnu.uet.group8.common.entity.Item;
 import vn.edu.vnu.uet.group8.common.entity.User;
 import vn.edu.vnu.uet.group8.common.entity.UserMember;
-import vn.edu.vnu.uet.group8.common.enums.ItemStatus;
+import vn.edu.vnu.uet.group8.common.enums.SessionStatus;
 import vn.edu.vnu.uet.group8.common.exception.AuctionException;
 import vn.edu.vnu.uet.group8.common.exception.ItemNotFoundException;
 import vn.edu.vnu.uet.group8.common.exception.UserNotFoundException;
@@ -106,7 +106,7 @@ public class BidValidator {
         .findById(itemId)
         .orElseThrow(() -> new ItemNotFoundException(itemId));
     
-    if (as.getStatus() != ItemStatus.ACTIVE) {
+    if (as.getStatus() != SessionStatus.ACTIVE) {
       throw new AuctionException(
           "Sản phẩm không trong trạng thái đấu giá. "
               + "Trạng thái hiện tại: " + as.getStatus());

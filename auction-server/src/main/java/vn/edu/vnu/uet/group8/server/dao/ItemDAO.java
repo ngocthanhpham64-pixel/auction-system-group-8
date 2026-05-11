@@ -1,12 +1,12 @@
 package vn.edu.vnu.uet.group8.server.dao;
 
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Types;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.Timestamp;
+import java.sql.Types;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -19,6 +19,7 @@ import com.google.gson.reflect.TypeToken;
 import vn.edu.vnu.uet.group8.common.entity.Item;
 import vn.edu.vnu.uet.group8.common.enums.ItemCategory;
 import vn.edu.vnu.uet.group8.common.enums.ItemCondition;
+import vn.edu.vnu.uet.group8.common.enums.ItemStatus;
 import vn.edu.vnu.uet.group8.common.exception.ItemNotFoundException;
 
 public class ItemDAO {
@@ -44,6 +45,7 @@ public class ItemDAO {
         .category(ItemCategory.valueOf(rs.getString("category")))
         .condition(parseCondition(rs.getString("condition_type")))
         .specs(parseSpecs(rs.getString("specs")))
+        .status(parseStatus(rs.getString("status")))
         .build();
   }
 
@@ -54,8 +56,8 @@ public class ItemDAO {
   public void insert(Item item) throws SQLException {
     String sql = """
         INSERT INTO item
-          (seller_id, title, description, category, condition_type, specs, is_deleted, created_at)
-        VALUES (?,?,?,?,?,?,?,?)
+          (seller_id, title, description, category, condition_type, specs, status, is_deleted, created_at)
+        VALUES (?,?,?,?,?,?,?,?,?)
         """;
 
     try (PreparedStatement ps = getConn().prepareStatement(
@@ -77,8 +79,13 @@ public class ItemDAO {
         ps.setString(6, serializeSpecs(item.getSpecs()));
       }
 
-      ps.setBoolean(7, item.isDeleted());
-      ps.setTimestamp(8, Timestamp.from(item.getCreatedAt()));
+      if (item.getStatus() != null)
+          ps.setString(7, item.getStatus().name());
+      else
+          ps.setString(7, ItemStatus.DRAFT.name());
+
+      ps.setBoolean(8, item.isDeleted());
+      ps.setTimestamp(9, Timestamp.from(item.getCreatedAt()));
 
       ps.executeUpdate();
 
@@ -133,6 +140,41 @@ public class ItemDAO {
     }
   }
 
+  public void update(Item item) throws SQLException {
+    String sql = """
+        UPDATE item
+        SET title = ?, description = ?, condition_type = ?, specs = ?, status = ?
+        WHERE item_id = ? AND is_deleted = false
+        """;
+
+    try (PreparedStatement ps = getConn().prepareStatement(sql)) {
+      ps.setString(1, item.getTitle());
+      ps.setString(2, item.getDescription());
+
+      if (item.getCondition() != null)
+          ps.setString(3, item.getCondition().name());
+      else
+          ps.setNull(3, Types.VARCHAR);
+
+      if (item.getSpecs() == null || item.getSpecs().isEmpty()) {
+        ps.setString(4, null);
+      } else {
+        ps.setString(4, serializeSpecs(item.getSpecs()));
+      }
+
+      if (item.getStatus() != null)
+          ps.setString(5, item.getStatus().name());
+      else
+          ps.setString(5, ItemStatus.DRAFT.name());
+
+      ps.setInt(6, item.getId());
+
+      int affected = ps.executeUpdate();
+      if (affected == 0)
+        throw new ItemNotFoundException(item.getId());
+    }
+  }
+
   public void softDelete(int itemId) throws SQLException {
     String sql = """
         UPDATE item
@@ -161,6 +203,23 @@ public class ItemDAO {
       ps.setInt(2, sellerId);
       try (ResultSet rs = ps.executeQuery()) {
         return rs.next() && rs.getBoolean(1);
+      }
+    }
+  }
+
+  public int countBySellerAndStatus(int sellerId, ItemStatus status) throws SQLException {
+    String sql = """
+        SELECT COUNT(*) 
+        FROM item
+        WHERE seller_id = ? 
+          AND status = ?
+      """;
+
+    try (PreparedStatement ps = getConn().prepareStatement(sql)) {
+      ps.setInt(1, sellerId);
+      ps.setString(2, status.name());
+      try (ResultSet rs = ps.executeQuery()) {
+        return rs.next() ? rs.getInt(1) : 0;
       }
     }
   }
@@ -195,6 +254,11 @@ public class ItemDAO {
   private ItemCondition parseCondition(String raw) {
       if (raw == null || raw.isBlank()) return null;
       return ItemCondition.valueOf(raw);
+  }
+
+  private ItemStatus parseStatus(String raw) {
+      if (raw == null || raw.isBlank()) return ItemStatus.DRAFT;
+      return ItemStatus.valueOf(raw);
   }
 
   @FunctionalInterface

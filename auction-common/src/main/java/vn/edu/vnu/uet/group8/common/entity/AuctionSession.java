@@ -3,7 +3,7 @@ package vn.edu.vnu.uet.group8.common.entity;
 import java.math.BigDecimal;
 import java.time.Instant;
 
-import vn.edu.vnu.uet.group8.common.enums.ItemStatus;
+import vn.edu.vnu.uet.group8.common.enums.SessionStatus;
 
 /**
  * Lớp biểu diễn một phiên đấu giá cho một sản phẩm.
@@ -18,7 +18,7 @@ public final class AuctionSession extends Entity {
 
   // ── Mutable có kiểm soát ─────────────────────────────
   private BigDecimal currentPrice;
-  private ItemStatus status;
+  private SessionStatus status;
   private Integer highestBidderId;
   private int bidCount;
 
@@ -27,7 +27,7 @@ public final class AuctionSession extends Entity {
     this.itemId = b.itemId;
     this.startingPrice = b.startingPrice;
     this.currentPrice = b.startingPrice;
-    this.status = ItemStatus.UPCOMING;
+    this.status = SessionStatus.UPCOMING;
     this.startTime = b.startTime;
     this.endTime = b.endTime;
     this.highestBidderId = b.highestBidderId;
@@ -60,7 +60,7 @@ public final class AuctionSession extends Entity {
     private Integer itemId;
     private BigDecimal startingPrice;
     private BigDecimal currentPrice;
-    private ItemStatus status;
+    private SessionStatus status;
     private Instant startTime;
     private Instant endTime;
     private Integer highestBidderId;
@@ -72,7 +72,7 @@ public final class AuctionSession extends Entity {
     public Reconstructor itemId(int v) { this.itemId = v; return this; }
     public Reconstructor startingPrice(BigDecimal v) { this.startingPrice = v; return this; }
     public Reconstructor currentPrice(BigDecimal v) { this.currentPrice = v; return this; }
-    public Reconstructor status(ItemStatus v) { this.status = v; return this; }
+    public Reconstructor status(SessionStatus v) { this.status = v; return this; }
     public Reconstructor startTime(Instant v) { this.startTime = v; return this; }
     public Reconstructor endTime(Instant v) { this.endTime = v; return this; }
     public Reconstructor highestBidderId(Integer v) { this.highestBidderId = v; return this; }
@@ -144,7 +144,7 @@ public final class AuctionSession extends Entity {
   public int getItemId() { return itemId; }
   public BigDecimal getStartingPrice() { return startingPrice; }
   public BigDecimal getCurrentPrice() { return currentPrice; }
-  public ItemStatus getStatus() { return status; }
+  public SessionStatus getStatus() { return status; }
   public Instant getStartTime() { return startTime; }
   public Instant getEndTime() { return endTime; }
   public Integer getHighestBidderId() { return highestBidderId; }
@@ -158,7 +158,7 @@ public final class AuctionSession extends Entity {
   }
 
   public void raiseCurrentPrice(BigDecimal newPrice) {
-    if (status != ItemStatus.ACTIVE) {
+    if (status != SessionStatus.ACTIVE) {
       throw new IllegalStateException("Chỉ có thể cập nhật giá khi session đang ACTIVE");
     }
     if (newPrice == null || newPrice.compareTo(currentPrice) <= 0) {
@@ -174,10 +174,10 @@ public final class AuctionSession extends Entity {
     this.highestBidderId = bidderId;
   }
 
-  public boolean transitionStatus(ItemStatus from, ItemStatus to) {
+  public boolean transitionStatus(SessionStatus from, SessionStatus to) {
     boolean isValid = switch (from) {
-      case UPCOMING     -> to == ItemStatus.ACTIVE || to == ItemStatus.CANCELLED;
-      case ACTIVE       -> to == ItemStatus.SOLD || to == ItemStatus.ENDED_NO_BID || to == ItemStatus.CANCELLED;
+      case UPCOMING     -> to == SessionStatus.ACTIVE || to == SessionStatus.CANCELLED;
+      case ACTIVE       -> to == SessionStatus.SOLD || to == SessionStatus.ENDED_NO_BID || to == SessionStatus.CANCELLED;
       default           -> false;
     };
     if (isValid) {
@@ -190,7 +190,7 @@ public final class AuctionSession extends Entity {
   // HELPER QUERIES
   // ════════════════════════════════════════════════════
   public boolean isActive() {
-    return status == ItemStatus.ACTIVE && !isDeleted();
+    return status == SessionStatus.ACTIVE && !isDeleted();
   }
 
   public boolean isExpired() {

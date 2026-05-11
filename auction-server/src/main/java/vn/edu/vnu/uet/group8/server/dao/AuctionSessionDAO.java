@@ -17,7 +17,7 @@ import com.google.gson.Gson;
 
 import vn.edu.vnu.uet.group8.common.entity.AuctionSession;
 import vn.edu.vnu.uet.group8.common.enums.ItemCategory;
-import vn.edu.vnu.uet.group8.common.enums.ItemStatus;
+import vn.edu.vnu.uet.group8.common.enums.SessionStatus;
 
 public class AuctionSessionDAO {
 
@@ -39,7 +39,7 @@ public class AuctionSessionDAO {
         .itemId(rs.getInt("item_id"))
         .startingPrice(rs.getBigDecimal("starting_price"))
         .currentPrice(rs.getBigDecimal("current_price"))
-        .status(ItemStatus.valueOf(rs.getString("status")))
+        .status(SessionStatus.valueOf(rs.getString("status")))
         .startTime(toInstant(rs.getTimestamp("start_time")))
         .endTime(toInstant(rs.getTimestamp("end_time")))
         .bidCount(rs.getInt("bid_count"))
@@ -128,7 +128,25 @@ public class AuctionSessionDAO {
       }
     }
     return Optional.empty();
-}
+  }
+
+  public Optional<AuctionSession> findUpcomingByItemId(int itemId) throws SQLException {
+    String sql = """
+            SELECT * 
+            FROM auction_session
+            Where item_id = ?
+              AND (status = 'UPCOMING')
+              AND is_deleted = false
+          """;
+    
+    try (PreparedStatement ps = getConn().prepareStatement(sql)) {
+      ps.setInt(1, itemId);
+      try (ResultSet rs = ps.executeQuery()) {
+          if (rs.next()) return Optional.of(mapRow(rs));
+      }
+    }
+    return Optional.empty();
+  }
 
   // ═══════════════════════════════════════════════════
   // QUERIES
@@ -152,7 +170,7 @@ public class AuctionSessionDAO {
     String sql = """
         SELECT * FROM auction_session
         WHERE status = 'ACTIVE' AND is_deleted = false
-        ORDER BY end_time ASC
+        ORDER BY end_time DESC
         """;
 
     return queryList(sql, ps -> {});
@@ -233,7 +251,7 @@ public class AuctionSessionDAO {
     }
   }
 
-  public void updateStatus(int sessionId, ItemStatus newStatus) throws SQLException {
+  public void updateStatus(int sessionId, SessionStatus newStatus) throws SQLException {
     String sql = """
         UPDATE auction_session
         SET status = ?

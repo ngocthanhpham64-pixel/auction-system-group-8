@@ -8,7 +8,7 @@ import vn.edu.vnu.uet.group8.common.entity.AuctionSession;
 import vn.edu.vnu.uet.group8.common.entity.Item;
 import vn.edu.vnu.uet.group8.common.enums.ItemCategory;
 import vn.edu.vnu.uet.group8.common.enums.ItemCondition;
-import vn.edu.vnu.uet.group8.common.enums.ItemStatus;
+import vn.edu.vnu.uet.group8.common.enums.SessionStatus;
 import vn.edu.vnu.uet.group8.common.enums.SpecKey;
 
 /**
@@ -34,7 +34,7 @@ public class AuctionItemDTO {
     private String        description;
     private ItemCategory  category;
     private ItemCondition condition;  // NEW / USED / REFURBISHED
-    private ItemStatus    status;
+    private SessionStatus    status;
     private Instant       endTime;
 
     // ── Người bán ─────────────────────────────────────────
@@ -101,7 +101,7 @@ public class AuctionItemDTO {
     public ItemCategory   getCategory()       { return category; }
     public ItemCondition  getCondition()      { return condition; }
     public String         getSellerUsername() { return sellerUsername; }
-    public ItemStatus     getStatus()         { return status; }
+    public SessionStatus     getStatus()         { return status; }
     public Instant        getEndTime()        { return endTime; }
 
     /**
@@ -141,7 +141,7 @@ public class AuctionItemDTO {
 
     /** Item còn đang mở không — dùng để enable/disable nút Bid */
     public boolean isActive() {
-      return status == ItemStatus.ACTIVE;
+      return status == SessionStatus.ACTIVE;
     }
 
     /** Item đã hết giờ chưa — dùng để hiển thị countdown */

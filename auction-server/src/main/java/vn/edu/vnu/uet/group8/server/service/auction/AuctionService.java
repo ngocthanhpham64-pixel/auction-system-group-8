@@ -9,7 +9,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import vn.edu.vnu.uet.group8.common.entity.AuctionSession;
-import vn.edu.vnu.uet.group8.common.enums.ItemStatus;
+import vn.edu.vnu.uet.group8.common.enums.SessionStatus;
 import vn.edu.vnu.uet.group8.common.exception.AuctionException;
 import vn.edu.vnu.uet.group8.common.exception.ItemNotFoundException;
 import vn.edu.vnu.uet.group8.server.dao.AuctionSessionDAO;
@@ -174,7 +174,7 @@ public class AuctionService {
       AuctionSession session = loadSessionOrThrow(sessionId);
 
       boolean ok = session.transitionStatus(
-          ItemStatus.UPCOMING, ItemStatus.ACTIVE);
+          SessionStatus.UPCOMING, SessionStatus.ACTIVE);
 
       if (!ok) {
         throw new AuctionException(
@@ -182,7 +182,7 @@ public class AuctionService {
                 + session.getStatus());
       }
 
-      sessionDAO.updateStatus(sessionId, ItemStatus.ACTIVE);
+      sessionDAO.updateStatus(sessionId, SessionStatus.ACTIVE);
 
       logger.info("Mở phiên đấu giá: sessionId={}, itemId={}",
           sessionId, session.getItemId());
@@ -220,11 +220,11 @@ public class AuctionService {
 
       // Thử chuyển từ UPCOMING trước, nếu không thì từ ACTIVE
       boolean ok = session.transitionStatus(
-          ItemStatus.UPCOMING, ItemStatus.CANCELLED);
+          SessionStatus.UPCOMING, SessionStatus.CANCELLED);
 
       if (!ok) {
         ok = session.transitionStatus(
-            ItemStatus.ACTIVE, ItemStatus.CANCELLED);
+            SessionStatus.ACTIVE, SessionStatus.CANCELLED);
       }
 
       if (!ok) {
@@ -234,7 +234,7 @@ public class AuctionService {
                 + ". Chỉ hủy được UPCOMING hoặc ACTIVE");
       }
 
-      sessionDAO.updateStatus(sessionId, ItemStatus.CANCELLED);
+      sessionDAO.updateStatus(sessionId, SessionStatus.CANCELLED);
 
       logger.info(
           "Hủy phiên: sessionId={}, itemId={}, adminId={}",

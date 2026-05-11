@@ -7,6 +7,7 @@ import java.util.Map;
 
 import vn.edu.vnu.uet.group8.common.enums.ItemCategory;
 import vn.edu.vnu.uet.group8.common.enums.ItemCondition;
+import vn.edu.vnu.uet.group8.common.enums.ItemStatus;
 import vn.edu.vnu.uet.group8.common.enums.SpecKey;
 import vn.edu.vnu.uet.group8.common.interfaces.SpecAccessor;
 
@@ -17,13 +18,14 @@ public final class Item extends Entity implements SpecAccessor {
 
   // ── Immutable sau khi tạo ────────────────────────────
   private final int sellerId;
-  private final String title;
   private final ItemCategory category;
 
   // ── Mutable có kiểm soát ─────────────────────────────
+  private String title;
   private String description;
   private ItemCondition condition;
   private Map<String, String> specs;
+  private ItemStatus status;
 
   private Item(Builder b) {
     super(0, Instant.now(), false);
@@ -33,6 +35,7 @@ public final class Item extends Entity implements SpecAccessor {
     this.description = b.description != null ? b.description : "";
     this.condition = b.condition;
     this.specs = b.specs != null ? new HashMap<>(b.specs) : new HashMap<>();
+    this.status = b.status != null ? b.status : ItemStatus.DRAFT;
   }
 
   private Item(Reconstructor r) {
@@ -43,6 +46,7 @@ public final class Item extends Entity implements SpecAccessor {
     this.description = r.description;
     this.condition = r.condition;
     this.specs = r.specs != null ? new HashMap<>(r.specs) : new HashMap<>();
+    this.status = r.status;
   }
 
   public static Reconstructor reconstructor() {
@@ -62,6 +66,7 @@ public final class Item extends Entity implements SpecAccessor {
     private ItemCondition condition;
     private ItemCategory category;
     private Map<String, String> specs;
+    private ItemStatus status;
 
     public Reconstructor id(int id) { this.id = id; return this; }
     public Reconstructor createdAt(Instant v) { this.createdAt = v; return this; }
@@ -72,6 +77,7 @@ public final class Item extends Entity implements SpecAccessor {
     public Reconstructor condition(ItemCondition v) { this.condition = v; return this; }
     public Reconstructor category(ItemCategory v) { this.category = v; return this; }
     public Reconstructor specs(Map<String, String> v) { this.specs = v; return this; }
+    public Reconstructor status(ItemStatus itemStatus) { this.status = itemStatus; return this; }
 
     public Item build() {
       requireNonNull(id, "id");
@@ -81,6 +87,7 @@ public final class Item extends Entity implements SpecAccessor {
       requireNonNull(title, "title");
       requireNonNull(category, "category");
       requireNonNull(specs, "specs");
+      requireNonNull(status, "status");
       return new Item(this);
     }
 
@@ -101,6 +108,7 @@ public final class Item extends Entity implements SpecAccessor {
     private String description = "";
     private ItemCondition condition = ItemCondition.USED;
     private Map<String, String> specs = new HashMap<>();
+    private ItemStatus status;
 
     public Builder(int sellerId, String title, ItemCategory category) {
       if (sellerId <= 0) throw new IllegalArgumentException("sellerId không tồn tại");
@@ -127,13 +135,17 @@ public final class Item extends Entity implements SpecAccessor {
       return this;
     }
 
+    public Builder status(ItemStatus status) {
+      this.status = status;
+      return this;
+    }
+
     public Builder putSpecs(String key, String value) {
       if (key != null && !key.isBlank() && value != null && !value.isBlank()) {
         this.specs.put(key, value);
       }
       return this;
     }
-
     public Item build() {
       return new Item(this);
     }
@@ -148,6 +160,7 @@ public final class Item extends Entity implements SpecAccessor {
   public String getDescription() { return description; }
   public ItemCondition getCondition() { return condition; }
   public Map<String, String> getSpecs() { return Collections.unmodifiableMap(specs); }
+  public ItemStatus getStatus() { return status; }
 
   // ════════════════════════════════════════════════════
   // SPEC HELPERS
@@ -162,6 +175,20 @@ public final class Item extends Entity implements SpecAccessor {
   // ════════════════════════════════════════════════════
   // SETTERS CÓ KIỂM SOÁT
   // ════════════════════════════════════════════════════
+  public void setTitle(String title) {
+    if (title == null || title.isBlank()) {
+      throw new IllegalArgumentException("Tiêu đề không được trống");
+    }
+    this.title = title.trim();
+  }
+
+  public void setSpecs(Map<String, String> specs) {
+    if (specs == null) {
+      throw new IllegalArgumentException("Specs không được null");
+    }
+    this.specs = specs;
+  }
+
   public void setDescription(String description) {
     if (description == null || description.isBlank()) {
       throw new IllegalArgumentException("Mô tả không được trống");
@@ -185,6 +212,13 @@ public final class Item extends Entity implements SpecAccessor {
 
   public void putCustomSpec(String rawKey, String value) {
     specs.put("custom_" + rawKey, value);
+  }
+
+  public void setStatus(ItemStatus status) {
+    if (status == null) {
+      throw new IllegalArgumentException("Status không được null");
+    }
+    this.status = status;
   }
 
   // ════════════════════════════════════════════════════
