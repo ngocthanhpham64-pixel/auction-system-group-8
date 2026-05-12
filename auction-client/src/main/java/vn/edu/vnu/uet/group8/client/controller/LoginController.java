@@ -14,18 +14,15 @@ import java.net.URL;
 import java.util.ResourceBundle;
 
 /**
- * LoginController — Wire AuthService thật từ Backend.
- *
- * Logic:
- *   - Validate input phía client (rỗng, format)
- *   - Gọi AuthService.login() bất đồng bộ
- *   - Callback onSuccess → navigate MainLayout
- *   - Callback onFailure → hiện lỗi
- *
- * Note: Bỏ hoàn toàn mock account "admin@auctiva.com/123456".
- * Server phải đang chạy + đã đăng ký user thật.
+ * LoginController — wire AuthService thật + mock account để test khi BE chưa sẵn sàng.
  */
 public class LoginController implements Initializable {
+
+    // ===== MOCK ACCOUNTS (chỉ dùng để test khi BE chưa đồng bộ) =====
+    private static final String MOCK_ADMIN_EMAIL = "admin@auctiva.com";
+    private static final String MOCK_ADMIN_PASS  = "123456";
+    private static final String MOCK_USER_EMAIL  = "user@auctiva.com";
+    private static final String MOCK_USER_PASS   = "123456";
 
     @FXML private TextField tfEmail;
     @FXML private PasswordField pfPassword;
@@ -44,25 +41,31 @@ public class LoginController implements Initializable {
         String email = tfEmail.getText().trim();
         String password = pfPassword.getText();
 
-        // Validate client-side trước (fail fast)
+        // Validate
         if (email.isEmpty() || password.isEmpty()) {
             showError("Vui lòng nhập tên đăng nhập và mật khẩu");
             return;
         }
 
         hideError();
+
+        // ===== MOCK LOGIN — Bypass server cho test =====
+        if (isMockAccount(email, password)) {
+            System.out.println("[Login] Mock login: " + email);
+            SceneManager.switchTo(SceneManager.VIEW_MAIN);
+            return;
+        }
+
+        // ===== REAL LOGIN — Gọi server =====
         btnSubmit.setDisable(true);
         btnSubmit.setText("Đang đăng nhập...");
 
-        // Gọi AuthService — callback đã chạy trên FX Thread
         AuthService.login(email, password,
-                // onSuccess: Runnable
                 () -> {
                     btnSubmit.setDisable(false);
                     btnSubmit.setText("Đăng nhập");
                     SceneManager.switchTo(SceneManager.VIEW_MAIN);
                 },
-                // onFailure: Consumer<String>
                 errorMsg -> {
                     btnSubmit.setDisable(false);
                     btnSubmit.setText("Đăng nhập");
@@ -71,20 +74,32 @@ public class LoginController implements Initializable {
         );
     }
 
+    /**
+     * Check mock account — chỉ trả về true nếu khớp 1 trong các tài khoản test.
+     * TODO: Xóa method này khi BE đồng bộ xong + có user thật trong DB.
+     */
+    private boolean isMockAccount(String email, String password) {
+        if (MOCK_ADMIN_EMAIL.equals(email) && MOCK_ADMIN_PASS.equals(password)) {
+            return true;
+        }
+        if (MOCK_USER_EMAIL.equals(email) && MOCK_USER_PASS.equals(password)) {
+            return true;
+        }
+        return false;
+    }
+
     @FXML
     private void onTabLogin() {
-        // Đã ở LoginView rồi, không làm gì
+        // Đã ở LoginView
     }
 
     @FXML
     private void onTabRegister() {
-        // Chuyển sang RegisterView (sẽ làm trong Batch 3)
         SceneManager.switchTo("RegisterView.fxml");
     }
 
     @FXML
     private void onForgotPassword() {
-        // TODO: chuyển sang ForgotPasswordView (chưa có)
         showError("Tính năng đang phát triển");
     }
 
