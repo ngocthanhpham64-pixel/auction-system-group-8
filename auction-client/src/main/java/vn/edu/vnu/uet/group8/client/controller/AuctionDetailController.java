@@ -4,18 +4,36 @@ import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
-import javafx.scene.control.*;
+import javafx.scene.control.Button;
+import javafx.scene.control.Label;
+import javafx.scene.control.TextField;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.VBox;
 import javafx.util.Duration;
 
+import vn.edu.vnu.uet.group8.client.model.ClientModel;
+import vn.edu.vnu.uet.group8.client.service.AuctionService;
+import vn.edu.vnu.uet.group8.client.service.BidService;
+import vn.edu.vnu.uet.group8.client.util.AlertUtil;
+import vn.edu.vnu.uet.group8.common.entity.Item;
+
 import java.math.BigDecimal;
 import java.net.URL;
+import java.time.Instant;
 import java.util.ResourceBundle;
 
+/**
+ * AuctionDetailController — wire BidService thật + tính năng #4 Kiểm định.
+ *
+ * Tích hợp:
+ *   - placeBid() gọi BidService.placeBid() qua JSON protocol
+ *   - displayCertInfo() hiển thị badge "✓ Đã kiểm định" theo item.isVerified()
+ *
+ * Note: setItem() được gọi từ ProductCardController khi user click card.
+ */
 public class AuctionDetailController implements Initializable {
 
-    // ===== FXML BINDINGS =====
+    // ===== FXML — Sản phẩm =====
     @FXML private ImageView imgMain;
     @FXML private Label lblCategory;
     @FXML private Label lblProductName;
@@ -31,107 +49,170 @@ public class AuctionDetailController implements Initializable {
     @FXML private Label lblYear;
     @FXML private Label lblMaterial;
     @FXML private Label lblOrigin;
-    @FXML private Label lblCertificate;
-    @FXML private Label lblSellerName;
-    @FXML private Label lblSellerAvatar;
-    @FXML private Label lblSellerStats;
+
+    // ===== FXML — Tính năng #4 Kiểm định =====
+    @FXML private Label lblCertBadge;
+    @FXML private Label lblCertStatus;
+    @FXML private Label lblCertBody;
+    @FXML private VBox  paneCertDetail;
+
+    // ===== FXML — Countdown =====
     @FXML private Label lblHours;
     @FXML private Label lblMinutes;
     @FXML private Label lblSeconds;
 
+    // ===== FXML — Bid =====
     @FXML private TextField tfBidAmount;
     @FXML private TextField tfMaxPrice;
-
+    @FXML private Button btnBidNow;
     @FXML private VBox bidHistory;
+
+    // ===== FXML — Tabs =====
     @FXML private VBox paneDesc;
     @FXML private VBox paneSpec;
     @FXML private VBox paneOrigin;
     @FXML private VBox paneAuto;
-
     @FXML private Button btnTabDesc;
     @FXML private Button btnTabSpec;
     @FXML private Button btnTabOrigin;
     @FXML private Button btnAutoToggle;
 
     // ===== STATE =====
-    private BigDecimal currentPrice = new BigDecimal("850000000");
-    private final BigDecimal bidStep  = new BigDecimal("10000000");
+    private Item currentItem;
+    private BigDecimal currentPrice = BigDecimal.ZERO;
+    private BigDecimal bidStep = new BigDecimal("10000000");
     private Timeline countdown;
-    private int remainSeconds = 2 * 3600 + 14 * 60 + 30; // 2h14m30s
+    private int remainSeconds = 0;
 
-    // ===== INIT =====
     @Override
     public void initialize(URL location, ResourceBundle resources) {
-        updatePriceDisplay();
-        startCountdown();
         showTab("desc");
+        currentItem = ClientModel.getInstance().auctionItemsProperty().get()
+                .stream().findFirst().orElse(null);
+
+        // Có id thì load chi tiết
+        if (currentItem != null) {
+            loadItemDetail(currentItem.getId());
+        }
     }
 
-    // ===== QUAY LẠI =====
-
-    @FXML
-    private void onBack() {
-        // TODO: yêu cầu MainController navigate về ExploreView
-        System.out.println("[AuctionDetail] Quay lại danh sách");
+    /**
+     * Setter cho phép Controller cha truyền item ID vào (alternative).
+     */
+    public void setItemId(int itemId) {
+        loadItemDetail(itemId);
     }
 
-    // ===== TABS MÔ TẢ =====
+    // ===== LOAD DATA TỪ SERVER =====
+
+    private void loadItemDetail(int itemId) {
+        AuctionService.loadDetail(itemId, item -> {
+            if (item == null) {
+                AlertUtil.showError("Không tải được chi tiết sản phẩm");
+                return;
+            }
+            this.currentItem = item;
+            this.currentPrice = item.getCurrentPrice() != null
+                    ? item.getCurrentPrice() : BigDecimal.ZERO;
+            displayItemInfo();
+            displayCertInfo();
+            updatePriceDisplay();
+            startCountdownFromEndTime(item.getEndTime());
+        });
+    }
+
+    private void displayItemInfo() {
+        if (currentItem == null) return;
+        lblProductName.setText(currentItem.getName());
+        if (currentItem.getCategory() != null) lblCategory.setText(currentItem.getCategory());
+        if (currentItem.getDescription() != null) lblDescription.setText(currentItem.getDescription());
+    }
+
+    // ===== TÍNH NĂNG #4: KIỂM ĐỊNH =====
+
+    private void displayCertInfo() {
+        if (currentItem == null) return;
+
+        boolean verified = currentItem.isVerified();
+
+        // Badge nhỏ cạnh tên SP
+        if (lblCertBadge != null) {
+            lblCertBadge.setVisible(verified);
+            lblCertBadge.setManaged(verified);
+            if (verified) {
+                lblCertBadge.setText("✓ Đã kiểm định");
+                if (!lblCertBadge.getStyleClass().contains("badge-certified")) {
+                    lblCertBadge.getStyleClass().add("badge-certified");
+                }
+            }
+        }
+
+        // Status text trong tab Nguồn gốc
+        if (lblCertStatus != null) {
+            lblCertStatus.setText(verified ? "✓ Đã kiểm định" : "Chưa kiểm định");
+        }
+
+        // Pane chi tiết — chỉ hiện khi verified
+        if (paneCertDetail != null) {
+            paneCertDetail.setVisible(verified);
+            paneCertDetail.setManaged(verified);
+        }
+
+        if (verified && lblCertBody != null && currentItem.getCertBody() != null) {
+            lblCertBody.setText(currentItem.getCertBody());
+        }
+    }
+
+    // ===== TABS =====
 
     @FXML private void onTabDesc()   { showTab("desc"); }
     @FXML private void onTabSpec()   { showTab("spec"); }
     @FXML private void onTabOrigin() { showTab("origin"); }
 
     private void showTab(String tab) {
-        // Ẩn tất cả
         paneDesc.setVisible(false);   paneDesc.setManaged(false);
         paneSpec.setVisible(false);   paneSpec.setManaged(false);
         paneOrigin.setVisible(false); paneOrigin.setManaged(false);
 
-        // Style reset
-        String inactive = "-fx-background-color: #F5F5F5; -fx-text-fill: #666; -fx-font-size: 12px; -fx-padding: 10; -fx-cursor: hand;";
-        String activeDesc   = "-fx-background-color: #F97316; -fx-text-fill: white; -fx-font-size: 12px; -fx-font-weight: bold; -fx-background-radius: 12 0 0 0; -fx-padding: 10; -fx-cursor: hand;";
-        String activeSpec   = "-fx-background-color: #F97316; -fx-text-fill: white; -fx-font-size: 12px; -fx-font-weight: bold; -fx-padding: 10; -fx-cursor: hand;";
-        String activeOrigin = "-fx-background-color: #F97316; -fx-text-fill: white; -fx-font-size: 12px; -fx-font-weight: bold; -fx-background-radius: 0 12 0 0; -fx-padding: 10; -fx-cursor: hand;";
+        String inactive = "-fx-background-color: #F5F5F5; -fx-text-fill: #666; -fx-padding: 10; -fx-cursor: hand;";
+        String active = "-fx-background-color: #F97316; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 10; -fx-cursor: hand;";
 
         btnTabDesc.setStyle(inactive);
         btnTabSpec.setStyle(inactive);
         btnTabOrigin.setStyle(inactive);
 
         switch (tab) {
-            case "desc" -> {
-                paneDesc.setVisible(true); paneDesc.setManaged(true);
-                btnTabDesc.setStyle(activeDesc);
-            }
-            case "spec" -> {
-                paneSpec.setVisible(true); paneSpec.setManaged(true);
-                btnTabSpec.setStyle(activeSpec);
-            }
-            case "origin" -> {
-                paneOrigin.setVisible(true); paneOrigin.setManaged(true);
-                btnTabOrigin.setStyle(activeOrigin);
-            }
+            case "desc"   -> { paneDesc.setVisible(true);   paneDesc.setManaged(true);   btnTabDesc.setStyle(active); }
+            case "spec"   -> { paneSpec.setVisible(true);   paneSpec.setManaged(true);   btnTabSpec.setStyle(active); }
+            case "origin" -> { paneOrigin.setVisible(true); paneOrigin.setManaged(true); btnTabOrigin.setStyle(active); }
         }
     }
 
-    // ===== ĐẤU GIÁ =====
+    // ===== ĐẶT GIÁ THẬT QUA BidService =====
 
     @FXML
     private void onBidNow() {
+        if (currentItem == null) {
+            AlertUtil.showError("Chưa có sản phẩm để đặt giá");
+            return;
+        }
+
         String input = tfBidAmount.getText().replaceAll("[^\\d]", "");
         if (input.isBlank()) {
             showQuickBid(currentPrice.add(bidStep));
             return;
         }
+
         try {
             BigDecimal amount = new BigDecimal(input);
             BigDecimal minBid = currentPrice.add(bidStep);
             if (amount.compareTo(minBid) < 0) {
-                tfBidAmount.setStyle(tfBidAmount.getStyle() + "; -fx-border-color: #E03030;");
+                AlertUtil.showWarning("Giá đặt phải >= " + String.format("%,.0f đ", minBid));
                 return;
             }
             placeBid(amount);
         } catch (NumberFormatException ignored) {
-            tfBidAmount.setStyle(tfBidAmount.getStyle() + "; -fx-border-color: #E03030;");
+            AlertUtil.showWarning("Số tiền không hợp lệ");
         }
     }
 
@@ -141,18 +222,30 @@ public class AuctionDetailController implements Initializable {
 
     private void showQuickBid(BigDecimal amount) {
         tfBidAmount.setText(String.format("%,.0f đ", amount));
-        tfBidAmount.setStyle("");
     }
 
+    /**
+     * Gọi BidService.placeBid() thật qua JSON protocol.
+     * Callback trả về BidResponse — kiểm tra success rồi update UI.
+     */
     private void placeBid(BigDecimal amount) {
-        currentPrice = amount;
-        updatePriceDisplay();
-        tfBidAmount.clear();
-        // TODO: gửi lên server
-        System.out.println("[AuctionDetail] Đặt giá: " + amount);
+        btnBidNow.setDisable(true);
+        BidService.placeBid(currentItem.getId(), amount, response -> {
+            btnBidNow.setDisable(false);
+            if (response.isSuccess()) {
+                currentPrice = amount;
+                updatePriceDisplay();
+                tfBidAmount.clear();
+                AlertUtil.showInfo("Đặt giá thành công!");
+            } else {
+                AlertUtil.showError(response.getMessage() != null
+                        ? response.getMessage()
+                        : "Đặt giá thất bại");
+            }
+        });
     }
 
-    // ===== ĐẶT GIÁ TỰ ĐỘNG =====
+    // ===== AUTO-BID =====
 
     @FXML
     private void onToggleAuto() {
@@ -164,31 +257,47 @@ public class AuctionDetailController implements Initializable {
 
     @FXML
     private void onActivateAuto() {
+        if (currentItem == null) return;
         String input = tfMaxPrice.getText().replaceAll("[^\\d]", "");
         if (input.isBlank()) return;
-        // TODO: gửi lên server kích hoạt auto-bid
-        System.out.println("[AuctionDetail] Kích hoạt auto-bid tối đa: " + input);
+        try {
+            BigDecimal max = new BigDecimal(input);
+            BidService.setAutoBid(currentItem.getId(), max, success -> {
+                if (success) {
+                    AlertUtil.showInfo("Đã kích hoạt đặt giá tự động");
+                } else {
+                    AlertUtil.showError("Kích hoạt auto-bid thất bại");
+                }
+            });
+        } catch (NumberFormatException ignored) {
+            AlertUtil.showWarning("Số tiền không hợp lệ");
+        }
     }
 
     // ===== YÊU THÍCH / CHIA SẺ =====
 
-    @FXML private void onFavorite() { System.out.println("[AuctionDetail] Thêm yêu thích"); }
-    @FXML private void onShare()    { System.out.println("[AuctionDetail] Chia sẻ"); }
-
-    // ===== THUMBNAIL =====
-
-    @FXML private void onThumb1() { setMainThumb(0); }
-    @FXML private void onThumb2() { setMainThumb(1); }
-    @FXML private void onThumb3() { setMainThumb(2); }
-
-    private void setMainThumb(int idx) {
-        // TODO: đổi imgMain theo ảnh thumbnail idx
-        System.out.println("[AuctionDetail] Chọn thumbnail " + idx);
+    @FXML private void onFavorite() {
+        // TODO: gọi FavoriteService.add() — wire ở Batch 2
     }
 
-    // ===== ĐẾM NGƯỢC =====
+    @FXML private void onShare() { /* TODO */ }
+    @FXML private void onBack() { /* TODO: navigate về Explore */ }
 
-    private void startCountdown() {
+    @FXML private void onThumb1() { /* TODO */ }
+    @FXML private void onThumb2() { /* TODO */ }
+    @FXML private void onThumb3() { /* TODO */ }
+
+    // ===== COUNTDOWN =====
+
+    private void startCountdownFromEndTime(Instant endTime) {
+        if (endTime == null) {
+            remainSeconds = 0;
+        } else {
+            long seconds = endTime.getEpochSecond() - Instant.now().getEpochSecond();
+            remainSeconds = seconds > 0 ? (int) seconds : 0;
+        }
+
+        if (countdown != null) countdown.stop();
         countdown = new Timeline(new KeyFrame(Duration.seconds(1), e -> {
             if (remainSeconds <= 0) {
                 countdown.stop();
@@ -213,9 +322,9 @@ public class AuctionDetailController implements Initializable {
 
     private void updatePriceDisplay() {
         lblCurrentPrice.setText(String.format("%,.0f đ", currentPrice));
-        BigDecimal minNext = currentPrice.add(bidStep);
         lblMinBid.setText("Mức tăng tối thiểu: " + String.format("%,.0f đ", bidStep));
         lblStep.setText("Bước nhảy: " + String.format("%,.0f đ", bidStep));
+        BigDecimal minNext = currentPrice.add(bidStep);
         tfBidAmount.setPromptText(String.format("%,.0f đ", minNext));
     }
 }

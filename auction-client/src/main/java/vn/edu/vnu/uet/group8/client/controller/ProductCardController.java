@@ -2,49 +2,54 @@ package vn.edu.vnu.uet.group8.client.controller;
 
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
-import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.VBox;
 
+import vn.edu.vnu.uet.group8.client.model.ClientModel;
+import vn.edu.vnu.uet.group8.client.service.AuctionService;
+import vn.edu.vnu.uet.group8.client.util.SceneManager;
+
 import java.math.BigDecimal;
 import java.net.URL;
 import java.util.ResourceBundle;
 
+/**
+ * ProductCardController — card sản phẩm tái sử dụng.
+ *
+ * Tích hợp:
+ *   - onBidNow() navigate thật sang AuctionDetailView (load item trước khi switch)
+ *   - showCertifiedBadge() (#4)
+ *   - showPartnerBadge() (#3)
+ *
+ * Pattern: Controller cha (Explore, Favorite) load FXML này → gọi setItem() + show*Badge().
+ */
 public class ProductCardController implements Initializable {
 
-    // ===== FXML BINDINGS =====
-    @FXML private VBox root;          // root container (styleClass="product-card")
+    @FXML private VBox root;
     @FXML private ImageView productImage;
     @FXML private Label productName;
     @FXML private Label currentPrice;
+    @FXML private Label lblCertBadge;
+    @FXML private Label lblPartnerBadge;
 
-    // ===== DATA =====
-    private String itemId;
+    private int itemId;
 
-    // ===== INIT =====
     @Override
     public void initialize(URL location, ResourceBundle resources) {
-        // Hover được xử lý hoàn toàn bởi CSS class "product-card" và "product-card:hover"
-        // Không cần code Java thêm — CSS đã có:
-        //   .product-card:hover { -fx-translate-y: -3; -fx-border-color: #F97316; ... }
+        hideBadge(lblCertBadge);
+        hideBadge(lblPartnerBadge);
     }
 
-    // ===== PUBLIC API — được gọi từ ExploreController / FavoriteController =====
+    // ===== PUBLIC API — gọi từ Controller cha =====
 
-    /**
-     * Nạp dữ liệu item vào card.
-     * Gọi sau khi FXMLLoader.load() để truyền dữ liệu từ controller cha.
-     *
-     * @param id          ID item
-     * @param name        Tên sản phẩm
-     * @param price       Giá hiện tại
-     * @param imageUrl    URL ảnh (null = dùng placeholder)
-     */
     public void setItem(String id, String name, BigDecimal price, String imageUrl) {
-        this.itemId = id;
-
+        try {
+            this.itemId = Integer.parseInt(id);
+        } catch (NumberFormatException e) {
+            this.itemId = 0;
+        }
         productName.setText(name);
         currentPrice.setText(formatPrice(price));
 
@@ -52,25 +57,65 @@ public class ProductCardController implements Initializable {
             try {
                 productImage.setImage(new Image(imageUrl, true));
             } catch (Exception e) {
-                System.err.println("[ProductCardController] Không load được ảnh: " + imageUrl);
+                System.err.println("[ProductCard] Không load ảnh: " + imageUrl);
             }
         }
     }
 
-    // ===== ACTIONS =====
+    /** Tính năng #4 — Badge "✓ Đã kiểm định" */
+    public void showCertifiedBadge() {
+        if (lblCertBadge == null) return;
+        lblCertBadge.setText("✓ Đã kiểm định");
+        if (!lblCertBadge.getStyleClass().contains("badge-certified")) {
+            lblCertBadge.getStyleClass().add("badge-certified");
+        }
+        lblCertBadge.setVisible(true);
+        lblCertBadge.setManaged(true);
+    }
+
+    /** Tính năng #3 — Badge đối tác */
+    public void showPartnerBadge(String badgeText) {
+        if (lblPartnerBadge == null || badgeText == null) return;
+        lblPartnerBadge.setText(badgeText);
+
+        String styleClass = badgeText.contains("Gold") ? "badge-partner-gold" : "badge-partner";
+        if (!lblPartnerBadge.getStyleClass().contains(styleClass)) {
+            lblPartnerBadge.getStyleClass().add(styleClass);
+        }
+
+        lblPartnerBadge.setVisible(true);
+        lblPartnerBadge.setManaged(true);
+    }
+
+    // ===== CLICK CARD — Navigate sang AuctionDetail =====
 
     @FXML
     private void onBidNow() {
-        // Điều hướng sang AuctionDetailView với itemId
-        System.out.println("[ProductCard] Đặt giá ngay — item: " + itemId);
-        // TODO: gọi MainController.loadView("AuctionDetailView.fxml") với itemId
+        if (itemId <= 0) {
+            System.err.println("[ProductCard] itemId không hợp lệ");
+            return;
+        }
+
+        // Load chi tiết trước để ClientModel có data sẵn
+        // Sau đó switch view — AuctionDetailController sẽ đọc từ ClientModel
+        AuctionService.loadDetail(itemId, item -> {
+            if (item != null) {
+                ClientModel.getInstance().setCurrentAuctionItem(item);
+                SceneManager.switchTo(SceneManager.VIEW_AUCTION_DETAIL);
+            }
+        });
     }
 
     // ===== HELPERS =====
 
     private String formatPrice(BigDecimal price) {
         if (price == null) return "--";
-        // Định dạng: 50,000,000 đ
         return String.format("%,.0f đ", price);
+    }
+
+    private void hideBadge(Label badge) {
+        if (badge == null) return;
+        badge.setVisible(false);
+        badge.setManaged(false);
     }
 }
