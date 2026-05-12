@@ -6,7 +6,8 @@ import javafx.fxml.Initializable;
 import javafx.scene.Node;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
-import javafx.scene.layout.BorderPane;
+import javafx.scene.control.TextField;
+import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 
 import vn.edu.vnu.uet.group8.client.model.ClientModel;
@@ -21,54 +22,59 @@ import java.util.ResourceBundle;
 
 /**
  * MainController — Khung chính của app sau khi login.
+ * Các fx:id phải khớp với MainLayout.fxml.
  */
 public class MainController implements Initializable {
 
-    @FXML private BorderPane root;
-    @FXML private VBox sidebar;
-    @FXML private BorderPane contentArea;
+    // ===== FXML — khớp với MainLayout.fxml =====
+    @FXML private Button btnToggle;
+    @FXML private TextField tfSearch;
+    @FXML private Button btnExplore;
+    @FXML private Button btnLive;
 
-    @FXML private Label lblUserName;
-    @FXML private Label lblUserAvatar;
     @FXML private Label lblFavCount;
-    @FXML private Label lblNotifCount;
-    @FXML private Label lblBalance;
+    @FXML private Label lblNotiCount;   // FXML là "NotiCount" KHÔNG có 'f'
+    @FXML private Label lblAvatar;
+
+    @FXML private VBox sidebar;
+    @FXML private Button btnHome;
+    @FXML private Button btnMyAuctions;
+    @FXML private Button btnWallet;
+    @FXML private Button btnSettings;
+
+    @FXML private StackPane contentPane;   // FXML là "contentPane" KHÔNG phải "contentArea"
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
         bindUserInfo();
+        // Mặc định mở Explore
         loadView(SceneManager.VIEW_EXPLORE);
     }
 
     private void bindUserInfo() {
-        if (lblUserName != null) {
-            String name = SessionManager.getFullName();
-            lblUserName.setText(name != null && !name.isBlank() ? name : SessionManager.getUsername());
+        // Avatar (chữ cái đầu của username)
+        if (lblAvatar != null) {
+            String avatarText = SessionManager.getAvatarText();
+            if (avatarText != null && !avatarText.isBlank()) {
+                lblAvatar.setText(avatarText);
+            }
         }
 
-        if (lblUserAvatar != null) {
-            lblUserAvatar.setText(SessionManager.getAvatarText());
-        }
-
-        if (lblBalance != null) {
-            ClientModel.getInstance().balanceProperty().addListener((obs, old, newVal) -> {
-                if (newVal != null) {
-                    lblBalance.setText(String.format("%,.0f đ", newVal));
-                }
-            });
-        }
-
+        // Số yêu thích
         if (lblFavCount != null) {
             ClientModel.getInstance().favCountProperty().addListener((obs, old, newVal) ->
                     lblFavCount.setText(String.valueOf(newVal.intValue()))
             );
         }
 
-        if (lblNotifCount != null) {
+        // Số thông báo chưa đọc
+        if (lblNotiCount != null) {
             int unread = ClientModel.getInstance().getUnreadNotificationCount();
-            lblNotifCount.setText(String.valueOf(unread));
+            lblNotiCount.setText(String.valueOf(unread));
         }
     }
+
+    // ===== NAVIGATION =====
 
     public void loadView(String fxmlFile) {
         try {
@@ -80,7 +86,7 @@ public class MainController implements Initializable {
             }
             FXMLLoader loader = new FXMLLoader(resource);
             Node view = loader.load();
-            contentArea.setCenter(view);
+            contentPane.getChildren().setAll(view);   // StackPane dùng getChildren()
         } catch (IOException e) {
             AlertUtil.showError("Lỗi khi load view: " + e.getMessage());
         }
@@ -90,18 +96,16 @@ public class MainController implements Initializable {
 
     @FXML private void onExploreClick()       { loadView(SceneManager.VIEW_EXPLORE); }
     @FXML private void onLiveClick()          { loadView(SceneManager.VIEW_LIVE_AUCTION); }
-    @FXML private void onFavoritesClick()     { loadView(SceneManager.VIEW_FAVORITES); }
     @FXML private void onFavoriteClick()      { loadView(SceneManager.VIEW_FAVORITES); }
     @FXML private void onWalletClick()        { loadView(SceneManager.VIEW_WALLET); }
     @FXML private void onProfileClick()       { loadView(SceneManager.VIEW_PROFILE); }
     @FXML private void onNotificationClick()  { loadView(SceneManager.VIEW_NOTIFICATIONS); }
-    @FXML private void onSettingsClick()      { loadView("SettingsView.fxml"); }
+    @FXML private void onSettingsClick()      { loadView(SceneManager.VIEW_SETTINGS); }
     @FXML private void onLogoClick()          { loadView(SceneManager.VIEW_EXPLORE); }
 
     @FXML
     private void onLogout() {
-        boolean confirm = AlertUtil.showConfirm("Đăng xuất",
-                "Bạn có chắc muốn đăng xuất?");
+        boolean confirm = AlertUtil.showConfirm("Đăng xuất", "Bạn có chắc muốn đăng xuất?");
         if (!confirm) return;
         AuthService.logout();
     }
@@ -119,7 +123,13 @@ public class MainController implements Initializable {
         if (source instanceof Button btn) {
             Object route = btn.getUserData();
             if (route instanceof String routeStr) {
-                loadView(routeStr);
+                switch (routeStr) {
+                    case "HOME"        -> loadView(SceneManager.VIEW_EXPLORE);
+                    case "MY_AUCTIONS" -> loadView(SceneManager.VIEW_PROFILE);
+                    case "WALLET"      -> loadView(SceneManager.VIEW_WALLET);
+                    case "SETTINGS"    -> loadView(SceneManager.VIEW_SETTINGS);
+                    default            -> loadView(routeStr);
+                }
             }
         }
     }
