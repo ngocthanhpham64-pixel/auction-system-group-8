@@ -4,111 +4,178 @@ import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
+import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 
-import java.net.URL;
-import java.util.ResourceBundle;
+import vn.edu.vnu.uet.group8.client.model.ClientModel;
+import vn.edu.vnu.uet.group8.client.service.NotificationService;
+import vn.edu.vnu.uet.group8.client.util.AlertUtil;
+import vn.edu.vnu.uet.group8.common.dto.NotificationDTO;
+import vn.edu.vnu.uet.group8.common.dto.ServerResponse;
 
+import java.net.URL;
+import java.util.List;
+import java.util.ResourceBundle;
+import java.util.function.Consumer;
+
+/**
+ * NotificationController — wire NotificationService.
+ *
+ * Tabs: Tất cả / Chưa đọc / Đấu giá / Hệ thống.
+ * Subscribe push notification realtime — tự render khi server đẩy notif mới.
+ */
 public class NotificationController implements Initializable {
 
-    // ===== FXML BINDINGS =====
-    @FXML private Label lblNewCount;
     @FXML private VBox notificationList;
-
-    // Tabs
+    @FXML private Label lblTotal;
     @FXML private Button btnTabAll;
     @FXML private Button btnTabUnread;
     @FXML private Button btnTabAuction;
     @FXML private Button btnTabSystem;
 
-    // ===== STATE =====
     private Button activeTab;
-    private int unreadCount = 3;
-    /** "all" | "unread" | "auction" | "system" */
-    private String currentFilter = "all";
+    private String currentFilter = "all";  // "all" / "unread" / "auction" / "system"
 
-    // ===== INIT =====
+    /** Wrapper subscribe — giữ để unsubscribe khi rời view */
+    private Consumer<ServerResponse> pushSubscription;
+
     @Override
     public void initialize(URL location, ResourceBundle resources) {
         activeTab = btnTabAll;
-        updateUnreadLabel();
+        loadNotifications();
+        subscribePush();
+    }
+
+    // ===== LOAD =====
+
+    private void loadNotifications() {
+        NotificationService.loadAll(
+                list -> render(list),
+                error -> {
+                    lblTotal.setText("Lỗi: " + error);
+                    notificationList.getChildren().clear();
+                }
+        );
+    }
+
+    private void subscribePush() {
+        pushSubscription = NotificationService.subscribePush(notif -> {
+            // Notif mới đến → ClientModel đã update, reload list
+            render(ClientModel.getInstance().getNotifications());
+        });
+    }
+
+    // ===== RENDER =====
+
+    private void render(List<NotificationDTO> all) {
+        notificationList.getChildren().clear();
+        if (all == null || all.isEmpty()) {
+            lblTotal.setText("Chưa có thông báo");
+            return;
+        }
+
+        List<NotificationDTO> filtered = all.stream()
+                .filter(this::matchFilter)
+                .toList();
+
+        for (NotificationDTO n : filtered) {
+            notificationList.getChildren().add(buildItem(n));
+        }
+
+        long unread = all.stream().filter(n -> !n.isRead()).count();
+        lblTotal.setText("Tổng: " + all.size() + " | Chưa đọc: " + unread);
+    }
+
+    private boolean matchFilter(NotificationDTO n) {
+        return switch (currentFilter) {
+            case "unread"  -> !n.isRead();
+            case "auction" -> "AUCTION".equalsIgnoreCase(n.getType());
+            case "system"  -> "SYSTEM".equalsIgnoreCase(n.getType());
+            default        -> true;
+        };
+    }
+
+    private HBox buildItem(NotificationDTO n) {
+        HBox row = new HBox(10);
+        row.getStyleClass().add(n.isRead() ? "card-soft" : "card-unread");
+
+        Label title = new Label(n.getTitle());
+        title.getStyleClass().add("h3");
+
+        Label content = new Label("(Noi dung)");
+        content.setWrapText(true);
+
+        VBox box = new VBox(4, title, content);
+
+        Button markRead = new Button(n.isRead() ? "✓" : "Đánh dấu đã đọc");
+        markRead.setDisable(n.isRead());
+        markRead.setOnAction(e -> markAsRead(n.getId()));
+
+        Button delete = new Button("Xóa");
+        delete.setOnAction(e -> deleteNotification(n.getId()));
+
+        row.getChildren().addAll(box, markRead, delete);
+        return row;
+    }
+
+    private void markAsRead(int notifId) {
+        NotificationService.markRead(notifId,
+                () -> render(ClientModel.getInstance().getNotifications()),
+                err -> AlertUtil.showError(err)
+        );
+    }
+
+    private void deleteNotification(int notifId) {
+        // TODO: NotificationService chưa có deleteNotification — báo BE bổ sung
+        // Tạm thời chỉ đánh dấu đã đọc
+        markAsRead(notifId);
     }
 
     // ===== TABS =====
 
-    @FXML private void onTabAll()     { setTab(btnTabAll,     "all");     }
-    @FXML private void onTabUnread()  { setTab(btnTabUnread,  "unread");  }
-    @FXML private void onTabAuction() { setTab(btnTabAuction, "auction"); }
-    @FXML private void onTabSystem()  { setTab(btnTabSystem,  "system");  }
+    @FXML private void onTabAll()     { setTab("all", btnTabAll); }
+    @FXML private void onTabUnread()  { setTab("unread", btnTabUnread); }
+    @FXML private void onTabAuction() { setTab("auction", btnTabAuction); }
+    @FXML private void onTabSystem()  { setTab("system", btnTabSystem); }
 
-    private void setTab(Button target, String filter) {
+    private void setTab(String filter, Button button) {
         currentFilter = filter;
         if (activeTab != null) {
             activeTab.getStyleClass().remove("tag-active");
-            if (!activeTab.getStyleClass().contains("tag-inactive")) {
-                activeTab.getStyleClass().add("tag-inactive");
-            }
+            activeTab.getStyleClass().add("tag-inactive");
         }
-        target.getStyleClass().remove("tag-inactive");
-        if (!target.getStyleClass().contains("tag-active")) {
-            target.getStyleClass().add("tag-active");
-        }
-        activeTab = target;
-        // TODO: filter danh sách notificationList theo currentFilter
+        button.getStyleClass().remove("tag-inactive");
+        button.getStyleClass().add("tag-active");
+        activeTab = button;
+        render(ClientModel.getInstance().getNotifications());
     }
-
-    // ===== ACTIONS =====
 
     @FXML
     private void onMarkAllRead() {
-        unreadCount = 0;
-        updateUnreadLabel();
-        // TODO: đánh dấu tất cả đã đọc trên server
-        // Đổi style tất cả card-unread → card-soft
-        notificationList.getChildren().forEach(node -> {
-            node.getStyleClass().remove("card-unread");
-            if (!node.getStyleClass().contains("card-soft")) {
-                node.getStyleClass().add("card-soft");
-            }
-        });
-        System.out.println("[NotificationController] Đã đánh dấu tất cả đã đọc");
+        List<NotificationDTO> unread = ClientModel.getInstance().getNotifications()
+                .stream().filter(n -> !n.isRead()).toList();
+        for (NotificationDTO n : unread) {
+            NotificationService.markRead(n.getId(), () -> {}, err -> {});
+        }
     }
 
     @FXML
     private void onClearRead() {
-        // Xóa tất cả node KHÔNG có class "card-unread" (tức là đã đọc)
-        notificationList.getChildren().removeIf(node ->
-                !node.getStyleClass().contains("card-unread")
-        );
-        System.out.println("[NotificationController] Đã xóa thông báo đã đọc");
-    }
-
-    @FXML
-    private void onBidNow() {
-        // TODO: điều hướng sang AuctionDetailView với item liên quan
-        System.out.println("[NotificationController] Đặt giá ngay");
-    }
-
-    @FXML
-    private void onViewDetail() {
-        // TODO: điều hướng sang AuctionDetailView
-        System.out.println("[NotificationController] Xem chi tiết");
+        // TODO: BE chưa có API xóa hàng loạt
+        AlertUtil.showInfo("Tính năng đang phát triển");
     }
 
     @FXML
     private void onDeleteNotification() {
-        // TODO: xác định node cha HBox và xóa khỏi notificationList
-        // Cách dùng: truyền event và traverse lên
-        System.out.println("[NotificationController] Xóa thông báo");
+        // Bị xóa khi click nút Xóa trong card — không xử lý chung
     }
 
-    // ===== HELPERS =====
-
-    private void updateUnreadLabel() {
-        if (unreadCount > 0) {
-            lblNewCount.setText(unreadCount + " thông báo mới");
-        } else {
-            lblNewCount.setText("Không có thông báo mới");
+    /**
+     * Cleanup khi rời view — controller cha gọi.
+     */
+    public void cleanup() {
+        if (pushSubscription != null) {
+            NotificationService.unsubscribePush(pushSubscription);
         }
     }
 }

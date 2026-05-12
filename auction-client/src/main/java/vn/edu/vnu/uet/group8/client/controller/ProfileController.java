@@ -1,119 +1,154 @@
 package vn.edu.vnu.uet.group8.client.controller;
 
 import javafx.fxml.FXML;
-import javafx.fxml.FXMLLoader;
 import javafx.fxml.Initializable;
-import javafx.scene.Parent;
-import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.layout.VBox;
-import javafx.stage.Stage;
 
-import java.io.IOException;
+import vn.edu.vnu.uet.group8.client.service.AuthService;
+import vn.edu.vnu.uet.group8.client.service.UserService;
+import vn.edu.vnu.uet.group8.client.util.AlertUtil;
+import vn.edu.vnu.uet.group8.client.util.SceneManager;
+import vn.edu.vnu.uet.group8.client.util.SessionManager;
+import vn.edu.vnu.uet.group8.common.dto.BidRecord;
+import vn.edu.vnu.uet.group8.common.dto.LoginResponse;
+
 import java.net.URL;
+import java.util.List;
 import java.util.ResourceBundle;
 
+/**
+ * ProfileController — wire UserService thật.
+ *
+ * Hiển thị:
+ *   - Profile: tên, email, role
+ *   - Số dư từ ClientModel
+ *   - Tabs: Đang đấu giá / Đã thắng / Đã thua — load từ BidService
+ */
 public class ProfileController implements Initializable {
 
-    // ===== FXML BINDINGS =====
-    @FXML private Label lblAvatar;
-    @FXML private Label lblName;
+    @FXML private Label lblFullName;
+    @FXML private Label lblUsername;
     @FXML private Label lblEmail;
-    @FXML private Label lblJoinDate;
-    @FXML private Label lblTotalBids;
-    @FXML private Label lblWonBids;
-    @FXML private Label lblActiveBids;
-    @FXML private Label lblRating;
+    @FXML private Label lblPhone;
+    @FXML private Label lblRole;
     @FXML private Label lblBalance;
+    @FXML private Label lblTotalBids;
+    @FXML private Label lblWonAuctions;
+    @FXML private Label lblRating;
 
-    // Tabs lịch sử
+    @FXML private VBox bidHistoryContainer;
     @FXML private Button btnTabActive;
     @FXML private Button btnTabWon;
     @FXML private Button btnTabLost;
-    @FXML private VBox bidHistoryList;
 
-    // ===== STATE =====
     private Button activeTab;
-    /** "active" | "won" | "lost" */
     private String currentFilter = "active";
 
-    // ===== INIT =====
     @Override
     public void initialize(URL location, ResourceBundle resources) {
         activeTab = btnTabActive;
-        // TODO: load dữ liệu user từ session/server
-        loadProfileData();
-        loadBidHistory();
+        loadProfile();
+        loadMyBids();
     }
 
-    // ===== LOAD DATA =====
-
-    private void loadProfileData() {
-        // TODO: thay bằng dữ liệu thật từ session
-        lblName.setText("Nguyễn Văn A");
-        lblEmail.setText("nguyenvana@email.com");
-        lblJoinDate.setText("Tham gia tháng 3/2024");
-        lblAvatar.setText("N");
-        lblTotalBids.setText("234");
-        lblWonBids.setText("45");
-        lblActiveBids.setText("12");
-        lblRating.setText("4.8");
-        lblBalance.setText("50.000.000 đ");
+    private void loadProfile() {
+        UserService.loadProfile(user -> {
+            if (user == null) {
+                AlertUtil.showError("Không tải được thông tin");
+                return;
+            }
+            displayUser(user);
+        });
     }
 
-    // ===== TABS LỊCH SỬ =====
+    private void displayUser(LoginResponse user) {
+        if (lblFullName != null) lblFullName.setText(user.getFullName());
+        if (lblUsername != null) lblUsername.setText("@" + user.getUsername());
+        if (lblEmail != null && user.getEmail() != null) lblEmail.setText(user.getEmail());
+        if (lblRole != null) lblRole.setText(user.getRole());
+    }
 
-    @FXML private void onTabActive() { setTab(btnTabActive, "active"); loadBidHistory(); }
-    @FXML private void onTabWon()    { setTab(btnTabWon,    "won");    loadBidHistory(); }
-    @FXML private void onTabLost()   { setTab(btnTabLost,   "lost");   loadBidHistory(); }
+    private void loadMyBids() {
+        UserService.loadMyBids(bids -> {
+            if (bids == null) {
+                bidHistoryContainer.getChildren().clear();
+                return;
+            }
+            renderBids(bids);
+            updateStats(bids);
+        });
+    }
 
-    private void setTab(Button target, String filter) {
+    private void renderBids(List<BidRecord> bids) {
+        bidHistoryContainer.getChildren().clear();
+        List<BidRecord> filtered = bids.stream()
+                .filter(this::matchTab)
+                .toList();
+        for (BidRecord b : filtered) {
+            Label entry = new Label(String.format(
+                    "Item %d — %,.0f đ — %s",
+                    b.getItemId(), b.getAmount(), b.getPlacedAt()
+            ));
+            bidHistoryContainer.getChildren().add(entry);
+        }
+    }
+
+    private boolean matchTab(BidRecord b) {
+        // TODO: BidRecord chưa có status — tạm return true cho mọi tab
+        // Khi BE bổ sung status (WON/LOST/ACTIVE), filter ở đây
+        return switch (currentFilter) {
+            case "active" -> true;
+            case "won"    -> false;  // chưa có field status
+            case "lost"   -> false;
+            default       -> true;
+        };
+    }
+
+    private void updateStats(List<BidRecord> bids) {
+        if (lblTotalBids != null) lblTotalBids.setText(String.valueOf(bids.size()));
+        // Won/Lost: cần BidRecord.status từ BE
+    }
+
+    // ===== TABS =====
+
+    @FXML private void onTabActive() { setTab("active", btnTabActive); }
+    @FXML private void onTabWon()    { setTab("won", btnTabWon); }
+    @FXML private void onTabLost()   { setTab("lost", btnTabLost); }
+
+    private void setTab(String filter, Button button) {
         currentFilter = filter;
         if (activeTab != null) {
             activeTab.getStyleClass().remove("tag-active");
-            if (!activeTab.getStyleClass().contains("tag-inactive")) {
-                activeTab.getStyleClass().add("tag-inactive");
-            }
+            activeTab.getStyleClass().add("tag-inactive");
         }
-        target.getStyleClass().remove("tag-inactive");
-        if (!target.getStyleClass().contains("tag-active")) {
-            target.getStyleClass().add("tag-active");
-        }
-        activeTab = target;
-    }
-
-    private void loadBidHistory() {
-        bidHistoryList.getChildren().clear();
-        // TODO: load dữ liệu thật từ server theo currentFilter
-        System.out.println("[ProfileController] Load lịch sử filter=" + currentFilter);
+        button.getStyleClass().remove("tag-inactive");
+        button.getStyleClass().add("tag-active");
+        activeTab = button;
+        loadMyBids();
     }
 
     // ===== ACTIONS =====
 
     @FXML
-    private void onDeposit() {
-        // TODO: điều hướng sang WalletView
-        System.out.println("[ProfileController] Nạp tiền");
+    private void onSettings() {
+        // MainController sẽ load SettingsView
+        // Hiện tại ProfileController không có ref đến MainController
+        // → dùng SceneManager.switchTo (load full screen)
+        // hoặc emit event lên cha
     }
 
     @FXML
-    private void onSettings() {
-        // TODO: điều hướng sang SettingsView qua MainController
-        System.out.println("[ProfileController] Mở cài đặt");
+    private void onDeposit() {
+        // Navigate sang WalletView qua main controller
+        // Tạm thời mở Wallet view trực tiếp
     }
 
     @FXML
     private void onLogout() {
-        try {
-            URL resource = getClass().getResource("/fxml/LoginView.fxml");
-            if (resource == null) return;
-            Parent login = FXMLLoader.load(resource);
-            Stage stage = (Stage) lblName.getScene().getWindow();
-            stage.setScene(new Scene(login));
-            stage.show();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        boolean ok = AlertUtil.showConfirm("Đăng xuất", "Bạn có chắc muốn đăng xuất?");
+        if (!ok) return;
+        AuthService.logout();
     }
 }

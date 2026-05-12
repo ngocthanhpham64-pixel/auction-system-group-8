@@ -4,100 +4,131 @@ import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
+import javafx.scene.control.TextInputDialog;
 import javafx.scene.layout.VBox;
+
+import vn.edu.vnu.uet.group8.client.model.ClientModel;
+import vn.edu.vnu.uet.group8.client.service.UserService;
+import vn.edu.vnu.uet.group8.client.util.AlertUtil;
 
 import java.math.BigDecimal;
 import java.net.URL;
+import java.util.Optional;
 import java.util.ResourceBundle;
 
+/**
+ * WalletController — wire UserService.deposit() thật.
+ *
+ * Hiển thị:
+ *   - Số dư từ ClientModel (auto-update khi balance đổi)
+ *   - Lịch sử giao dịch (TODO: BE chưa có API getTransactions)
+ *   - Nút Nạp tiền → mở dialog nhập số tiền → gọi UserService.deposit()
+ */
 public class WalletController implements Initializable {
 
-    // ===== FXML BINDINGS =====
     @FXML private Label lblBalance;
     @FXML private Label lblHolding;
     @FXML private Label lblTotalSpent;
-    @FXML private VBox transactionList;
-
-    // Tab buttons
+    @FXML private VBox transactionContainer;
     @FXML private Button btnTabAll;
     @FXML private Button btnTabDeposit;
-    @FXML private Button btnTabHold;
-    @FXML private Button btnTabPayment;
+    @FXML private Button btnTabBid;
+    @FXML private Button btnTabRefund;
 
-    // ===== STATE =====
     private Button activeTab;
-    private BigDecimal balance    = new BigDecimal("50000000");
-    private BigDecimal holding    = new BigDecimal("12000000");
-    private BigDecimal totalSpent = new BigDecimal("238000000");
-    /** "all" | "deposit" | "hold" | "payment" */
     private String currentFilter = "all";
 
-    // ===== INIT =====
     @Override
     public void initialize(URL location, ResourceBundle resources) {
         activeTab = btnTabAll;
-        updateBalanceDisplay();
+        bindBalance();
         loadTransactions();
+    }
+
+    private void bindBalance() {
+        // Listen ClientModel.balance → auto update label
+        ClientModel.getInstance().balanceProperty().addListener((obs, oldVal, newVal) -> {
+            if (newVal != null && lblBalance != null) {
+                lblBalance.setText(String.format("%,.0f đ", newVal));
+            }
+        });
+
+        // Set giá trị hiện tại
+        BigDecimal current = ClientModel.getInstance().getBalance();
+        if (current != null && lblBalance != null) {
+            lblBalance.setText(String.format("%,.0f đ", current));
+        }
+    }
+
+    private void loadTransactions() {
+        // TODO: BE chưa có API getTransactions
+        // Khi có → UserService.loadTransactions(...);
+        transactionContainer.getChildren().clear();
+        Label placeholder = new Label("Chưa có giao dịch nào");
+        placeholder.getStyleClass().add("label-info");
+        transactionContainer.getChildren().add(placeholder);
     }
 
     // ===== ACTIONS =====
 
     @FXML
     private void onDeposit() {
-        // TODO: mở dialog nạp tiền
-        System.out.println("[WalletController] Nạp tiền");
+        TextInputDialog dialog = new TextInputDialog();
+        dialog.setTitle("Nạp tiền");
+        dialog.setHeaderText(null);
+        dialog.setContentText("Nhập số tiền muốn nạp (VND):");
+
+        Optional<String> result = dialog.showAndWait();
+        if (result.isEmpty()) return;
+
+        try {
+            String input = result.get().replaceAll("[^\\d]", "");
+            BigDecimal amount = new BigDecimal(input);
+            if (amount.compareTo(BigDecimal.ZERO) <= 0) {
+                AlertUtil.showWarning("Số tiền phải > 0");
+                return;
+            }
+
+            UserService.deposit(amount, success -> {
+                if (success) {
+                    AlertUtil.showInfo("Nạp tiền thành công!");
+                    // ClientModel.balance đã update tự động
+                } else {
+                    AlertUtil.showError("Nạp tiền thất bại");
+                }
+            });
+        } catch (NumberFormatException e) {
+            AlertUtil.showWarning("Số tiền không hợp lệ");
+        }
     }
 
     @FXML
     private void onWithdraw() {
-        // TODO: mở dialog rút tiền
-        System.out.println("[WalletController] Rút tiền");
+        // TODO: BE chưa có API withdraw
+        AlertUtil.showInfo("Tính năng đang phát triển");
     }
 
     @FXML
     private void onHistory() {
-        // Scroll xuống phần lịch sử
-        transactionList.requestFocus();
-    }
-
-    @FXML
-    private void onViewAll() {
-        System.out.println("[WalletController] Xem tất cả giao dịch");
+        loadTransactions();
     }
 
     // ===== TABS =====
 
-    @FXML private void onTabAll()     { setTab(btnTabAll,     "all");     loadTransactions(); }
-    @FXML private void onTabDeposit() { setTab(btnTabDeposit, "deposit"); loadTransactions(); }
-    @FXML private void onTabHold()    { setTab(btnTabHold,    "hold");    loadTransactions(); }
-    @FXML private void onTabPayment() { setTab(btnTabPayment, "payment"); loadTransactions(); }
+    @FXML private void onTabAll()     { setTab("all", btnTabAll); }
+    @FXML private void onTabDeposit() { setTab("deposit", btnTabDeposit); }
+    @FXML private void onTabBid()     { setTab("bid", btnTabBid); }
+    @FXML private void onTabRefund()  { setTab("refund", btnTabRefund); }
 
-    private void setTab(Button target, String filter) {
+    private void setTab(String filter, Button button) {
         currentFilter = filter;
         if (activeTab != null) {
             activeTab.getStyleClass().remove("tag-active");
-            if (!activeTab.getStyleClass().contains("tag-inactive")) {
-                activeTab.getStyleClass().add("tag-inactive");
-            }
+            activeTab.getStyleClass().add("tag-inactive");
         }
-        target.getStyleClass().remove("tag-inactive");
-        if (!target.getStyleClass().contains("tag-active")) {
-            target.getStyleClass().add("tag-active");
-        }
-        activeTab = target;
-    }
-
-    // ===== LOAD DATA =====
-
-    private void updateBalanceDisplay() {
-        lblBalance.setText(String.format("%,.0f đ", balance));
-        lblHolding.setText(String.format("%,.0f đ", holding));
-        lblTotalSpent.setText(String.format("%,.0f đ", totalSpent));
-    }
-
-    private void loadTransactions() {
-        // TODO: load dữ liệu thật từ server theo currentFilter
-        // Hiện tại giữ nguyên dữ liệu tĩnh trong FXML
-        System.out.println("[WalletController] Load giao dịch filter=" + currentFilter);
+        button.getStyleClass().remove("tag-inactive");
+        button.getStyleClass().add("tag-active");
+        activeTab = button;
+        loadTransactions();
     }
 }

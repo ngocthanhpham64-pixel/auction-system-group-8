@@ -3,137 +3,142 @@ package vn.edu.vnu.uet.group8.client.controller;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.control.Alert;
-import javafx.scene.control.ButtonType;
 import javafx.scene.control.CheckBox;
-import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
+import javafx.scene.control.TextInputDialog;
+
+import vn.edu.vnu.uet.group8.client.service.AuthService;
+import vn.edu.vnu.uet.group8.client.util.AlertUtil;
+import vn.edu.vnu.uet.group8.client.util.SessionManager;
 
 import java.net.URL;
 import java.util.Optional;
 import java.util.ResourceBundle;
 
+/**
+ * SettingsController — quản lý cài đặt tài khoản.
+ *
+ * Note: BE hiện chưa có API update profile từng field
+ * (chỉ có loadProfile + deposit). Một số setting tạm để TODO
+ * chờ BE bổ sung endpoint UPDATE_PROFILE.
+ */
 public class SettingsController implements Initializable {
 
-    // ===== FXML BINDINGS — Thông tin cá nhân =====
+    // Cá nhân
     @FXML private Label lblFullName;
-    @FXML private Label lblBirthday;
-    @FXML private Label lblAddress;
-
-    // Bảo mật
     @FXML private Label lblEmail;
     @FXML private Label lblPhone;
-    @FXML private Label lbl2FA;
 
-    // Thanh toán
-    @FXML private Label lblPaymentMethod;
-    @FXML private Label lblDepositLimit;
-
-    // Thông báo
-    @FXML private CheckBox cbPushNoti;
-    @FXML private CheckBox cbEmailOutbid;
-    @FXML private CheckBox cbEmailEnding;
-    @FXML private CheckBox cbEmailPromo;
+    // Notification
+    @FXML private CheckBox cbNotifBid;
+    @FXML private CheckBox cbNotifWin;
+    @FXML private CheckBox cbNotifNewItem;
 
     // Giao diện
-    @FXML private ComboBox<String> cbLanguage;
     @FXML private CheckBox cbDarkMode;
+    @FXML private Label lblLanguage;
 
-    // ===== INIT =====
     @Override
     public void initialize(URL location, ResourceBundle resources) {
-        cbLanguage.getItems().addAll("Tiếng Việt", "English");
-        cbLanguage.getSelectionModel().selectFirst();
-        // TODO: load settings từ server / local preferences
+        loadCurrentSettings();
     }
 
-    // ===== THÔNG TIN CÁ NHÂN =====
+    private void loadCurrentSettings() {
+        // Hiển thị info từ SessionManager
+        if (lblFullName != null) lblFullName.setText(SessionManager.getFullName());
+        if (lblEmail != null) lblEmail.setText("(load từ profile)");
+        if (lblPhone != null) lblPhone.setText("(load từ profile)");
+    }
 
-    @FXML private void onEditFullName() { openEditDialog("Họ và tên", lblFullName); }
-    @FXML private void onEditBirthday() { openEditDialog("Ngày sinh", lblBirthday); }
-    @FXML private void onEditAddress()  { openEditDialog("Địa chỉ",   lblAddress);  }
+    // ===== EDIT CÁ NHÂN =====
+
+    @FXML private void onEditFullName() { openEditDialog("Họ tên", "fullName"); }
+    @FXML private void onEditEmail()    { openEditDialog("Email", "email"); }
+    @FXML private void onEditPhone()    { openEditDialog("Số điện thoại", "phone"); }
+    @FXML private void onEditAddress()  { openEditDialog("Địa chỉ", "address"); }
+    @FXML private void onEditBirthday() { openEditDialog("Ngày sinh", "birthday"); }
+
+    private void openEditDialog(String fieldLabel, String fieldKey) {
+        TextInputDialog dialog = new TextInputDialog();
+        dialog.setTitle("Cập nhật " + fieldLabel);
+        dialog.setHeaderText(null);
+        dialog.setContentText("Nhập " + fieldLabel + " mới:");
+
+        Optional<String> result = dialog.showAndWait();
+        result.ifPresent(value -> saveSetting(fieldKey, value));
+    }
+
+    private void saveSetting(String key, String value) {
+        // TODO: Khi BE có API USER_UPDATE → gọi UserService.updateProfile(key, value)
+        // Hiện tại chỉ hiện thông báo
+        AlertUtil.showInfo("Đã ghi nhận: " + key + " = " + value
+                + "\n(Chờ BE bổ sung API)");
+    }
 
     // ===== BẢO MẬT =====
 
-    @FXML private void onChangeEmail()    { openEditDialog("Email mới",    lblEmail); }
-    @FXML private void onChangePhone()    { openEditDialog("Số điện thoại", lblPhone); }
-    @FXML private void onChangePassword() {
-        // TODO: mở dialog đổi mật khẩu (yêu cầu mật khẩu cũ)
-        Alert alert = new Alert(Alert.AlertType.INFORMATION);
-        alert.setTitle("Đổi mật khẩu");
-        alert.setHeaderText(null);
-        alert.setContentText("Tính năng đổi mật khẩu sẽ sớm ra mắt.");
-        alert.showAndWait();
-    }
-    @FXML private void onManage2FA() {
-        System.out.println("[SettingsController] Quản lý xác thực 2 lớp");
+    @FXML
+    private void onChangePassword() {
+        // TODO: BE chưa có API CHANGE_PASSWORD
+        // Cần: oldPassword + newPassword + confirmNewPassword
+        AlertUtil.showInfo("Đổi mật khẩu — chờ BE bổ sung API");
     }
 
-    // ===== THANH TOÁN =====
+    @FXML
+    private void onEnable2FA() {
+        AlertUtil.showInfo("2FA — chờ BE bổ sung API");
+    }
 
-    @FXML private void onManagePayment()   { System.out.println("[Settings] Quản lý phương thức thanh toán"); }
-    @FXML private void onEditDepositLimit() { System.out.println("[Settings] Chỉnh hạn mức đặt cọc"); }
+    // ===== NOTIFICATION TOGGLES =====
 
-    // ===== THÔNG BÁO (Toggle) =====
+    @FXML
+    private void onToggleNotifBid() {
+        saveSetting("notifBid", String.valueOf(cbNotifBid.isSelected()));
+    }
 
-    @FXML private void onTogglePush()         { saveSetting("push_noti",    cbPushNoti.isSelected()); }
-    @FXML private void onToggleEmailOutbid()  { saveSetting("email_outbid", cbEmailOutbid.isSelected()); }
-    @FXML private void onToggleEmailEnding()  { saveSetting("email_ending", cbEmailEnding.isSelected()); }
-    @FXML private void onToggleEmailPromo()   { saveSetting("email_promo",  cbEmailPromo.isSelected()); }
+    @FXML
+    private void onToggleNotifWin() {
+        saveSetting("notifWin", String.valueOf(cbNotifWin.isSelected()));
+    }
+
+    @FXML
+    private void onToggleNotifNewItem() {
+        saveSetting("notifNewItem", String.valueOf(cbNotifNewItem.isSelected()));
+    }
 
     // ===== GIAO DIỆN =====
 
     @FXML
-    private void onChangeLanguage() {
-        String lang = cbLanguage.getValue();
-        System.out.println("[Settings] Đổi ngôn ngữ: " + lang);
-        // TODO: áp dụng locale
+    private void onToggleDarkMode() {
+        boolean dark = cbDarkMode.isSelected();
+        // TODO: apply theme dark/light
+        saveSetting("darkMode", String.valueOf(dark));
     }
 
     @FXML
-    private void onToggleDarkMode() {
-        boolean dark = cbDarkMode.isSelected();
-        System.out.println("[Settings] Dark mode: " + dark);
-        // TODO: đổi stylesheet toàn app
+    private void onChangeLanguage() {
+        AlertUtil.showInfo("Đổi ngôn ngữ — chờ i18n");
     }
 
     // ===== VÙNG NGUY HIỂM =====
 
     @FXML
     private void onDeleteAccount() {
-        Alert confirm = new Alert(Alert.AlertType.CONFIRMATION);
-        confirm.setTitle("Xóa tài khoản");
-        confirm.setHeaderText("Bạn có chắc chắn muốn xóa tài khoản?");
-        confirm.setContentText("Hành động này không thể hoàn tác. Tất cả dữ liệu sẽ bị xóa vĩnh viễn.");
+        Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
+        alert.setTitle("Xóa tài khoản");
+        alert.setHeaderText("Hành động này KHÔNG THỂ HOÀN TÁC");
+        alert.setContentText("Bạn có chắc muốn xóa vĩnh viễn tài khoản?");
 
-        Optional<ButtonType> result = confirm.showAndWait();
-        if (result.isPresent() && result.get() == ButtonType.OK) {
-            // TODO: gọi server xóa tài khoản (soft-delete: setDeleted(true))
-            System.out.println("[Settings] Xóa tài khoản");
+        Optional<javafx.scene.control.ButtonType> result = alert.showAndWait();
+        if (result.isPresent() && result.get() == javafx.scene.control.ButtonType.OK) {
+            // TODO: BE chưa có API DELETE_ACCOUNT
+            AlertUtil.showInfo("Xóa tài khoản — chờ BE bổ sung API");
         }
     }
 
-    // ===== HELPERS =====
-
-    /**
-     * Mở dialog chỉnh sửa đơn giản (TextField) và cập nhật Label.
-     */
-    private void openEditDialog(String fieldName, Label target) {
-        javafx.scene.control.TextInputDialog dialog = new javafx.scene.control.TextInputDialog(target.getText());
-        dialog.setTitle("Chỉnh sửa");
-        dialog.setHeaderText(null);
-        dialog.setContentText(fieldName + ":");
-        // Style dialog button OK
-        dialog.showAndWait().ifPresent(value -> {
-            if (!value.isBlank()) {
-                target.setText(value);
-                // TODO: gửi lên server cập nhật
-                System.out.println("[Settings] Cập nhật " + fieldName + " = " + value);
-            }
-        });
-    }
-
-    private void saveSetting(String key, boolean value) {
-        // TODO: lưu setting xuống server / preferences
-        System.out.println("[Settings] " + key + " = " + value);
+    @FXML
+    private void onLogout() {
+        boolean ok = AlertUtil.showConfirm("Đăng xuất", "Bạn có chắc muốn đăng xuất?");
+        if (ok) AuthService.logout();
     }
 }
