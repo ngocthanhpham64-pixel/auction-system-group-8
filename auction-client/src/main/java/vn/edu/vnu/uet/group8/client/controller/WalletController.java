@@ -112,6 +112,11 @@ public class WalletController implements Initializable {
     private void onHistory() {
         loadTransactions();
     }
+    @FXML
+    private void onViewAll() {
+        // TODO: hiện toàn bộ giao dịch (load page mới hoặc mở rộng list)
+        System.out.println("[Wallet] Xem tất cả giao dịch");
+    }
 
     // ===== TABS =====
 
