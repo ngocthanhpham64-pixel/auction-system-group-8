@@ -117,6 +117,11 @@ public class WalletController implements Initializable {
         // TODO: hiện toàn bộ giao dịch (load page mới hoặc mở rộng list)
         System.out.println("[Wallet] Xem tất cả giao dịch");
     }
+    @FXML
+    private void onTabHold() {
+        setTab("hold", btnTabAll);  // hoặc tạo button tương ứng
+        System.out.println("[Wallet] Tab Hold");
+    }
 
     // ===== TABS =====
 
