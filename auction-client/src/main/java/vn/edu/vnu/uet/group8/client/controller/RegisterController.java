@@ -2,7 +2,12 @@ package vn.edu.vnu.uet.group8.client.controller;
 
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
-import javafx.scene.control.*;
+import javafx.scene.control.Button;
+import javafx.scene.control.CheckBox;
+import javafx.scene.control.Hyperlink;
+import javafx.scene.control.Label;
+import javafx.scene.control.PasswordField;
+import javafx.scene.control.TextField;
 
 import vn.edu.vnu.uet.group8.client.service.RegisterService;
 import vn.edu.vnu.uet.group8.client.util.AlertUtil;
@@ -10,17 +15,32 @@ import vn.edu.vnu.uet.group8.client.util.SceneManager;
 
 import java.net.URL;
 import java.util.ResourceBundle;
+import java.util.logging.Logger;
 import java.util.regex.Pattern;
 
 /**
- * RegisterController — xử lý form đăng ký tài khoản mới.
+ * RegisterController — man hinh dang ky tai khoan.
+ *
+ * Validate phia client (fail fast):
+ *  - All fields required
+ *  - Username: 3-20 ky tu, chi alphanumeric + underscore
+ *  - Email: format chuan
+ *  - Phone: 10 so, bat dau 0
+ *  - Password: >= 8 ky tu, co chua chu va so
+ *  - Confirm password phai khop
+ *  - Phai tick dieu khoan
+ *
+ * Sau khi dang ky thanh cong -> chuyen ve LoginView.
  */
 public class RegisterController implements Initializable {
 
-    private static final Pattern EMAIL_PATTERN =
-            Pattern.compile("^[A-Za-z0-9+_.-]+@(.+)$");
-    private static final Pattern PHONE_PATTERN =
-            Pattern.compile("^0\\d{9}$");
+    private static final Logger LOGGER = Logger.getLogger(RegisterController.class.getName());
+
+    // Validators
+    private static final Pattern EMAIL_PATTERN    = Pattern.compile("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$");
+    private static final Pattern PHONE_PATTERN    = Pattern.compile("^0\\d{9}$");
+    private static final Pattern USERNAME_PATTERN = Pattern.compile("^[A-Za-z0-9_]{3,20}$");
+    private static final Pattern PASSWORD_PATTERN = Pattern.compile("^(?=.*[A-Za-z])(?=.*\\d).{8,}$");
 
     @FXML private TextField tfUsername;
     @FXML private TextField tfFullName;
@@ -38,74 +58,91 @@ public class RegisterController implements Initializable {
     @Override
     public void initialize(URL location, ResourceBundle resources) {
         hideError();
+        setupEnterKeySubmit();
+    }
+
+    private void setupEnterKeySubmit() {
+        if (pfConfirmPassword != null) {
+            pfConfirmPassword.setOnAction(e -> onRegister());
+        }
     }
 
     @FXML
     private void onRegister() {
-        String username = tfUsername.getText().trim();
-        String fullName = tfFullName.getText().trim();
-        String email = tfEmail.getText().trim();
-        String phone = tfPhone.getText().trim();
-        String password = pfPassword.getText();
-        String confirmPassword = pfConfirmPassword.getText();
+        // Lay tat ca input
+        String username = safeText(tfUsername);
+        String fullName = safeText(tfFullName);
+        String email    = safeText(tfEmail);
+        String phone    = safeText(tfPhone);
+        String password = pfPassword != null ? pfPassword.getText() : "";
+        String confirm  = pfConfirmPassword != null ? pfConfirmPassword.getText() : "";
 
-        // Validate client-side
-        if (username.isEmpty() || fullName.isEmpty() || email.isEmpty()
-                || phone.isEmpty() || password.isEmpty()) {
-            showError("Vui lòng điền đầy đủ thông tin");
+        // ===== VALIDATE =====
+        String error = validate(username, fullName, email, phone, password, confirm);
+        if (error != null) {
+            showError(error);
             return;
         }
 
-        if (username.length() < 3) {
-            showError("Tên đăng nhập phải có ít nhất 3 ký tự");
-            return;
+        hideError();
+        setLoadingState(true);
+
+        RegisterService.register(username, email, password, fullName, phone,
+                () -> {
+                    LOGGER.info(() -> "Dang ky thanh cong: " + username);
+                    setLoadingState(false);
+                    AlertUtil.showInfo("Dang ky thanh cong!\n"
+                            + "Vui long dang nhap voi tai khoan " + username);
+                    SceneManager.switchTo(SceneManager.VIEW_LOGIN);
+                },
+                errorMsg -> {
+                    LOGGER.warning("Dang ky that bai: " + errorMsg);
+                    setLoadingState(false);
+                    showError(errorMsg != null ? errorMsg : "Dang ky that bai");
+                }
+        );
+    }
+
+    /**
+     * Validate tat ca field. Return error message hoac null neu OK.
+     */
+    private String validate(String username, String fullName, String email,
+                            String phone, String password, String confirm) {
+
+        if (username.isEmpty() || fullName.isEmpty() || email.isEmpty()
+                || phone.isEmpty() || password.isEmpty()) {
+            return "Vui long dien day du thong tin";
+        }
+
+        if (!USERNAME_PATTERN.matcher(username).matches()) {
+            return "Ten dang nhap 3-20 ky tu, chi chu/so/gach duoi";
+        }
+
+        if (fullName.length() < 2 || fullName.length() > 50) {
+            return "Ho ten phai 2-50 ky tu";
         }
 
         if (!EMAIL_PATTERN.matcher(email).matches()) {
-            showError("Email không hợp lệ");
-            return;
+            return "Email khong hop le";
         }
 
         if (!PHONE_PATTERN.matcher(phone).matches()) {
-            showError("Số điện thoại phải có 10 số, bắt đầu bằng 0");
-            return;
+            return "SDT phai 10 so, bat dau bang 0";
         }
 
-        if (password.length() < 8) {
-            showError("Mật khẩu phải có ít nhất 8 ký tự");
-            return;
+        if (!PASSWORD_PATTERN.matcher(password).matches()) {
+            return "Mat khau >= 8 ky tu, co chua chu va so";
         }
 
-        if (!password.equals(confirmPassword)) {
-            showError("Mật khẩu xác nhận không khớp");
-            return;
+        if (!password.equals(confirm)) {
+            return "Mat khau xac nhan khong khop";
         }
 
-        if (!cbTerms.isSelected()) {
-            showError("Bạn cần đồng ý với điều khoản sử dụng");
-            return;
+        if (cbTerms != null && !cbTerms.isSelected()) {
+            return "Vui long dong y voi dieu khoan su dung";
         }
 
-        // Gọi RegisterService
-        hideError();
-        btnSubmit.setDisable(true);
-        btnSubmit.setText("Đang đăng ký...");
-
-        RegisterService.register(username, email, password, fullName, phone,
-                // onSuccess — Runnable, không nhận tham số
-                () -> {
-                    btnSubmit.setDisable(false);
-                    btnSubmit.setText("Đăng ký");
-                    AlertUtil.showInfo("Đăng ký thành công!\nVui lòng đăng nhập để tiếp tục.");
-                    SceneManager.switchTo(SceneManager.VIEW_LOGIN);
-                },
-                // onFailure
-                errorMsg -> {
-                    btnSubmit.setDisable(false);
-                    btnSubmit.setText("Đăng ký");
-                    showError(errorMsg);
-                }
-        );
+        return null;
     }
 
     @FXML
@@ -115,28 +152,44 @@ public class RegisterController implements Initializable {
 
     @FXML
     private void onTabRegister() {
-        // Đã ở RegisterView, không làm gì
+        // Da o RegisterView
     }
 
     @FXML
     private void onShowTerms() {
         AlertUtil.showInfo(
-                "ĐIỀU KHOẢN SỬ DỤNG AUCTIVA\n\n"
-                        + "1. Người dùng cam kết cung cấp thông tin chính xác\n"
-                        + "2. Mọi giao dịch đấu giá đều có hiệu lực pháp lý\n"
-                        + "3. Cấm giả mạo, lừa đảo, gian lận đấu giá\n"
-                        + "4. Tuân thủ luật pháp Việt Nam\n"
-                        + "5. Auctiva có quyền khóa tài khoản vi phạm"
+                "DIEU KHOAN SU DUNG AUCTIVA\n\n"
+                        + "1. Nguoi dung cam ket cung cap thong tin chinh xac.\n\n"
+                        + "2. Moi giao dich dau gia co hieu luc phap ly.\n\n"
+                        + "3. Cam gia mao, lua dao, gian lan.\n\n"
+                        + "4. Tuan thu phap luat Viet Nam.\n\n"
+                        + "5. Auctiva co quyen khoa tai khoan vi pham."
         );
     }
 
+    private void setLoadingState(boolean loading) {
+        if (btnSubmit == null) return;
+        btnSubmit.setDisable(loading);
+        btnSubmit.setText(loading ? "Dang dang ky..." : "Dang ky");
+    }
+
+    // ===== HELPERS =====
+
+    private String safeText(TextField field) {
+        if (field == null) return "";
+        String text = field.getText();
+        return text != null ? text.trim() : "";
+    }
+
     private void showError(String message) {
+        if (lblError == null) return;
         lblError.setText(message);
         lblError.setVisible(true);
         lblError.setManaged(true);
     }
 
     private void hideError() {
+        if (lblError == null) return;
         lblError.setVisible(false);
         lblError.setManaged(false);
     }

@@ -81,6 +81,9 @@
             <Region prefHeight="4"/>
             <Button fx:id="btnWallet" text="💰   Ví tiền" userData="WALLET" onAction="#onNavClick"
                     maxWidth="Infinity" styleClass="nav-item"/>
+            <Region prefHeight="4"/>
+            <Button fx:id="btnSeller" text="🛒   Quản lý bán hàng" userData="SELLER" onAction="#onNavClick"
+                    maxWidth="Infinity" styleClass="nav-item"/>
 
             <Region prefHeight="12"/>
             <Region prefHeight="1" styleClass="divider-h"/>

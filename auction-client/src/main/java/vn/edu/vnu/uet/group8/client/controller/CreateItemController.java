@@ -2,7 +2,12 @@ package vn.edu.vnu.uet.group8.client.controller;
 
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
-import javafx.scene.control.*;
+import javafx.scene.control.Button;
+import javafx.scene.control.CheckBox;
+import javafx.scene.control.ComboBox;
+import javafx.scene.control.Label;
+import javafx.scene.control.TextArea;
+import javafx.scene.control.TextField;
 import javafx.scene.layout.VBox;
 
 import vn.edu.vnu.uet.group8.client.service.SellerService;
@@ -14,20 +19,31 @@ import java.net.URL;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.ResourceBundle;
+import java.util.logging.Logger;
 
 /**
- * CreateItemController — form đăng sản phẩm mới (hoặc sửa).
+ * CreateItemController — form dang san pham moi.
  *
  * Validate:
- *   - Tên, danh mục, mô tả, giá khởi điểm, bước nhảy: bắt buộc
- *   - Giá khởi điểm > 0
- *   - Bước nhảy > 0
- *   - Duration: 1-168 giờ (1h - 1 tuần)
- *   - Nếu hasCert: certBody + certId bắt buộc
+ *  - Name: 5-100 ky tu
+ *  - Category, Condition: required (combobox)
+ *  - Description: 20-2000 ky tu
+ *  - StartPrice: > 0
+ *  - BidStep: > 0, < startPrice (logical)
+ *  - DurationHours: 1-168 (1h - 1 tuan)
+ *  - Specs: optional - chi them neu khong rong
+ *  - HasCert: neu tick -> certBody + certId required
  *
- * Submit → SellerService.createItem() → navigate về SellerDashboard.
+ * Format VND tren the fly khi user nhap so tien.
  */
 public class CreateItemController implements Initializable {
+
+    private static final Logger LOGGER = Logger.getLogger(CreateItemController.class.getName());
+
+    private static final BigDecimal MIN_START_PRICE = new BigDecimal("100000");
+    private static final BigDecimal MAX_START_PRICE = new BigDecimal("100000000000");  // 100 ty
+    private static final int MIN_DURATION = 1;
+    private static final int MAX_DURATION = 168;
 
     @FXML private TextField tfName;
     @FXML private ComboBox<String> cbCategory;
@@ -56,95 +72,110 @@ public class CreateItemController implements Initializable {
     public void initialize(URL location, ResourceBundle resources) {
         initComboBoxes();
         hideError();
-        paneCertFields.setVisible(false);
-        paneCertFields.setManaged(false);
+        hideCertPane();
+        setupPriceFormatting();
     }
 
     private void initComboBoxes() {
-        cbCategory.getItems().addAll(
-                "Đồng hồ cao cấp", "Điện tử", "Trang sức", "Nghệ thuật",
-                "Xe cổ", "Sách quý", "Đồ cổ", "Thời trang", "Khác"
-        );
+        if (cbCategory != null) {
+            cbCategory.getItems().setAll(
+                    "Dong ho cao cap", "Dien tu", "Trang suc", "Nghe thuat",
+                    "Xe co", "Sach quy", "Do co", "Thoi trang", "Khac"
+            );
+        }
+        if (cbCondition != null) {
+            cbCondition.getItems().setAll(
+                    "Moi 100%", "Nhu moi (99%)", "Tot (90%)", "Kha (70%)", "Cu (50%)"
+            );
+            cbCondition.getSelectionModel().selectFirst();
+        }
+    }
 
-        cbCondition.getItems().addAll(
-                "Mới 100%", "Như mới (99%)", "Tốt (90%)", "Khá (70%)", "Cũ (50%)"
-        );
-        cbCondition.getSelectionModel().selectFirst();
+    /** Format gia VND khi user nhap (1000000 -> 1,000,000). */
+    private void setupPriceFormatting() {
+        if (tfStartPrice != null) {
+            tfStartPrice.focusedProperty().addListener((obs, oldVal, newVal) -> {
+                if (!newVal) formatPriceField(tfStartPrice);
+            });
+        }
+        if (tfBidStep != null) {
+            tfBidStep.focusedProperty().addListener((obs, oldVal, newVal) -> {
+                if (!newVal) formatPriceField(tfBidStep);
+            });
+        }
+    }
+
+    private void formatPriceField(TextField field) {
+        String input = field.getText().replaceAll("[^\\d]", "");
+        if (input.isEmpty()) return;
+        try {
+            BigDecimal amount = new BigDecimal(input);
+            field.setText(String.format("%,.0f", amount));
+        } catch (NumberFormatException ignored) {}
     }
 
     @FXML
     private void onToggleCert() {
-        boolean show = cbHasCert.isSelected();
-        paneCertFields.setVisible(show);
-        paneCertFields.setManaged(show);
+        if (cbHasCert != null && paneCertFields != null) {
+            boolean show = cbHasCert.isSelected();
+            paneCertFields.setVisible(show);
+            paneCertFields.setManaged(show);
+        }
+    }
+
+    private void hideCertPane() {
+        if (paneCertFields != null) {
+            paneCertFields.setVisible(false);
+            paneCertFields.setManaged(false);
+        }
     }
 
     // ===== SUBMIT =====
 
     @FXML
     private void onSubmit() {
-        String name = tfName.getText().trim();
-        String category = cbCategory.getValue();
-        String condition = cbCondition.getValue();
-        String description = taDescription.getText().trim();
-        String startPriceStr = tfStartPrice.getText().replaceAll("[^\\d]", "");
-        String bidStepStr = tfBidStep.getText().replaceAll("[^\\d]", "");
-        String durationStr = tfDurationHours.getText().trim();
-        boolean hasCert = cbHasCert.isSelected();
+        // Lay input
+        String name = safeText(tfName);
+        String category = cbCategory != null ? cbCategory.getValue() : null;
+        String condition = cbCondition != null ? cbCondition.getValue() : null;
+        String description = taDescription != null ? taDescription.getText().trim() : "";
 
         // Validate
-        if (name.isEmpty() || category == null || description.isEmpty()
-                || startPriceStr.isEmpty() || bidStepStr.isEmpty() || durationStr.isEmpty()) {
-            showError("Vui lòng điền đầy đủ thông tin bắt buộc");
+        String error = validateRequired(name, category, condition, description);
+        if (error != null) {
+            showError(error);
             return;
         }
 
-        BigDecimal startPrice;
-        BigDecimal bidStep;
-        int duration;
+        BigDecimal startPrice = parseAmount(tfStartPrice);
+        BigDecimal bidStep = parseAmount(tfBidStep);
+        Integer duration = parseInt(tfDurationHours);
 
-        try {
-            startPrice = new BigDecimal(startPriceStr);
-            bidStep = new BigDecimal(bidStepStr);
-            duration = Integer.parseInt(durationStr);
-        } catch (NumberFormatException e) {
-            showError("Giá khởi điểm, bước nhảy, thời gian phải là số");
+        if (startPrice == null || bidStep == null || duration == null) {
+            showError("Gia khoi diem, buoc nhay, thoi gian phai la so");
             return;
         }
 
-        if (startPrice.compareTo(BigDecimal.ZERO) <= 0) {
-            showError("Giá khởi điểm phải > 0");
+        String numError = validateNumbers(startPrice, bidStep, duration);
+        if (numError != null) {
+            showError(numError);
             return;
         }
 
-        if (bidStep.compareTo(BigDecimal.ZERO) <= 0) {
-            showError("Bước nhảy giá phải > 0");
-            return;
-        }
-
-        if (duration < 1 || duration > 168) {
-            showError("Thời gian đấu giá phải từ 1 đến 168 giờ");
-            return;
-        }
-
-        String certBody = null;
-        String certId = null;
+        // Cert validate
+        boolean hasCert = cbHasCert != null && cbHasCert.isSelected();
+        String certBody = null, certId = null;
         if (hasCert) {
-            certBody = tfCertBody.getText().trim();
-            certId = tfCertId.getText().trim();
+            certBody = safeText(tfCertBody);
+            certId = safeText(tfCertId);
             if (certBody.isEmpty() || certId.isEmpty()) {
-                showError("Vui lòng điền đầy đủ thông tin kiểm định");
+                showError("Vui long dien day du thong tin kiem dinh");
                 return;
             }
         }
 
-        // Build specs map
-        Map<String, String> specs = new HashMap<>();
-        if (!tfBrand.getText().isBlank())    specs.put("brand", tfBrand.getText().trim());
-        if (!tfModel.getText().isBlank())    specs.put("model", tfModel.getText().trim());
-        if (!tfYear.getText().isBlank())     specs.put("year", tfYear.getText().trim());
-        if (!tfMaterial.getText().isBlank()) specs.put("material", tfMaterial.getText().trim());
-        if (!tfOrigin.getText().isBlank())   specs.put("origin", tfOrigin.getText().trim());
+        // Build specs
+        Map<String, String> specs = collectSpecs();
 
         // Build request
         SellerService.CreateItemRequest request = new SellerService.CreateItemRequest(
@@ -153,48 +184,151 @@ public class CreateItemController implements Initializable {
                 specs, hasCert, certBody, certId
         );
 
+        // Confirm
+        boolean confirm = AlertUtil.showConfirm("Xac nhan dang ban",
+                "San pham: " + name + "\n"
+                        + "Gia khoi diem: " + formatVnd(startPrice) + "\n"
+                        + "Thoi gian: " + duration + " gio\n\n"
+                        + "Dang ban san pham nay?");
+        if (!confirm) return;
+
         // Submit
         hideError();
-        btnSubmit.setDisable(true);
-        btnSubmit.setText("Đang đăng...");
+        setLoadingState(true);
 
         SellerService.createItem(request,
-                // onSuccess
                 item -> {
-                    btnSubmit.setDisable(false);
-                    btnSubmit.setText("Đăng bán ngay");
-                    AlertUtil.showInfo("Đăng sản phẩm thành công!");
-                    SceneManager.switchTo("SellerDashboardView.fxml");
+                    LOGGER.info(() -> "Dang ban thanh cong: " + name);
+                    setLoadingState(false);
+                    AlertUtil.showInfo("Dang ban san pham thanh cong!");
+                    navigateToDashboard();
                 },
-                // onFailure
                 errorMsg -> {
-                    btnSubmit.setDisable(false);
-                    btnSubmit.setText("Đăng bán ngay");
+                    LOGGER.warning("Dang ban that bai: " + errorMsg);
+                    setLoadingState(false);
                     showError(errorMsg);
                 }
         );
     }
 
+    private String validateRequired(String name, String category, String condition, String description) {
+        if (name.isEmpty()) return "Vui long nhap ten san pham";
+        if (name.length() < 5 || name.length() > 100) return "Ten 5-100 ky tu";
+        if (category == null) return "Vui long chon danh muc";
+        if (condition == null) return "Vui long chon tinh trang";
+        if (description.isEmpty()) return "Vui long nhap mo ta";
+        if (description.length() < 20) return "Mo ta toi thieu 20 ky tu";
+        if (description.length() > 2000) return "Mo ta toi da 2000 ky tu";
+        return null;
+    }
+
+    private String validateNumbers(BigDecimal startPrice, BigDecimal bidStep, int duration) {
+        if (startPrice.compareTo(MIN_START_PRICE) < 0) {
+            return "Gia khoi diem toi thieu " + formatVnd(MIN_START_PRICE);
+        }
+        if (startPrice.compareTo(MAX_START_PRICE) > 0) {
+            return "Gia khoi diem toi da " + formatVnd(MAX_START_PRICE);
+        }
+        if (bidStep.compareTo(BigDecimal.ZERO) <= 0) {
+            return "Buoc nhay phai > 0";
+        }
+        if (bidStep.compareTo(startPrice) >= 0) {
+            return "Buoc nhay phai < gia khoi diem";
+        }
+        if (duration < MIN_DURATION || duration > MAX_DURATION) {
+            return "Thoi gian " + MIN_DURATION + "-" + MAX_DURATION + " gio";
+        }
+        return null;
+    }
+
+    private Map<String, String> collectSpecs() {
+        Map<String, String> specs = new HashMap<>();
+        addSpec(specs, "brand", tfBrand);
+        addSpec(specs, "model", tfModel);
+        addSpec(specs, "year", tfYear);
+        addSpec(specs, "material", tfMaterial);
+        addSpec(specs, "origin", tfOrigin);
+        return specs;
+    }
+
+    private void addSpec(Map<String, String> specs, String key, TextField field) {
+        if (field == null) return;
+        String value = field.getText();
+        if (value != null && !value.isBlank()) {
+            specs.put(key, value.trim());
+        }
+    }
+
     @FXML
     private void onSaveDraft() {
-        // TODO: BE cần endpoint lưu draft (status = DRAFT, không lên sàn)
-        AlertUtil.showInfo("Tính năng đang phát triển");
+        // TODO: BE bo sung endpoint luu draft (status=DRAFT)
+        AlertUtil.showInfo("Tinh nang luu nhap dang phat trien");
     }
 
     @FXML
     private void onBack() {
-        SceneManager.switchTo("SellerDashboardView.fxml");
+        navigateToDashboard();
+    }
+
+    private void navigateToDashboard() {
+        MainController main = MainController.getInstance();
+        if (main != null) {
+            main.loadView("SellerDashboardView.fxml");
+        } else {
+            SceneManager.switchTo("SellerDashboardView.fxml");
+        }
+    }
+
+    private void setLoadingState(boolean loading) {
+        if (btnSubmit != null) {
+            btnSubmit.setDisable(loading);
+            btnSubmit.setText(loading ? "Dang gui..." : "Dang ban ngay");
+        }
     }
 
     // ===== HELPERS =====
 
+    private String safeText(TextField field) {
+        if (field == null) return "";
+        String text = field.getText();
+        return text != null ? text.trim() : "";
+    }
+
+    private BigDecimal parseAmount(TextField field) {
+        if (field == null) return null;
+        String input = field.getText().replaceAll("[^\\d]", "");
+        if (input.isEmpty()) return null;
+        try {
+            return new BigDecimal(input);
+        } catch (NumberFormatException e) {
+            return null;
+        }
+    }
+
+    private Integer parseInt(TextField field) {
+        if (field == null) return null;
+        String input = field.getText().trim();
+        if (input.isEmpty()) return null;
+        try {
+            return Integer.parseInt(input);
+        } catch (NumberFormatException e) {
+            return null;
+        }
+    }
+
+    private String formatVnd(BigDecimal amount) {
+        return amount == null ? "0 d" : String.format("%,.0f d", amount);
+    }
+
     private void showError(String msg) {
+        if (lblError == null) return;
         lblError.setText(msg);
         lblError.setVisible(true);
         lblError.setManaged(true);
     }
 
     private void hideError() {
+        if (lblError == null) return;
         lblError.setVisible(false);
         lblError.setManaged(false);
     }

@@ -52,6 +52,7 @@ public class MainController implements Initializable {
     @FXML private Button btnHome;
     @FXML private Button btnMyAuctions;
     @FXML private Button btnWallet;
+    @FXML private Button btnSeller;
     @FXML private Button btnSettings;
     @FXML private StackPane contentPane;
 
@@ -215,6 +216,7 @@ public class MainController implements Initializable {
             case "HOME"        -> loadView(SceneManager.VIEW_EXPLORE);
             case "MY_AUCTIONS" -> loadView(SceneManager.VIEW_PROFILE);
             case "WALLET"      -> loadView(SceneManager.VIEW_WALLET);
+            case "SELLER"      -> loadView("SellerDashboardView.fxml");
             case "SETTINGS"    -> loadView(SceneManager.VIEW_SETTINGS);
             default            -> loadView(routeStr);
         }
