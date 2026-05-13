@@ -208,18 +208,23 @@ public class ProfileController implements Initializable {
 
     @FXML
     private void onDeposit() {
-        // Chuyen sang Wallet view qua SceneManager
-        LOGGER.info("Chuyen sang Wallet view");
-        // Goi qua main controller (neu duoc embed) - tam goi qua SceneManager
-        SceneManager.switchTo(SceneManager.VIEW_MAIN);
+        MainController main = MainController.getInstance();
+        if (main != null) {
+            main.loadView(SceneManager.VIEW_WALLET);
+        } else {
+            AlertUtil.showWarning("Khong the chuyen view");
+        }
     }
 
     @FXML
     private void onSettings() {
-        LOGGER.info("Chuyen sang Settings view");
-        SceneManager.switchTo(SceneManager.VIEW_SETTINGS);
+        MainController main = MainController.getInstance();
+        if (main != null) {
+            main.loadView(SceneManager.VIEW_SETTINGS);
+        } else {
+            AlertUtil.showWarning("Khong the chuyen view");
+        }
     }
-
     @FXML
     private void onLogout() {
         boolean ok = AlertUtil.showConfirm("Dang xuat", "Ban co chac muon dang xuat?");

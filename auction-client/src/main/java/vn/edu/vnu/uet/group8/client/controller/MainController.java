@@ -56,9 +56,15 @@ public class MainController implements Initializable {
     @FXML private StackPane contentPane;
 
     private Button activeNav;
+    private static MainController instance;
+
+    public static MainController getInstance() {
+        return instance;
+    }
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
+        instance = this;
         bindUserInfo();
         bindBadges();
         setupSearch();
