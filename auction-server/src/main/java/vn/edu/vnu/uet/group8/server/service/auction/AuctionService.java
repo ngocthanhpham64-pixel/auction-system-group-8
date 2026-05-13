@@ -306,4 +306,5 @@ public class AuctionService {
             ? bidResult.getPrevBidderId()
             : null));
   }
+
 }
