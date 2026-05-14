@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.control.*?>
+
+<VBox xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="vn.edu.vnu.uet.group8.client.controller.AdminAuctionListController"
+      style="-fx-padding: 30;" spacing="16">
+
+    <Label text="Quản lý phiên đấu giá" style="-fx-font-size: 24px; -fx-font-weight: bold; -fx-text-fill: #1a1a1a;"/>
+    <Label text="Theo dõi và can thiệp vào các phiên đấu giá đang diễn ra" style="-fx-text-fill: #888; -fx-font-size: 12px;"/>
+
+    <HBox spacing="12" alignment="CENTER_LEFT">
+        <TextField fx:id="tfSearch" promptText="Tìm theo tên sản phẩm..."
+                   prefWidth="320"
+                   style="-fx-background-radius: 8; -fx-border-color: #DDD; -fx-border-radius: 8; -fx-padding: 8;"/>
+        <ComboBox fx:id="cbFilterStatus" prefWidth="200" promptText="Trạng thái"/>
+    </HBox>
+
+    <TableView fx:id="auctionTable" style="-fx-pref-height: 400; -fx-background-radius: 8;">
+        <columns>
+            <TableColumn text="ID" fx:id="colId" prefWidth="60"/>
+            <TableColumn text="Tên sản phẩm" fx:id="colTitle" prefWidth="220"/>
+            <TableColumn text="Giá hiện tại" fx:id="colPrice" prefWidth="140"/>
+            <TableColumn text="Trạng thái" fx:id="colStatus" prefWidth="120"/>
+            <TableColumn text="Thời gian kết thúc" fx:id="colEndTime" prefWidth="180"/>
+            <TableColumn text="Hành động" fx:id="colAction" prefWidth="140"/>
+        </columns>
+        <placeholder>
+            <Label text="Không có phiên đấu giá nào" style="-fx-text-fill: #888;"/>
+        </placeholder>
+    </TableView>
+
+    <HBox spacing="10" style="-fx-padding: 10 0 0 0;">
+        <Label text="Hành động nhanh:" style="-fx-text-fill: #888; -fx-padding: 8 0 0 0;"/>
+        <Button text="Hủy phiên đã chọn" onAction="#cancelSelected"
+                style="-fx-background-color: #E03030; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 8; -fx-padding: 8 16;"/>
+    </HBox>
+</VBox>

@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.control.*?>
+
+<VBox xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="vn.edu.vnu.uet.group8.client.controller.AdminUserListController"
+      style="-fx-padding: 30;" spacing="16">
+
+    <Label text="Quản lý người dùng" style="-fx-font-size: 24px; -fx-font-weight: bold; -fx-text-fill: #1a1a1a;"/>
+    <Label text="Quản lý tài khoản, vai trò và trạng thái người dùng" style="-fx-text-fill: #888; -fx-font-size: 12px;"/>
+
+    <HBox spacing="12" alignment="CENTER_LEFT">
+        <TextField fx:id="tfSearch" promptText="Tìm theo tên đăng nhập, email..."
+                   prefWidth="320"
+                   style="-fx-background-radius: 8; -fx-border-color: #DDD; -fx-border-radius: 8; -fx-padding: 8;"/>
+        <ComboBox fx:id="cbFilterRole" prefWidth="160" promptText="Vai trò"/>
+        <ComboBox fx:id="cbFilterStatus" prefWidth="160" promptText="Trạng thái"/>
+    </HBox>
+
+    <TableView fx:id="userTable" style="-fx-pref-height: 400; -fx-background-radius: 8;">
+        <columns>
+            <TableColumn text="ID" fx:id="colId" prefWidth="60"/>
+            <TableColumn text="Tên đăng nhập" fx:id="colUsername" prefWidth="140"/>
+            <TableColumn text="Email" fx:id="colEmail" prefWidth="200"/>
+            <TableColumn text="Vai trò" fx:id="colRole" prefWidth="100"/>
+            <TableColumn text="Trạng thái" fx:id="colStatus" prefWidth="120"/>
+            <TableColumn text="Hành động" fx:id="colAction" prefWidth="260"/>
+        </columns>
+        <placeholder>
+            <Label text="Không có người dùng nào" style="-fx-text-fill: #888;"/>
+        </placeholder>
+    </TableView>
+
+    <HBox spacing="10" style="-fx-padding: 10 0 0 0;">
+        <Label text="Hành động nhanh:" style="-fx-text-fill: #888; -fx-padding: 8 0 0 0;"/>
+        <Button text="Khóa tạm thời" onAction="#suspendSelected"
+                style="-fx-background-color: #F97316; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 8; -fx-padding: 8 16;"/>
+        <Button text="Cấm vĩnh viễn" onAction="#banSelected"
+                style="-fx-background-color: #E03030; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 8; -fx-padding: 8 16;"/>
+    </HBox>
+</VBox>
