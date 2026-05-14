@@ -2,17 +2,23 @@ package vn.edu.vnu.uet.group8.server.service.auction;
 
 import java.math.BigDecimal;
 import java.sql.SQLException;
+import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import vn.edu.vnu.uet.group8.common.dto.model.UserBidHistoryDTO;
 import vn.edu.vnu.uet.group8.common.entity.AuctionSession;
 import vn.edu.vnu.uet.group8.common.enums.SessionStatus;
 import vn.edu.vnu.uet.group8.common.exception.AuctionException;
 import vn.edu.vnu.uet.group8.common.exception.ItemNotFoundException;
 import vn.edu.vnu.uet.group8.server.dao.AuctionSessionDAO;
+import vn.edu.vnu.uet.group8.server.dao.BidTransactionDAO;
+import vn.edu.vnu.uet.group8.server.dao.BidTransactionDAO.BidHistoryEntry;
+import vn.edu.vnu.uet.group8.server.dao.BidTransactionDAO.UserBidRecord;
 import vn.edu.vnu.uet.group8.server.service.auction.AntiSnipingService.AntiSnipingResult;
 import vn.edu.vnu.uet.group8.server.service.auction.event.AuctionCancelledEvent;
 import vn.edu.vnu.uet.group8.server.service.auction.event.AuctionOpenedEvent;
@@ -61,18 +67,21 @@ public class AuctionService {
   private final BidProcessor      processor;
   private final AntiSnipingService antiSniping;
   private final AuctionEventBus   eventBus;
+  private final BidTransactionDAO bidTransactionDAO;
 
   public AuctionService(
       AuctionSessionDAO sessionDAO,
       BidValidator validator,
       BidProcessor processor,
       AntiSnipingService antiSniping,
-      AuctionEventBus eventBus) {
+      AuctionEventBus eventBus,
+      BidTransactionDAO bidTransactionDAO) {
     this.sessionDAO  = sessionDAO;
     this.validator   = validator;
     this.processor   = processor;
     this.antiSniping = antiSniping;
     this.eventBus    = eventBus;
+    this.bidTransactionDAO = bidTransactionDAO;
   }
 
   // ════════════════════════════════════════════════════
@@ -93,60 +102,56 @@ public class AuctionService {
    * @throws ItemNotFoundException nếu phiên không tồn tại
    * @throws SQLException      nếu lỗi DB
    */
-  public void placeBid(int bidderId, int sessionId, BigDecimal bidAmount)
+  public void placeBid(int bidderId, int itemId, BigDecimal bidAmount)
       throws SQLException {
 
     logger.info(
-        "Nhận bid: bidderId={}, sessionId={}, amount={}",
-        bidderId, sessionId, bidAmount);
+        "Nhận bid: bidderId={}, itemId={}, amount={}",
+        bidderId, itemId, bidAmount);
 
-    // ── Lấy lock của phiên này ────────────────────────
-    // computeIfAbsent đảm bảo thread-safe khi tạo lock mới
+    // Bước 1: Tìm sessionId đang hoạt động cho itemId.
+    // Service chịu trách nhiệm cho việc mapping này, giúp Controller đơn giản hơn.
+    AuctionSession session = sessionDAO.findActiveSessionByItemId(itemId)
+        .orElseThrow(() -> new AuctionException(
+            "Không có phiên đấu giá nào đang hoạt động cho sản phẩm #" + itemId));
+    int sessionId = session.getId();
+
+    // Lấy lock của phiên này, computeIfAbsent đảm bảo thread-safe khi tạo lock mới
     ReentrantLock lock = sessionLocks
         .computeIfAbsent(sessionId, id -> new ReentrantLock());
 
     BidResult bidResult;
     AntiSnipingResult snipingResult;
 
-    // ════════════════════════════════════════════════
-    // CRITICAL SECTION — chỉ một thread tại một thời điểm
-    // ════════════════════════════════════════════════
     lock.lock();
     try {
-
-      // Bước 1: Load session — trong lock để đảm bảo
-      // trạng thái nhất quán với validate và process
-      AuctionSession session = loadSessionOrThrow(sessionId);
-
-      // Bước 2: Validate toàn bộ điều kiện
+      // Bước 2 (trong lock): Validate toàn bộ điều kiện
       // Trả BidContext chứa entity đã load — tránh load lại
       BidContext context = validator.validate(
-          bidderId, session.getItemId(), bidAmount);
+          bidderId, sessionId, bidAmount);
 
-      // Bước 3: Xử lý DB atomic — update giá + xử lý tiền
+      // Bước 3 (trong lock): Xử lý DB atomic — update giá + xử lý tiền
       bidResult = processor.process(context);
+
+      // Bước 4 (trong lock): Anti-sniping — gia hạn nếu bid trong cửa sổ cuối
+      // Việc này phải nằm trong lock để tránh race condition với AuctionClosingService.
+      // Đảm bảo việc đặt giá và gia hạn là một khối atomic.
+      snipingResult = antiSniping.checkAndExtend(context.getAuctionSession());
 
     } finally {
       // LUÔN unlock — dù validate hay process ném exception
       lock.unlock();
     }
-    // ════════════════════════════════════════════════
-    // NGOÀI LOCK — không block các bid khác
-    // ════════════════════════════════════════════════
 
-    // Bước 4: Anti-sniping — gia hạn nếu bid trong cửa sổ cuối
-    // Cần load lại session vì endTime có thể đã thay đổi
-    AuctionSession sessionForSniping = loadSessionOrThrow(sessionId);
-    snipingResult = antiSniping.checkAndExtend(sessionForSniping);
-
-    // Bước 5: Publish event — subscriber tự lo broadcast
+    // Bước 5 (ngoài lock): Publish event — subscriber tự lo broadcast
     // Service không biết ai lắng nghe hay gửi như thế nào
     publishBidPlacedEvent(bidResult, snipingResult);
 
     logger.info(
-        "Bid thành công: sessionId={}, bidderId={}, "
-            + "newPrice={}, isExtended={}",
-        sessionId, bidderId,
+        "Bid thành công: itemId={}, sessionId={}, bidderId={}, newPrice={}, isExtended={}",
+        itemId,
+        sessionId,
+        bidderId,
         bidResult.getNewPrice(),
         snipingResult.isExtended());
   }
@@ -268,6 +273,49 @@ public class AuctionService {
   }
 
   // ════════════════════════════════════════════════════
+  // Truy vấn đấu giá
+  // ════════════════════════════════════════════════════
+  /**
+   * Lấy lịch sử đặt giá của một phiên đấu giá.
+   *
+   * <p>Trả về danh sách các lần đặt giá bao gồm thời gian, số tiền
+   * và tên người đặt (đã được ẩn một phần để bảo mật).
+   
+   * @param sessionId
+   * @return
+   * @throws SQLException
+   */
+  public List<BidHistoryEntry> getItemBidHistory(int sessionId) throws SQLException {
+    return bidTransactionDAO.findHistoryByItem(sessionId);
+  }
+
+  /**
+   * Lấy lịch sử đặt giá của một người dùng.
+   *
+   * <p>Kết hợp thông tin từ bảng bid_transaction, auction_session và item
+   * để cung cấp cái nhìn tổng quan về các phiên người dùng đã tham gia.
+   
+   * @param userId
+   * @return
+   * @throws SQLException
+   */
+  public List<UserBidHistoryDTO> getUserBidHistory(int userId) throws SQLException {
+    List<UserBidRecord> records = bidTransactionDAO.findHistoryByUser(userId);
+    
+    return records.stream()
+        .map(r -> UserBidHistoryDTO.of(
+          r.bidId(),
+          r.sessionId(),
+          r.itemId(),
+          r.itemTitle(),
+          r.bidAmount(),
+          r.currentPrice(),
+          r.bidTime(),
+          r.sessionEndTime()
+        ))
+        .collect(Collectors.toList());
+  }
+  // ════════════════════════════════════════════════════
   // PRIVATE HELPERS
   // ════════════════════════════════════════════════════
 
@@ -306,5 +354,4 @@ public class AuctionService {
             ? bidResult.getPrevBidderId()
             : null));
   }
-
 }

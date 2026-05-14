@@ -70,15 +70,15 @@ public class BidValidator {
    * @throws AuctionException      nếu item không ở trạng thái hợp lệ
    * @throws SQLException          nếu lỗi DB
    */
-  public BidContext validate(int bidderId, int itemId, BigDecimal bidAmount)
+  public BidContext validate(int bidderId, int sessionId, BigDecimal bidAmount)
       throws SQLException {
 
-    logger.debug("Bắt đầu validate bid: bidderId={}, itemId={}, amount={}",
-        bidderId, itemId, bidAmount);
+    logger.debug("Bắt đầu validate bid: bidderId={}, sessionId={}, amount={}",
+        bidderId, sessionId, bidAmount);
 
     // -- Bước 1: Validate -- kiểm tra trước để tránh load bidder
     // khi item không tồn tại
-    AuctionSession as = loadAndValidateItem(itemId);
+    AuctionSession as = loadAndValidateSession(sessionId);
 
     // Check item
     Item item = itemDAO.findById(as.getItemId())
@@ -93,7 +93,7 @@ public class BidValidator {
     // -- Bước 4: State checks -- phụ thuộc giá trị hiện tại
     validateStateChecks(bidder, as, bidAmount);
 
-    logger.debug("Validate bid thành công: bidderId={}, itemId={}", bidderId, itemId);
+    logger.debug("Validate bid thành công: bidderId={}, sessionId={}", bidderId, sessionId);
 
     // Trả context để BidProcessor dùng lại -- không load lại từ DB
     return new BidContext(bidder, item, as, bidAmount);
@@ -101,10 +101,10 @@ public class BidValidator {
 
   // -- Private: load và validate item ----------------------------------------
 
-  private AuctionSession loadAndValidateItem(int itemId) throws SQLException {
+  private AuctionSession loadAndValidateSession(int sessionId) throws SQLException {
     AuctionSession as = auctionSessionDAO
-        .findById(itemId)
-        .orElseThrow(() -> new ItemNotFoundException(itemId));
+        .findById(sessionId)
+        .orElseThrow(() -> new ItemNotFoundException(sessionId));
     
     if (as.getStatus() != SessionStatus.ACTIVE) {
       throw new AuctionException(
@@ -130,8 +130,7 @@ public class BidValidator {
     if (!(bidder instanceof UserMember member)) {
       throw new ValidationException("Không thể đấu giá");
     }
-
-    // canBid() = isActive()
+    
     if (!member.isActive()) {
       throw new ValidationException(
           "Tài khoản không có quyền đặt giá. "

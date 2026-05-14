@@ -9,6 +9,8 @@ import org.slf4j.LoggerFactory;
 
 import vn.edu.vnu.uet.group8.common.entity.Item;
 import vn.edu.vnu.uet.group8.common.entity.User;
+import vn.edu.vnu.uet.group8.common.enums.ItemCategory;
+import vn.edu.vnu.uet.group8.common.enums.ItemCondition;
 import vn.edu.vnu.uet.group8.common.enums.ItemStatus;
 import vn.edu.vnu.uet.group8.common.enums.SessionStatus;
 import vn.edu.vnu.uet.group8.common.enums.UserRole;
@@ -78,9 +80,9 @@ public class ItemWriteService {
       int sellerId,
       String title,
       String description,
-      vn.edu.vnu.uet.group8.common.enums.ItemCategory category,
-      vn.edu.vnu.uet.group8.common.enums.ItemCondition condition,
-      java.util.Map<String, String> specs) throws SQLException {
+      ItemCategory category,
+      ItemCondition condition,
+      Map<String, String> specs) throws SQLException {
 
     // -- Kiểm tra seller tồn tại và đang ACTIVE
     User seller = userDAO.findById(sellerId)

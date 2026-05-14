@@ -10,8 +10,13 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import vn.edu.vnu.uet.group8.common.enums.TransactionStatus;
+import vn.edu.vnu.uet.group8.common.enums.TransactionType;
 
 /**
  * DAO xử lý toàn bộ thao tác DB liên quan đến BidTransaction.
@@ -24,6 +29,8 @@ public class BidTransactionDAO {
 
   private static final Logger logger =
       LoggerFactory.getLogger(BidTransactionDAO.class);
+
+  private final TransactionDAO transactionDAO = new TransactionDAO();
 
   // ── Record chứa thông tin leader hiện tại ──────────────
   public record LeaderInfo(int bidderId, BigDecimal bidAmount) {}
@@ -85,7 +92,7 @@ public class BidTransactionDAO {
         LeaderInfo leader = prevLeader.get();
 
         if (leader.bidderId() != bidderId) {
-          refundBidder(conn, leader.bidderId(), leader.bidAmount());
+          refundBidder(conn, leader.bidderId(), leader.bidAmount(), sessionId);
           logger.debug(
               "Hoàn tiền bidderId={}, amount={}",
               leader.bidderId(), leader.bidAmount());
@@ -93,8 +100,8 @@ public class BidTransactionDAO {
       }
 
       // -- Bước 3: Trừ tiền bidder mới
-      boolean deducted = deductBalance(conn, bidderId, bidAmount);
-      if (!deducted) {
+      boolean holdBalance = holdBalance(conn, bidderId, bidAmount, sessionId);
+      if (!holdBalance) {
         // Balance thay đổi giữa validate và execute — race condition hiếm
         throw new InsufficientBalanceException(
             "Số dư thay đổi trong quá trình xử lý. Vui lòng thử lại");
@@ -178,11 +185,11 @@ public class BidTransactionDAO {
   public List<BidHistoryEntry> findHistoryByItem(int sessionId)
       throws SQLException {
     String sql = """
-          SELECT bt.bid_transaction_id, bt.bidder_id, u.username, bt.bid_amount, bt.bid_time
+          SELECT bt.bid_id, bt.session_id, bt.bidder_id, u.username, bt.bid_amount, bt.created_at
           FROM bid_transaction bt
           JOIN users u ON bt.bidder_id = u.user_id
-          WHERE bt.item_id = ?
-          ORDER BY bt.bid_time DESC
+          WHERE session_id = ?
+          ORDER BY bt.created_at DESC
         """;
 
     List<BidHistoryEntry> history = new ArrayList<>();
@@ -192,15 +199,51 @@ public class BidTransactionDAO {
       try (ResultSet rs = ps.executeQuery()) {
         while (rs.next()) {
           history.add(new BidHistoryEntry(
-              rs.getLong("bid_transaction_id"),
+              rs.getInt("bid_id"),
+              rs.getInt("session_id"),
               rs.getInt("bidder_id"),
               rs.getString("username"),
               rs.getBigDecimal("bid_amount"),
-              rs.getTimestamp("bid_time").toInstant()));
+              rs.getTimestamp("created_at").toInstant()));
         }
       }
     }
     return history;
+  }
+
+  public List<UserBidRecord> findHistoryByUser(int userId) throws SQLException {
+    String sql = """
+        SELECT
+          bt.bid_id, bt.session_id, bt.bid_amount, bt.created_at,
+          s.item_id, s.current_price, s.end_time,
+          i.title AS item_title
+        FROM bid_transaction bt
+        JOIN auction_session s ON bt.session_id = s.session_id
+        JOIN item i ON s.item_id = i.item_id
+        WHERE bt.bidder_id = ?
+        ORDER BY bt.created_at DESC;
+        """;
+      
+    List<UserBidRecord> history = new ArrayList<>();
+    try (Connection conn = DatabaseConnection.getInstance().getConnection();
+        PreparedStatement ps = conn.prepareStatement(sql)) {
+        ps.setInt(1, userId);
+        try (ResultSet rs = ps.executeQuery()) {
+          while (rs.next()) {
+            history.add(new UserBidRecord(
+              rs.getInt("bid_id"),
+              rs.getInt("session_id"),
+              rs.getInt("item_id"),
+              rs.getString("item_title"),
+              rs.getBigDecimal("bid_amount"),
+              rs.getBigDecimal("current_price"),
+              rs.getTimestamp("created_at").toInstant(),
+              rs.getTimestamp("end_time").toInstant()
+            ));
+          }
+          return history;
+        }
+      }
   }
 
   // ════════════════════════════════════════════════════════
@@ -217,10 +260,10 @@ public class BidTransactionDAO {
   private int updateItemPrice(Connection conn, int sessionId, BigDecimal bidAmount)
       throws SQLException {
     String sql =
-        "UPDATE item"
+        "UPDATE auction_session"
             + " SET current_price = ?,"
             + "     bid_count = bid_count + 1"
-            + " WHERE item_id = ?"
+            + " WHERE session_id = ?"
             + "   AND current_price < ?"
             + "   AND status = 'ACTIVE'"
             + "   AND is_deleted = false";
@@ -233,41 +276,101 @@ public class BidTransactionDAO {
     }
   }
 
-  /** Hoàn tiền cho bidder cũ. */
-  private void refundBidder(Connection conn, int bidderId, BigDecimal amount)
+  /**
+   * Hoàn trả tiền ký quỹ cho người đặt giá cũ khi bị vượt mặt.
+   * * <p>Nghiệp vụ này thực hiện:
+   * <ol>
+   * <li>Cộng lại tiền vào balance và trừ đi ở frozen_balance.</li>
+   * <li>Ghi nhận một bản ghi BID_REFUND vào sổ cái giao dịch.</li>
+   * </ol>
+   *
+   * @param conn Kết nối DB đang dùng chung cho transaction.
+   * @param bidderId ID của người cần hoàn tiền.
+   * @param amount Số tiền đã ký quỹ trước đó.
+   * @param sessionId ID của phiên đấu giá liên quan.
+   * @throws SQLException Nếu có lỗi truy vấn hoặc vi phạm ràng buộc dữ liệu.
+   */
+  private void refundBidder(Connection conn, int bidderId, BigDecimal amount, int sessionId)
       throws SQLException {
-    String sql =
-        "UPDATE users"
-            + " SET balance = balance + ?"
-            + " WHERE user_id = ?"
-            + "   AND is_deleted = false";
+    String sql = 
+        "UPDATE users "
+            + "SET balance = balance + ?, "
+            + "    frozen_balance = frozen_balance - ? "
+            + "WHERE user_id = ? "
+            + "  AND is_deleted = false";
 
     try (PreparedStatement ps = conn.prepareStatement(sql)) {
       ps.setBigDecimal(1, amount);
-      ps.setInt(2, bidderId);
-      ps.executeUpdate();
+      ps.setBigDecimal(2, amount);
+      ps.setInt(3, bidderId);
+
+      int affectedRows = ps.executeUpdate();
+      if (affectedRows == 0) {
+        throw new SQLException("Không thể hoàn tiền: Người dùng không tồn tại hoặc đã bị xóa.");
+      }
+
+      // Tạo ID giao dịch duy nhất cho nghiệp vụ hoàn tiền
+      String transactionId = UUID.randomUUID().toString();
+
+      // Ghi biên lai vào sổ cái thông qua TransactionDAO
+      transactionDAO.insertTransaction(
+          conn,
+          transactionId,
+          bidderId,
+          amount,
+          TransactionType.BID_REFUND,
+          TransactionStatus.SUCCESS,
+          "Hoàn trả tiền ký quỹ do bị vượt giá tại phiên #" + sessionId,
+          sessionId);
+
+      logger.debug("Đã hoàn tiền thành công cho bidderId={}, amount={}, sessionId={}", 
+          bidderId, amount, sessionId);
     }
   }
 
   /**
-   * Trừ tiền bidder mới.
-   *
-   * @return true nếu thành công, false nếu balance không đủ
+   * Thực hiện ký quỹ (hold) số dư của người dùng khi đặt giá.
+   * <p>Nghiệp vụ này thực hiện:
+   * <ol>
+   *   <li>Trừ tiền từ balance và cộng vào frozen_balance.</li>
+   *   <li>Ghi nhận một bản ghi BID_HOLD vào sổ cái giao dịch.</li>
+   * </ol>
+   * @param conn
+   * @param bidderId
+   * @param amount
+   * @param sessionId
+   * @return
+   * @throws SQLException
    */
-  private boolean deductBalance(Connection conn, int bidderId, BigDecimal amount)
+  private boolean holdBalance(Connection conn, int bidderId, BigDecimal amount, int sessionId)
       throws SQLException {
-    String sql =
-        "UPDATE users"
-            + " SET balance = balance - ?"
-            + " WHERE user_id = ?"
-            + "   AND balance >= ?"
-            + "   AND is_deleted = false";
+    String sql = """
+        UPDATE users
+        SET balance = balance - ?,
+            frozen_balance = frozen_balance + ?
+        WHERE user_id = ?
+          AND balance >= ?
+          AND is_deleted = false
+        """;
 
     try (PreparedStatement ps = conn.prepareStatement(sql)) {
       ps.setBigDecimal(1, amount);
-      ps.setInt(2, bidderId);
-      ps.setBigDecimal(3, amount);
-      return ps.executeUpdate() > 0;
+      ps.setBigDecimal(2, amount);
+      ps.setInt(3, bidderId);
+      ps.setBigDecimal(4, amount);
+      
+      if (ps.executeUpdate() > 0) {
+        // TẠO MÃ GIAO DỊCH
+        String uuid = UUID.randomUUID().toString();
+        
+        transactionDAO.insertTransaction(
+            conn, uuid, bidderId, amount, 
+            TransactionType.BID_HOLD, TransactionStatus.SUCCESS, 
+            "Ký quỹ đặt giá", sessionId
+        );
+        return true;
+      }
+      return false;
     }
   }
 
@@ -281,7 +384,7 @@ public class BidTransactionDAO {
       throws SQLException {
     String sql =
         "INSERT INTO bid_transaction"
-            + " (bidder_id, item_id, bid_amount, bid_time)"
+            + " (bidder_id, session_id, bid_amount, created_at)"
             + " VALUES (?, ?, ?, ?)";
 
     try (PreparedStatement ps =
@@ -349,11 +452,24 @@ public class BidTransactionDAO {
 
   /** Lịch sử một lần bid. */
   public record BidHistoryEntry(
-      long transactionId,
+      int bidId,
+      int sessionId,
       int bidderId,
       String bidderUsername,
       BigDecimal bidAmount,
       Instant bidTime) {}
+
+  /** Lịch sử đấu giá của 1 người cụ thể */
+  public record UserBidRecord(
+    int bidId,
+    int sessionId,
+    int itemId,
+    String itemTitle,
+    BigDecimal bidAmount,
+    BigDecimal currentPrice,
+    Instant bidTime,
+    Instant sessionEndTime
+  ) {}
 
   /** Bid bị vượt qua bởi người khác trong cùng thời điểm. */
   public static class BidOutpricedException extends SQLException {

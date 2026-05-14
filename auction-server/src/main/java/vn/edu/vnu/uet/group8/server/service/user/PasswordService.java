@@ -1,12 +1,12 @@
 package vn.edu.vnu.uet.group8.server.service.user;
 
 import java.sql.SQLException;
+
 import vn.edu.vnu.uet.group8.common.entity.User;
 import vn.edu.vnu.uet.group8.common.exception.InvalidCredentialsException;
 import vn.edu.vnu.uet.group8.common.exception.UserNotFoundException;
 import vn.edu.vnu.uet.group8.common.exception.ValidationException;
 import vn.edu.vnu.uet.group8.server.dao.UserDAO;
-import vn.edu.vnu.uet.group8.server.service.user.UserPolicy;
 import vn.edu.vnu.uet.group8.server.util.PasswordUtil;
 
 /**
@@ -49,6 +49,8 @@ public class PasswordService {
       throw new ValidationException("Mật khẩu mới phải khác mật khẩu cũ");
     }
 
-    userDAO.updatePassword(userId, newPassword);
+    // -- Hash mật khẩu mới trước khi lưu xuống DB
+    String hashedNewPassword = PasswordUtil.hash(newPassword);
+    userDAO.updatePassword(userId, hashedNewPassword);
   }
 }

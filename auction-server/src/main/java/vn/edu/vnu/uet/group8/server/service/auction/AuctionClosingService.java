@@ -9,8 +9,10 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import vn.edu.vnu.uet.group8.common.entity.AuctionSession;
 import vn.edu.vnu.uet.group8.common.entity.Item;
 import vn.edu.vnu.uet.group8.common.enums.SessionStatus;
@@ -19,6 +21,8 @@ import vn.edu.vnu.uet.group8.server.dao.BidTransactionDAO;
 import vn.edu.vnu.uet.group8.server.dao.BidTransactionDAO.LeaderInfo;
 import vn.edu.vnu.uet.group8.server.dao.ItemDAO;
 import vn.edu.vnu.uet.group8.server.dao.UserDAO;
+import vn.edu.vnu.uet.group8.server.service.auction.event.AuctionEndedEvent;
+import vn.edu.vnu.uet.group8.server.service.user.BalanceService;
 
 /**
  * Scheduler tự động đóng các phiên đấu giá đã hết giờ.
@@ -54,7 +58,8 @@ public class AuctionClosingService {
   private final ItemDAO itemDAO;
   private final UserDAO userDAO;
   private final BidTransactionDAO bidDAO;
-  private final AuctionBroadcaster broadcaster;
+  private final BalanceService balanceService;
+  private final AuctionEventBus eventBus;
 
   private final ScheduledExecutorService scheduler =
       Executors.newSingleThreadScheduledExecutor(runnable -> {
@@ -73,12 +78,14 @@ public class AuctionClosingService {
       ItemDAO itemDAO,
       UserDAO userDAO,
       BidTransactionDAO bidDAO,
-      AuctionBroadcaster broadcaster) {
+      BalanceService balanceService,
+      AuctionEventBus eventBus) {
     this.sessionDAO  = sessionDAO;
     this.itemDAO     = itemDAO;
     this.userDAO     = userDAO;
     this.bidDAO      = bidDAO;
-    this.broadcaster = broadcaster;
+    this.balanceService = balanceService;
+    this.eventBus = eventBus;
   }
 
   // ════════════════════════════════════════════════════
@@ -244,7 +251,7 @@ public class AuctionClosingService {
         .orElseThrow(() -> new SQLException(
             "Không tìm thấy item itemId=" + itemId));
 
-    userDAO.updateBalance(sellerId, finalPrice);
+    balanceService.settleAuction(sellerId, winnerId, finalPrice, sessionId);
 
     // Bước 3: Lấy username của winner để broadcast
     String winnerUsername = userDAO.findById(winnerId)
@@ -256,8 +263,12 @@ public class AuctionClosingService {
         sessionId, itemId, winnerUsername, finalPrice);
 
     // Bước 4: Broadcast — SAU KHI đã commit DB
-    broadcaster.broadcastAuctionSold(
-        itemId, itemTitle, finalPrice, winnerUsername);
+    try {
+      eventBus.publish(AuctionEndedEvent.sold(
+          itemId, itemTitle, finalPrice, winnerUsername));
+    } catch (Exception e) {
+      logger.error("Lỗi khi publish AuctionEndedEvent (SOLD): {}", e.getMessage());
+    }
   }
 
   // ════════════════════════════════════════════════════
@@ -294,6 +305,10 @@ public class AuctionClosingService {
         "Session ENDED_NO_BID: sessionId={}, itemId={}",
         sessionId, itemId);
 
-    broadcaster.broadcastAuctionNoBid(itemId, itemTitle);
+    try {
+      eventBus.publish(AuctionEndedEvent.noBid(itemId, itemTitle));
+    } catch (Exception e) {
+      logger.error("Lỗi khi publish AuctionEndedEvent (NO_BID): {}", e.getMessage());
+    }
   }
 }

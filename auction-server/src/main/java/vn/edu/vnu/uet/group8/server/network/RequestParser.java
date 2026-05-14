@@ -1,10 +1,16 @@
 package vn.edu.vnu.uet.group8.server.network;
 
+import java.lang.reflect.Type;
+import java.util.Collections;
+import java.util.Map;
+
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import com.google.gson.reflect.TypeToken;
+
 import vn.edu.vnu.uet.group8.common.exception.ValidationException;
-import vn.edu.vnu.uet.group8.server.util.GsonUtil;
+import vn.edu.vnu.uet.group8.common.util.GsonUtil;
 
 /**
  * Helper static để extract field/payload từ JsonObject request.
@@ -78,5 +84,45 @@ public final class RequestParser {
   public static Integer optionalInt(JsonObject request, String field) {
     JsonElement el = request.get(field);
     return (el == null || el.isJsonNull()) ? null : el.getAsInt();
+  }
+
+  /**
+   * Lấy ra Map<String, String> bắt buộc. Ném lỗi nếu thiếu hoặc sai định dạng.
+   */
+  public static Map<String, String> requireMap(JsonObject request, String field) {
+    JsonElement el = request.get(field);
+    if (el == null || el.isJsonNull()) {
+      throw new ValidationException("Thiếu field bắt buộc: " + field);
+    }
+    if (!el.isJsonObject()) {
+      throw new ValidationException("Field " + field + " phải là một JSON Object");
+    }
+
+    Type type = new TypeToken<Map<String, String>>(){}.getType();
+    try {
+      return GSON.fromJson(el, type);
+    } catch (Exception e) {
+      throw new ValidationException("Định dạng " + field + " không hợp lệ: " + e.getMessage());
+    }
+  }
+
+  /**
+   * Lấy ra Map<String, String> tuỳ chọn. Trả về Map rỗng nếu không có.
+   */
+  public static Map<String, String> optionalMap(JsonObject request, String field) {
+    JsonElement el = request.get(field);
+    if (el == null || el.isJsonNull()) {
+      return Collections.emptyMap();
+    }
+    if (!el.isJsonObject()) {
+      throw new ValidationException("Field " + field + " phải là một JSON Object");
+    }
+
+    Type type = new TypeToken<Map<String, String>>(){}.getType();
+    try {
+      return GSON.fromJson(el, type);
+    } catch (Exception e) {
+      throw new ValidationException("Định dạng " + field + " không hợp lệ: " + e.getMessage());
+    }
   }
 }

@@ -1,8 +1,10 @@
 package vn.edu.vnu.uet.group8.server.network;
 
-import com.google.gson.JsonObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.google.gson.JsonObject;
+
 import vn.edu.vnu.uet.group8.common.dto.response.ServerResponse;
 import vn.edu.vnu.uet.group8.server.auth.SessionManager;
 import vn.edu.vnu.uet.group8.server.controller.AuthController;
@@ -102,22 +104,40 @@ public class AppDispatcher {
         return itemController.handleGetAll(request, requestId);
       case "ITEM_GET_DETAIL":
         return itemController.handleGetDetail(request, requestId);
-
+      case "ITEM_CREATE":
+        return itemController.handleCreateItem(request, requestId);
+      
+    
       // Bid
       case "BID_PLACE":
         return bidController.handlePlaceBid(request, requestId, userId);
-      case "BID_AUTO":
-        return bidController.handleAutoBid(request, requestId, userId);
-      case "BID_HISTORY":
-        return bidController.handleBidHistory(request, requestId, userId);
+      case "ITEM_BID_HISTORY":
+        return bidController.handleItemBidHistory(request, requestId);
+      case "USER_BIDS":
+        return bidController.handleUserBidHistory(request, requestId, userId);
+      case "ITEM_MY_LISTINGS":
+        return itemController.handleGetMyListings(request, requestId, userId);
+      case "ITEM_UPDATE":
+        return itemController.handleUpdateItem(request, requestId, userId);
+      case "ITEM_DELETE":
+        return itemController.handleDeleteItem(request, requestId, userId);
+      // case "BID_AUTO":
+      //   return bidController.handleAutoBid(request, requestId, userId);
+      // case "BID_HISTORY":
+      //   return bidController.handleBidHistory(request, requestId, userId);
 
       // User
       case "USER_PROFILE":
         return userController.handleGetProfile(request, requestId, userId);
       case "USER_DEPOSIT":
         return userController.handleDeposit(request, requestId, userId);
-      case "USER_BIDS":
-        return userController.handleUserBids(request, requestId, userId);
+      case "USER_WITHDRAW":
+        return userController.handleWithdraw(request, requestId, userId);
+      case "USER_GET_TRANSACTIONS":
+        return userController.handleGetTransactions(request, requestId, userId);
+      case "USER_CHANGE_PASSWORD":
+        return userController.handleChangePassword(request, requestId, userId);
+
 
       default:
         log.warn("Action không xác định: {}", action);

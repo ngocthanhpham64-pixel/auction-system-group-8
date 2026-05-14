@@ -2,16 +2,22 @@ package vn.edu.vnu.uet.group8.server.service.user;
 
 import java.math.BigDecimal;
 import java.sql.SQLException;
+import java.util.List;
+import java.util.UUID;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import vn.edu.vnu.uet.group8.common.dto.model.TransactionHistoryEntry;
 import vn.edu.vnu.uet.group8.common.entity.User;
 import vn.edu.vnu.uet.group8.common.entity.UserMember;
+import vn.edu.vnu.uet.group8.common.enums.PaymentMethod;
+import vn.edu.vnu.uet.group8.common.enums.TransactionType;
 import vn.edu.vnu.uet.group8.common.exception.DuplicateTransactionException;
 import vn.edu.vnu.uet.group8.common.exception.UserNotFoundException;
 import vn.edu.vnu.uet.group8.common.exception.ValidationException;
+import vn.edu.vnu.uet.group8.server.dao.TransactionDAO;
 import vn.edu.vnu.uet.group8.server.dao.UserDAO;
-import vn.edu.vnu.uet.group8.server.service.user.UserPolicy;
-import vn.edu.vnu.uet.group8.common.enums.PaymentMethod;
 
 /**
  * Xử lý nghiệp vụ liên quan đến số dư ví.
@@ -21,9 +27,11 @@ public class BalanceService {
   private static final Logger log = LoggerFactory.getLogger(BalanceService.class);
 
   private final UserDAO userDAO;
+  private final TransactionDAO transactionDAO;
 
-  public BalanceService(UserDAO userDAO) {
+  public BalanceService(UserDAO userDAO, TransactionDAO transactionDAO) {
     this.userDAO = userDAO;
+    this.transactionDAO = transactionDAO;
   }
 
   /**
@@ -62,11 +70,6 @@ public class BalanceService {
     User user = userDAO.findById(userId)
         .orElseThrow(() -> new UserNotFoundException(userId));
 
-    // -- Idempotency check
-    // if (userDAO.existsTransaction(transactionId)) {
-    //   throw new DuplicateTransactionException(transactionId);
-    // }
-
     // -- Kiểm tra balance tổng không vượt giới hạn
     if (!(user instanceof UserMember member)) {
       throw new ValidationException("Tài khoản này không hỗ trợ ví tiền.");
@@ -83,7 +86,7 @@ public class BalanceService {
     // Không bao giờ xảy ra tình trạng "có lịch sử nhưng tiền chưa cộng"
     // hoặc "tiền đã cộng nhưng không có lịch sử"
     return userDAO.insertTransactionAndUpdateBalance(
-        transactionId, userId, amount, paymentMethod);
+        transactionId, userId, amount, TransactionType.DEPOSIT, paymentMethod);
   }
 
   /**
@@ -113,11 +116,6 @@ public class BalanceService {
     // -- Kiểm tra user tồn tại
     User user = userDAO.findById(userId)
         .orElseThrow(() -> new UserNotFoundException(userId));
-    
-    // -- Idempotency check
-    // if (userDAO.existsTransaction(transactionId)) {
-    //   throw new DuplicateTransactionException(transactionId);
-    // }
 
     // -- Kiểm tra balance tổng không vượt giới hạn
     if (!(user instanceof UserMember member)) {
@@ -132,6 +130,25 @@ public class BalanceService {
     
     BigDecimal deltaAmount = amount.negate();
     return userDAO.insertTransactionAndUpdateBalance(
-        transactionId, userId, deltaAmount, paymentMethod);
+        transactionId, userId, deltaAmount, TransactionType.WITHDRAW, paymentMethod);
+  }
+
+  public void settleAuction(int sellerId, int winnerId, BigDecimal finalPrice, 
+    int sessionId) throws SQLException {
+      // Mã giao dịch cho người mua 
+      String sellerTxId = UUID.randomUUID().toString();
+      // Mã giao dịch cho người thắng
+      String winnerTxId = UUID.randomUUID().toString();
+
+      userDAO.settleAuctionPayment(winnerTxId, sellerTxId, winnerId, sellerId, 
+        sessionId, finalPrice, TransactionType.BID_WIN);
+    }
+
+  // ═══════════════════════════════════════════════════
+  // Truy suất dữ liệu
+  // ═══════════════════════════════════════════════════
+  public List<TransactionHistoryEntry> getTransactionRecordByUserId(int userId) throws SQLException {
+    log.info("Truy suất dữ liệu chuyển tiền của userId=" + userId);
+    return transactionDAO.getTransactionsByUserId(userId);
   }
 }

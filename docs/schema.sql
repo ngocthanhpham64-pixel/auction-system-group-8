@@ -220,9 +220,9 @@ CREATE TABLE IF NOT EXISTS auction_session (
 
 
 -- ================================================================
--- BẢNG 4: payment_transaction
+-- BẢNG 4: wallet_transaction
 -- ================================================================
-CREATE TABLE IF NOT EXISTS payment_transaction (
+CREATE TABLE IF NOT EXISTS wallet_transaction (
     transaction_id  VARCHAR(100)    NOT NULL,
     user_id         INT             NOT NULL,
     amount          DECIMAL(15,2)   NOT NULL,
@@ -232,8 +232,11 @@ CREATE TABLE IF NOT EXISTS payment_transaction (
     
     -- Trạng thái: PENDING (Đang chờ), SUCCESS (Thành công), FAILED (Thất bại)
     status          VARCHAR(20)     NOT NULL DEFAULT 'SUCCESS', 
+
+    -- Phiên đấu giá
+    session_id      INT             NULL,
     
-    -- Ghi chú giao dịch (Ví dụ: "Nạp tiền qua VNPay", "Cọc cho sản phẩm Laptop")
+    -- Ghi chú giao dịch
     description     VARCHAR(255)    NULL, 
 
     created_at      DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,

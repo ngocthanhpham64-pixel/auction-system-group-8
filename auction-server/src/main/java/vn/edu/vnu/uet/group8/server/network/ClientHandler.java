@@ -1,7 +1,5 @@
 package vn.edu.vnu.uet.group8.server.network;
 
-import com.google.gson.Gson;
-import com.google.gson.JsonObject;
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.DataInputStream;
@@ -9,10 +7,15 @@ import java.io.DataOutputStream;
 import java.io.EOFException;
 import java.io.IOException;
 import java.net.Socket;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.google.gson.Gson;
+import com.google.gson.JsonObject;
+
 import vn.edu.vnu.uet.group8.common.dto.response.ServerResponse;
-import vn.edu.vnu.uet.group8.server.util.GsonUtil;
+import vn.edu.vnu.uet.group8.common.util.GsonUtil;
 
 public class ClientHandler implements Runnable {
   private static final Logger log = LoggerFactory.getLogger(ClientHandler.class);
@@ -20,7 +23,7 @@ public class ClientHandler implements Runnable {
 
   private final Socket socket;
   private final AppDispatcher dispatcher;
-  private final BroadcastChannel broadcastChannel;   // ✅ CHỈ ĐỔI KIỂU NÀY
+  private final BroadcastChannel broadcastChannel;
 
   private DataInputStream in;
   private DataOutputStream out;
@@ -28,7 +31,7 @@ public class ClientHandler implements Runnable {
 
   public ClientHandler(Socket socket,
                        AppDispatcher dispatcher,
-                       BroadcastChannel broadcastChannel) { // ✅ CHỈ ĐỔI KIỂU NÀY
+                       BroadcastChannel broadcastChannel) {
     this.socket = socket;
     this.dispatcher = dispatcher;
     this.broadcastChannel = broadcastChannel;
@@ -42,11 +45,12 @@ public class ClientHandler implements Runnable {
       clientAddr = socket.getInetAddress().getHostAddress();
       log.info("[{}] Kết nối mới", clientAddr);
 
-      broadcastChannel.addClient(this);   // ✅ giữ nguyên
+      broadcastChannel.addClient(this);
 
       readLoop();
 
     } catch (IOException e) {
+      log.warn("[{}] IO error: {}", clientAddr, e.getMessage());
       log.warn("[{}] IO error: {}", clientAddr, e.getMessage());
     } finally {
       cleanup();
@@ -103,11 +107,14 @@ public class ClientHandler implements Runnable {
     broadcastChannel.removeClient(this);   // ✅ giữ nguyên
     try {
       if (in != null) in.close();
+      if (in != null) in.close();
       if (out != null) out.close();
       if (socket != null && !socket.isClosed()) socket.close();
     } catch (IOException e) {
       log.error("[{}] Cleanup error", clientAddr, e);
+      log.error("[{}] Cleanup error", clientAddr, e);
     }
+    log.info("[{}] Đã ngắt kết nối", clientAddr);
     log.info("[{}] Đã ngắt kết nối", clientAddr);
   }
 }

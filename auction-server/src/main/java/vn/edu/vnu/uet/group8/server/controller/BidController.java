@@ -1,10 +1,16 @@
 package vn.edu.vnu.uet.group8.server.controller;
 
-import com.google.gson.JsonObject;
+import java.util.List;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.google.gson.JsonObject;
+
+import vn.edu.vnu.uet.group8.common.dto.model.UserBidHistoryDTO;
 import vn.edu.vnu.uet.group8.common.dto.request.BidRequest;
 import vn.edu.vnu.uet.group8.common.dto.response.ServerResponse;
+import vn.edu.vnu.uet.group8.server.dao.BidTransactionDAO.BidHistoryEntry;
 import vn.edu.vnu.uet.group8.server.network.RequestParser;
 import vn.edu.vnu.uet.group8.server.service.auction.AuctionService;
 
@@ -62,21 +68,45 @@ public class BidController {
    * BID_AUTO — placeholder cho proxy bidding.
    * Service chưa implement → trả "not supported".
    */
-  public ServerResponse handleAutoBid(JsonObject request, String requestId,
-                                      int authenticatedUserId) {
-    log.debug("BID_AUTO chưa hỗ trợ — userId={}", authenticatedUserId);
-    return ServerResponse.replyError("BID_AUTO", requestId,
-        "Tính năng đặt giá tự động chưa được hỗ trợ");
+  // public ServerResponse handleAutoBid(JsonObject request, String requestId,
+  //                                     int authenticatedUserId) {
+  //   log.debug("BID_AUTO chưa hỗ trợ — userId={}", authenticatedUserId);
+  //   return ServerResponse.replyError("BID_AUTO", requestId,
+  //       "Tính năng đặt giá tự động chưa được hỗ trợ");
+  // }
+
+  // Lịch sử bid của 1 phiên/món hàng (Cho trang chi tiết sản phẩm)
+  public ServerResponse handleItemBidHistory(JsonObject request, String requestId) {
+    try {
+      if (!request.has("sessionId")) {
+         return ServerResponse.replyError("ITEM_BID_HISTORY", requestId, "Thiếu sessionId");
+      }
+      int sessionId = request.get("sessionId").getAsInt();
+      
+      // Trả về List<BidHistoryEntry>
+      List<BidHistoryEntry> history = auctionService.getItemBidHistory(sessionId);
+      return ServerResponse.reply("ITEM_BID_HISTORY", requestId)
+                              .success(true)
+                              .data(history)
+                              .build();
+    } catch (Exception e) {
+      log.error("Lỗi khi lấy lịch sử phiên={}: {}", request, e.getMessage());
+      return ServerResponse.replyError("ITEM_BID_HISTORY", requestId, "Lỗi server: " + e.getMessage());
+    }
   }
 
-  /**
-   * BID_HISTORY — placeholder.
-   * Khi BidTransactionDAO có findByItemId() / findByUserId() → implement.
-   */
-  public ServerResponse handleBidHistory(JsonObject request, String requestId,
-                                         int authenticatedUserId) {
-    log.debug("BID_HISTORY chưa hỗ trợ — userId={}", authenticatedUserId);
-    return ServerResponse.replyError("BID_HISTORY", requestId,
-        "Lịch sử đặt giá chưa được hỗ trợ");
+  // Lịch sử bid của chính User (Cho trang Quản lý tài khoản)
+  public ServerResponse handleUserBidHistory(JsonObject request, String requestId, int authenticatedUserId) {
+    try {
+      // Trả về List<UserBidHistoryDTO>
+      List<UserBidHistoryDTO> userBidHistory = auctionService.getUserBidHistory(authenticatedUserId);
+      return ServerResponse.reply("USER_BIDS", requestId)
+                              .success(true)
+                              .data(userBidHistory)
+                              .build();
+    } catch (Exception e) {
+      log.error("Lỗi lấy lịch sử đấu giá userId={}: {}", authenticatedUserId, e.getMessage());
+      return ServerResponse.replyError("USER_BIDS", requestId, "Lỗi server: " + e.getMessage());
+    }
   }
 }

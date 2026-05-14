@@ -229,9 +229,9 @@ public final class UserMember extends User {
       return new UserMember(this);
     }
 
-    private void checkRequiredString(String str, String massage) {
+    private void checkRequiredString(String str, String message) {
       if (str == null || str.isBlank()) {
-        throw new IllegalArgumentException(massage);
+        throw new IllegalArgumentException(message);
       }
     }
 
@@ -302,33 +302,11 @@ public final class UserMember extends User {
   // }
 
   // ════════════════════════════════════════════════════
-  // HELPER CÁC HÀM NGHIỆP VỤ
-  // ════════════════════════════════════════════════════
-  // public void deposit(BigDecimal amount) {
-  //   if (amount == null || amount.compareTo(BigDecimal.ZERO) <= 0) {
-  //     throw new IllegalArgumentException(
-  //       "Số tiền phải lớn hơn 0");
-  //   }
-  //   this.balance = this.balance.add(amount);
-  //   // Có thể ghi log ở đây
-  //   // Log.info("Member " + getUsername() + " đã nạp " + amount);
-  // }
-
-  // public void withdraw(BigDecimal amount) {
-  //   if (amount == null || amount.compareTo(this.balance) > 0) {
-  //     throw new InsufficientBalanceException("Số dư không đủ để thực hiện giao dịch");
-  //   }
-  //   this.balance = this.balance.subtract(amount);
-  //   // Có thể ghi log ở đây
-  //   // Log.info("Member " + getUsername() + " đã rút " + amount);
-  // }
-
-  // ════════════════════════════════════════════════════
   // Các hàm HELPER
   // ════════════════════════════════════════════════════
-  private void checkRequiredString(String str, String massage) {
+  private void checkRequiredString(String str, String message) {
     if (str == null || str.isBlank()) {
-      throw new IllegalArgumentException(massage);
+      throw new IllegalArgumentException(message);
     }
   }
   // ════════════════════════════════════════════════════

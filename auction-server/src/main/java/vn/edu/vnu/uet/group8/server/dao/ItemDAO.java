@@ -60,7 +60,8 @@ public class ItemDAO {
         VALUES (?,?,?,?,?,?,?,?,?)
         """;
 
-    try (PreparedStatement ps = getConn().prepareStatement(
+    try (Connection conn = getConn(); 
+          PreparedStatement ps = conn.prepareStatement(
             sql, Statement.RETURN_GENERATED_KEYS)) {
 
       ps.setInt(1,         item.getSellerId());
@@ -105,7 +106,8 @@ public class ItemDAO {
         WHERE item_id = ? AND is_deleted = false
         """;
 
-    try (PreparedStatement ps = getConn().prepareStatement(sql)) {
+    try (Connection conn = getConn(); 
+        PreparedStatement ps = conn.prepareStatement(sql)) {
       ps.setInt(1, itemId);
       try (ResultSet rs = ps.executeQuery()) {
         if (rs.next()) return Optional.of(mapRow(rs));
@@ -131,7 +133,8 @@ public class ItemDAO {
         WHERE item_id = ? AND is_deleted = false
         """;
 
-    try (PreparedStatement ps = getConn().prepareStatement(sql)) {
+    try (Connection conn = getConn(); 
+        PreparedStatement ps = conn.prepareStatement(sql)) {
       ps.setString(1, serializeSpecs(specs));
       ps.setInt(2, itemId);
       int affected = ps.executeUpdate();
@@ -147,7 +150,8 @@ public class ItemDAO {
         WHERE item_id = ? AND is_deleted = false
         """;
 
-    try (PreparedStatement ps = getConn().prepareStatement(sql)) {
+    try (Connection conn = getConn(); 
+        PreparedStatement ps = conn.prepareStatement(sql)) {
       ps.setString(1, item.getTitle());
       ps.setString(2, item.getDescription());
 
@@ -182,7 +186,8 @@ public class ItemDAO {
         WHERE item_id = ?
         """;
 
-    try (PreparedStatement ps = getConn().prepareStatement(sql)) {
+    try (Connection conn = getConn(); 
+        PreparedStatement ps = conn.prepareStatement(sql)) {
       ps.setInt(1, itemId);
       int affected = ps.executeUpdate();
       if (affected == 0)
@@ -198,7 +203,8 @@ public class ItemDAO {
         )
         """;
 
-    try (PreparedStatement ps = getConn().prepareStatement(sql)) {
+    try (Connection conn = getConn(); 
+        PreparedStatement ps = conn.prepareStatement(sql)) {
       ps.setInt(1, itemId);
       ps.setInt(2, sellerId);
       try (ResultSet rs = ps.executeQuery()) {
@@ -215,7 +221,8 @@ public class ItemDAO {
           AND status = ?
       """;
 
-    try (PreparedStatement ps = getConn().prepareStatement(sql)) {
+    try (Connection conn = getConn(); 
+        PreparedStatement ps = conn.prepareStatement(sql)) {
       ps.setInt(1, sellerId);
       ps.setString(2, status.name());
       try (ResultSet rs = ps.executeQuery()) {
@@ -231,7 +238,8 @@ public class ItemDAO {
   private List<Item> queryList(String sql, SqlConsumer<PreparedStatement> binder)
           throws SQLException {
     List<Item> result = new ArrayList<>();
-    try (PreparedStatement ps = getConn().prepareStatement(sql)) {
+    try (Connection conn = getConn(); 
+        PreparedStatement ps = conn.prepareStatement(sql)) {
       binder.accept(ps);
       try (ResultSet rs = ps.executeQuery()) {
           while (rs.next()) result.add(mapRow(rs));

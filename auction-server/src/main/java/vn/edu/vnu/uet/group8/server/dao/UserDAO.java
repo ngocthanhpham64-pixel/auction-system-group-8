@@ -1,30 +1,42 @@
 package vn.edu.vnu.uet.group8.server.dao;
 
 import java.math.BigDecimal;
-import java.sql.*;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.sql.Timestamp;
+import java.sql.Types;
 import java.time.Instant;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.EnumSet;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
-
-import javax.naming.spi.DirStateFactory.Result;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import vn.edu.vnu.uet.group8.common.entity.User;
 import vn.edu.vnu.uet.group8.common.entity.UserAdmin;
 import vn.edu.vnu.uet.group8.common.entity.UserMember;
-import vn.edu.vnu.uet.group8.common.entity.User;
-import vn.edu.vnu.uet.group8.common.enums.UserRole;
-import vn.edu.vnu.uet.group8.common.enums.UserStatus;
-import vn.edu.vnu.uet.group8.common.exception.UserNotFoundException;
-import vn.edu.vnu.uet.group8.server.dao.DatabaseConnection;
-import vn.edu.vnu.uet.group8.server.util.PasswordUtil;
 import vn.edu.vnu.uet.group8.common.enums.AdminLevel;
 import vn.edu.vnu.uet.group8.common.enums.PaymentMethod;
+import vn.edu.vnu.uet.group8.common.enums.TransactionStatus;
+import vn.edu.vnu.uet.group8.common.enums.TransactionType;
+import vn.edu.vnu.uet.group8.common.enums.UserRole;
+import vn.edu.vnu.uet.group8.common.enums.UserStatus;
 import vn.edu.vnu.uet.group8.common.exception.InsufficientBalanceException;
+import vn.edu.vnu.uet.group8.common.exception.UserNotFoundException;
+import vn.edu.vnu.uet.group8.server.util.PasswordUtil;
 
 public class UserDAO {
   private static final Logger log = LoggerFactory.getLogger(UserDAO.class);
+  private static final TransactionDAO transactionDAO = new TransactionDAO();
 
   private Connection getConn() throws SQLException {
     return DatabaseConnection.getInstance().getConnection();
@@ -189,11 +201,13 @@ public class UserDAO {
           AND is_deleted = false
         """;
 
-    try (PreparedStatement ps = getConn().prepareStatement(sql)) {
+    try (Connection conn = getConn(); 
+        PreparedStatement ps = conn.prepareStatement(sql)) {
+      
         ps.setInt(1, userId);
-        try (ResultSet rs = ps.executeQuery()) {
-            if (rs.next()) return Optional.of(mapRow(rs));
-        }
+      try (ResultSet rs = ps.executeQuery()) {
+          if (rs.next()) return Optional.of(mapRow(rs));
+      }
     }
     return Optional.empty();
   }
@@ -205,7 +219,8 @@ public class UserDAO {
           AND is_deleted = false
         """;
 
-    try (PreparedStatement ps = getConn().prepareStatement(sql)) {
+    try (Connection conn = getConn(); 
+        PreparedStatement ps = conn.prepareStatement(sql)) {
       ps.setString(1, email.trim().toLowerCase());
       try (ResultSet rs = ps.executeQuery()) {
         if (rs.next()) return Optional.of(mapRow(rs));
@@ -222,7 +237,8 @@ public class UserDAO {
           AND is_deleted = false
         """;
 
-    try (PreparedStatement ps = getConn().prepareStatement(sql)) {
+    try (Connection conn = getConn(); 
+        PreparedStatement ps = conn.prepareStatement(sql)) {
         ps.setString(1, username.trim().toLowerCase());
         try (ResultSet rs = ps.executeQuery()) {
             if (rs.next()) return Optional.of(mapRow(rs));
@@ -246,7 +262,8 @@ public class UserDAO {
           AND is_deleted = false
         """;
 
-    try (PreparedStatement ps = getConn().prepareStatement(sql)) {
+    try (Connection conn = getConn(); 
+        PreparedStatement ps = conn.prepareStatement(sql)) {
         ps.setString(1, user.getFullname());
         ps.setString(2, user.getPhone());
         
@@ -277,7 +294,7 @@ public class UserDAO {
 
   /**
    * Admin khoá / mở tài khoản.
-   * Soft delete dùng markAsDeleted() — không dùng updateStatus().
+   * Soft delete dùng softDelete() — không dùng updateStatus().
    */
   public void updateStatus(int userId, UserStatus status)
           throws SQLException {
@@ -287,7 +304,8 @@ public class UserDAO {
         WHERE user_id = ?
         """;
 
-    try (PreparedStatement ps = getConn().prepareStatement(sql)) {
+    try (Connection conn = getConn(); 
+        PreparedStatement ps = conn.prepareStatement(sql)) {
       ps.setString(1, status.name());
       ps.setInt(2, userId);
       int affected = ps.executeUpdate();
@@ -307,43 +325,14 @@ public class UserDAO {
         WHERE user_id  = ?
         """;
 
-    try (PreparedStatement ps = getConn().prepareStatement(sql)) {
+    try (Connection conn = getConn(); 
+        PreparedStatement ps = conn.prepareStatement(sql)) {
       ps.setInt(1, userId);
       int affected = ps.executeUpdate();
       if (affected == 0)
         throw new UserNotFoundException(userId);
     }
   }
-
-  /**
-   * Cộng/trừ balance — để DB tính toán, tránh race condition.
-   * delta > 0: nạp tiền | delta < 0: trừ tiền.
-   */
-  // public void updateBalance(
-  //   int userId, BigDecimal delta) 
-  //         throws SQLException {
-
-  //   String sql = """
-  //       UPDATE users
-  //       SET balance = balance + ?
-  //       WHERE user_id     = ?
-  //         AND is_deleted   = false
-  //         AND balance + ?  >= 0
-  //       """;
-
-  //   try (PreparedStatement ps = getConn().prepareStatement(sql)) {
-  //     ps.setBigDecimal(1, delta);
-  //     ps.setInt(2, userId);
-  //     ps.setBigDecimal(3, delta);
-
-  //     int affected = ps.executeUpdate();
-  //     if (affected == 0)
-  //       throw new IllegalStateException(
-  //           "Số dư không đủ hoặc user không tồn tại. "
-  //           + "userId=" + userId
-  //           + ", delta=" + delta);
-  //   }
-  // }
 
   /**
    * Đổi mật khẩu — hash tại đây, không nhận hash từ bên ngoài.
@@ -359,7 +348,8 @@ public class UserDAO {
           AND is_deleted   = false
         """;
 
-    try (PreparedStatement ps = getConn().prepareStatement(sql)) {
+    try (Connection conn = getConn(); 
+        PreparedStatement ps = conn.prepareStatement(sql)) {
       ps.setString(1, hashed);
       ps.setInt(2, userId);
       int affected = ps.executeUpdate();
@@ -380,7 +370,8 @@ public class UserDAO {
           AND is_deleted   = false
         """;
 
-    try (PreparedStatement ps = getConn().prepareStatement(sql)) {
+    try (Connection conn = getConn(); 
+        PreparedStatement ps = conn.prepareStatement(sql)) {
       ps.setTimestamp(1, Timestamp.from(Instant.now()));
       ps.setInt(2, userId);
       ps.executeUpdate();
@@ -406,7 +397,8 @@ public class UserDAO {
         WHERE user_id = ?
         """;
 
-    try (PreparedStatement ps = getConn().prepareStatement(sql)) {
+    try (Connection conn = getConn(); 
+        PreparedStatement ps = conn.prepareStatement(sql)) {
       ps.setString(1, serializeRoles(updated));
       ps.setInt(2, userId);
       ps.executeUpdate();
@@ -429,7 +421,8 @@ public class UserDAO {
           AND is_deleted  = false
         """;
 
-    try (PreparedStatement ps = getConn().prepareStatement(sql)) {
+    try (Connection conn = getConn(); 
+        PreparedStatement ps = conn.prepareStatement(sql)) {
       ps.setInt(1, sellerId);
       ps.setInt(2, sellerId);
       ps.executeUpdate();
@@ -449,14 +442,9 @@ public class UserDAO {
    * @throws SQLException Nếu có lỗi Database hoặc lỗi toàn vẹn dữ liệu
    */
   public BigDecimal insertTransactionAndUpdateBalance(
-      String transactionId, int userId, BigDecimal amount, PaymentMethod paymentMethod) 
+      String transactionId, int userId, BigDecimal amount, TransactionType transactionType,
+      PaymentMethod paymentMethod) 
         throws SQLException {
-
-    final String insertTxSql = """
-        INSERT INTO payment_transaction
-          (transaction_id, user_id, amount, transaction_type, created_at)
-          VALUES (?, ?, ?, ?, NOW())
-        """;
 
     final String updateSql = """
         UPDATE users
@@ -476,7 +464,7 @@ public class UserDAO {
     Connection conn = getConn();
     boolean originalAutoCommit = conn.getAutoCommit();
 
-    if (existsTransaction(transactionId)) {
+    if (transactionDAO.existsTransaction(conn, transactionId)) {
       try (PreparedStatement psSelect = conn.prepareStatement(selectSql)) {
         psSelect.setInt(1, userId);
         try (ResultSet rs = psSelect.executeQuery()) {
@@ -491,16 +479,7 @@ public class UserDAO {
     try {
       conn.setAutoCommit(false);
 
-      // Bước 1: Ghi nhận lịch sử giao dịch
-      try (PreparedStatement psInsert = conn.prepareStatement(insertTxSql)) {
-        psInsert.setString(1, transactionId);
-        psInsert.setInt(2, userId);
-        psInsert.setBigDecimal(3, amount);
-        psInsert.setString(4, paymentMethod.name());
-        psInsert.executeUpdate();
-      }
-
-      // Bước 2: Cập nhật số dư một cách an toàn
+      // Bước 1: Cập nhật số dư một cách an toàn
       try (PreparedStatement psUpdate = conn.prepareStatement(updateSql)) {
         psUpdate.setBigDecimal(1, amount);
         psUpdate.setInt(2, userId);
@@ -512,6 +491,18 @@ public class UserDAO {
               "Giao dịch thất bại: Tài khoản không hợp lệ (ID: " + userId + ")");
         }
       }
+
+      // Bước 2: Ghi lịch sử
+      transactionDAO.insertTransaction(
+            conn, 
+            transactionId, 
+            userId, 
+            amount, 
+            transactionType, 
+            TransactionStatus.SUCCESS, 
+            "Giao dịch thành công qua " + paymentMethod.name(), 
+            null
+        );
 
       // Bước 3: Lấy số dư mới nhất
       try (PreparedStatement psSelect = conn.prepareStatement(selectSql)) {
@@ -549,6 +540,99 @@ public class UserDAO {
           conn.close();
         } catch (SQLException ex) {
           log.error("Không thể đóng kết nối cho userId: " + userId, ex);
+        }
+      }
+    }
+  }
+
+  public void settleAuctionPayment(String winnerTxId, String sellerTxId, int winnerId,
+    int sellerId, int sessionId, BigDecimal amount, 
+    TransactionType transactionType) throws SQLException {
+    String buyerSlq = """
+        UPDATE users
+        SET frozen_balance = frozen_balance - ?
+        WHERE user_id      = ?
+          AND is_deleted   = false
+          AND frozen_balance - ? >= 0
+        """;
+      
+    String sellerSlq = """
+        UPDATE users
+        SET balance = balance + ?
+        WHERE user_id      = ?
+          AND is_deleted   = false
+        """;
+    
+    Connection conn = getConn();
+    boolean originalAutoCommit = conn.getAutoCommit();
+
+    try {
+      conn.setAutoCommit(false);
+
+      try (PreparedStatement psBuyer = conn.prepareStatement(buyerSlq)) {
+        psBuyer.setBigDecimal(1, amount);
+        psBuyer.setInt(2, winnerId);
+        psBuyer.setBigDecimal(3, amount);
+        int affectedRows = psBuyer.executeUpdate();
+        if (affectedRows == 0) {
+          throw new InsufficientBalanceException(
+              "Giao dịch thất bại: Tài khoản không hợp lệ (ID: " + winnerId + ")");
+        }
+      }
+
+      transactionDAO.insertTransaction(
+        conn, 
+        winnerTxId, 
+        winnerId, 
+        amount.negate(), 
+        transactionType, 
+        TransactionStatus.SUCCESS,
+        "Thanh toán phiên đấu giá", 
+        sessionId
+      );
+      
+      try (PreparedStatement psBuyer = conn.prepareStatement(sellerSlq)) {
+        psBuyer.setBigDecimal(1, amount);
+        psBuyer.setInt(2, sellerId);
+        int affectedRows = psBuyer.executeUpdate();
+        if (affectedRows == 0) {
+          throw new SQLException("Lỗi không thể chuyển tiền cho seller");
+        }
+      }
+
+      transactionDAO.insertTransaction(
+        conn,
+        sellerTxId,
+        sellerId,
+        amount,
+        transactionType,
+        TransactionStatus.SUCCESS,
+        "Tiền bán vật phẩm đấu giá",
+        sessionId
+      );
+
+      conn.commit();
+    } catch (SQLException e) {
+      try {
+        conn.rollback();
+      } catch (SQLException rollbackEx) {
+        log.error("Rollback thất bại cho transactionId: "
+                + sellerTxId
+                + " - "
+                + rollbackEx.getMessage());
+      }
+      throw e;
+
+    } finally {
+      try {
+        conn.setAutoCommit(originalAutoCommit);
+      } catch (SQLException ex) {
+        log.error("Không thể khôi phục trạng thái AutoCommit cho userId: " + winnerId, ex);
+      } finally {
+        try {
+          conn.close();
+        } catch (SQLException ex) {
+          log.error("Không thể đóng kết nối cho userId: " + winnerId, ex);
         }
       }
     }
@@ -593,7 +677,8 @@ public class UserDAO {
         )
         """;
 
-    try (PreparedStatement ps = getConn().prepareStatement(sql)) {
+    try (Connection conn = getConn(); 
+        PreparedStatement ps = conn.prepareStatement(sql)) {
       ps.setString(1, email.trim().toLowerCase());
       try (ResultSet rs = ps.executeQuery()) {
         return rs.next() && rs.getBoolean(1);
@@ -610,7 +695,8 @@ public class UserDAO {
         )
         """;
 
-    try (PreparedStatement ps = getConn().prepareStatement(sql)) {
+    try (Connection conn = getConn(); 
+        PreparedStatement ps = conn.prepareStatement(sql)) {
       ps.setString(1, username.trim().toLowerCase());
       try (ResultSet rs = ps.executeQuery()) {
         return rs.next() && rs.getBoolean(1);
@@ -627,24 +713,9 @@ public class UserDAO {
         )
         """;
 
-    try (PreparedStatement ps = getConn().prepareStatement(sql)) {
+    try (Connection conn = getConn(); 
+        PreparedStatement ps = conn.prepareStatement(sql)) {
       ps.setString(1, phone.trim());
-      try (ResultSet rs = ps.executeQuery()) {
-        return rs.next() && rs.getBoolean(1);
-      }
-    }
-  }
-  
-  public boolean existsTransaction(String transactionId) throws SQLException {
-    String sql = """
-        SELECT EXISTS(
-            SELECT 1 FROM payment_transaction
-            WHERE transaction_id = ?
-        )
-        """;
-
-    try (PreparedStatement ps = getConn().prepareStatement(sql)) {
-      ps.setString(1, transactionId);
       try (ResultSet rs = ps.executeQuery()) {
         return rs.next() && rs.getBoolean(1);
       }
@@ -662,7 +733,8 @@ public class UserDAO {
         """;
 
     List<UserMember> sellers = new ArrayList<>();
-    try (PreparedStatement ps = getConn().prepareStatement(sql);
+    try (Connection conn = getConn(); 
+          PreparedStatement ps = conn.prepareStatement(sql);
           ResultSet rs = ps.executeQuery()) {
       while (rs.next()) {
         User u = mapRow(rs);

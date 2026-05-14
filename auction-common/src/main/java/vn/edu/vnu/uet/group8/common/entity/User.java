@@ -207,35 +207,6 @@ public abstract sealed class User extends Entity permits UserAdmin, UserMember{
   }
 
   /**
-   * Cộng hoặc trừ balance — delta âm = trừ tiền, dương = cộng tiền.
-   * Kiểm tra không để balance âm.
-   */
-  // public void adjustBalance(BigDecimal delta) {
-  //   if (delta == null) {
-  //     throw new IllegalArgumentException("Delta không được null");
-  //   }
-  //   BigDecimal newBalance = this.balance.add(delta);
-  //   if (newBalance.compareTo(BigDecimal.ZERO) < 0) {
-  //     throw new IllegalStateException(
-  //       "Số dư không đủ. Hiện có: " + this.balance
-  //     );
-  //   }
-  //   this.balance = newBalance;
-  // }
-
-  /**
-   * Thêm role — khi user đăng item đầu tiên, tự động thêm SELLER.
-   */
-  public void setRoles(UserRole role) {
-    if (roles == null) {
-      throw new IllegalArgumentException(
-        "Roll không được null"
-      );
-    }
-    this.roles.add(role);
-  }
-
-  /**
    * Xoá role — khi admin thu hồi quyền bán hàng chẳng hạn.
    * Không cho phép xoá hết toàn bộ roles.
    */
@@ -248,8 +219,19 @@ public abstract sealed class User extends Entity permits UserAdmin, UserMember{
     this.roles.remove(role);
     }
 
+  /**
+   * Thêm role cho user.
+   * Ví dụ: Tự động thêm role SELLER khi user đăng bán sản phẩm đầu tiên.
+   */
+  public void addRole(UserRole role) {
+    if (role == null) {
+      throw new IllegalArgumentException("Role không được null");
+    }
+    roles.add(role);
+  }
+
   // ════════════════════════════════════════════════════
-  // HELPER — logic nghiệp vụ thường dùng
+  // HELPER — logic nghiệp vụ 
   // ════════════════════════════════════════════════════
   public boolean isActive() {
     return status == UserStatus.ACTIVE && !isDeleted();
@@ -259,17 +241,13 @@ public abstract sealed class User extends Entity permits UserAdmin, UserMember{
     return roles.contains(role);
   }
 
-  public boolean canBid(UserRole role) {
-    return role == UserRole.BIDDER && this.status == UserStatus.ACTIVE;
-  }
+  // public boolean canBid() {
+  //   return roles.contains(UserRole.BIDDER) && this.status == UserStatus.ACTIVE;
+  // }
 
-  public boolean canSell(UserRole role) {
-    return role == UserRole.SELLER && this.status == UserStatus.ACTIVE;
-  }
-
-  public void addRole(UserRole role) {
-    roles.add(role);
-  }
+  // public boolean canSell() {
+  //   return roles.contains(UserRole.SELLER) && this.status == UserStatus.ACTIVE;
+  // }
 
   // ════════════════════════════════════════════════════
   // Abstract method

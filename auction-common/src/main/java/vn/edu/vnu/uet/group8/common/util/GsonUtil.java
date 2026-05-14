@@ -1,7 +1,12 @@
-package vn.edu.vnu.uet.group8.server.util;
+package vn.edu.vnu.uet.group8.common.util;
 
-import com.google.gson.*;
 import java.time.Instant;
+
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonDeserializer;
+import com.google.gson.JsonPrimitive;
+import com.google.gson.JsonSerializer;
 
 /**
  * GsonUtil - Trung tâm xử lý JSON của cả hệ thống.

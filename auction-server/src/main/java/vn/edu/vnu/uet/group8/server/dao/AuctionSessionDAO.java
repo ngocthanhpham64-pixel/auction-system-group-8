@@ -58,7 +58,8 @@ public class AuctionSessionDAO {
         VALUES (?,?,?,?,?,?,?,?,?)
         """;
 
-    try (PreparedStatement ps = getConn().prepareStatement(
+    try (Connection conn = getConn(); 
+       PreparedStatement ps = conn.prepareStatement(
             sql, Statement.RETURN_GENERATED_KEYS)) {
 
       ps.setInt(1, session.getItemId());
@@ -94,7 +95,8 @@ public class AuctionSessionDAO {
         WHERE session_id = ? AND is_deleted = false
         """;
 
-    try (PreparedStatement ps = getConn().prepareStatement(sql)) {
+    try (Connection conn = getConn(); 
+        PreparedStatement ps = conn.prepareStatement(sql)) {
       ps.setInt(1, sessionId);
       try (ResultSet rs = ps.executeQuery()) {
         if (rs.next()) return Optional.of(mapRow(rs));
@@ -121,7 +123,8 @@ public class AuctionSessionDAO {
           AND status = 'ACTIVE' 
           AND is_deleted = false
         """;
-    try (PreparedStatement ps = getConn().prepareStatement(sql)) {
+    try (Connection conn = getConn(); 
+        PreparedStatement ps = conn.prepareStatement(sql)) {
       ps.setInt(1, itemId);
       try (ResultSet rs = ps.executeQuery()) {
           if (rs.next()) return Optional.of(mapRow(rs));
@@ -139,7 +142,8 @@ public class AuctionSessionDAO {
               AND is_deleted = false
           """;
     
-    try (PreparedStatement ps = getConn().prepareStatement(sql)) {
+    try (Connection conn = getConn(); 
+        PreparedStatement ps = conn.prepareStatement(sql)) {
       ps.setInt(1, itemId);
       try (ResultSet rs = ps.executeQuery()) {
           if (rs.next()) return Optional.of(mapRow(rs));
@@ -176,7 +180,8 @@ public class AuctionSessionDAO {
     return queryList(sql, ps -> {});
   }
 
-  public List<AuctionSession> findByPriceRange(ItemCategory category, BigDecimal minPrice, BigDecimal maxPrice) throws SQLException {
+  public List<AuctionSession> findByPriceRange(ItemCategory category, BigDecimal minPrice, 
+    BigDecimal maxPrice) throws SQLException {
     String sql = """
         SELECT s.* FROM auction_session s
         JOIN item i ON s.item_id = i.item_id
@@ -239,7 +244,8 @@ public class AuctionSessionDAO {
           AND is_deleted = false
         """;
 
-    try (PreparedStatement ps = getConn().prepareStatement(sql)) {
+    try (Connection conn = getConn(); 
+        PreparedStatement ps = conn.prepareStatement(sql)) {
       ps.setBigDecimal(1, newPrice);
       ps.setInt(2, bidderId);
       ps.setInt(3, sessionId);
@@ -258,7 +264,8 @@ public class AuctionSessionDAO {
         WHERE session_id = ?
         """;
 
-    try (PreparedStatement ps = getConn().prepareStatement(sql)) {
+    try (Connection conn = getConn(); 
+        PreparedStatement ps = conn.prepareStatement(sql)) {
       ps.setString(1, newStatus.name());
       ps.setInt(2, sessionId);
       ps.executeUpdate();
@@ -274,7 +281,8 @@ public class AuctionSessionDAO {
           AND is_deleted = false
         """;
 
-    try (PreparedStatement ps = getConn().prepareStatement(sql)) {
+    try (Connection conn = getConn(); 
+        PreparedStatement ps = conn.prepareStatement(sql)) {
       ps.setTimestamp(1, Timestamp.from(newEndTime));
       ps.setInt(2, sessionId);
       ps.executeUpdate();
@@ -288,7 +296,8 @@ public class AuctionSessionDAO {
         WHERE session_id = ?
         """;
 
-    try (PreparedStatement ps = getConn().prepareStatement(sql)) {
+    try (Connection conn = getConn(); 
+        PreparedStatement ps = conn.prepareStatement(sql)) {
       ps.setInt(1, sessionId);
       ps.executeUpdate();
     }
@@ -300,7 +309,8 @@ public class AuctionSessionDAO {
 
   private List<AuctionSession> queryList(String sql, SqlConsumer<PreparedStatement> binder) throws SQLException {
     List<AuctionSession> result = new ArrayList<>();
-    try (PreparedStatement ps = getConn().prepareStatement(sql)) {
+    try (Connection conn = getConn(); 
+        PreparedStatement ps = conn.prepareStatement(sql)) {
       binder.accept(ps);
       try (ResultSet rs = ps.executeQuery()) {
           while (rs.next()) result.add(mapRow(rs));

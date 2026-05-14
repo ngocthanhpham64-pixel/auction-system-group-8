@@ -1,16 +1,20 @@
 package vn.edu.vnu.uet.group8.server.service.user;
 
 import java.sql.SQLException;
-import java.util.Optional;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import vn.edu.vnu.uet.group8.common.dto.model.LoginResultDTO;
 import vn.edu.vnu.uet.group8.common.dto.model.UserSummaryDTO;
 import vn.edu.vnu.uet.group8.common.entity.User;
 import vn.edu.vnu.uet.group8.common.enums.UserStatus;
 import vn.edu.vnu.uet.group8.common.exception.AccountLockedException;
 import vn.edu.vnu.uet.group8.common.exception.InvalidCredentialsException;
 import vn.edu.vnu.uet.group8.common.exception.ValidationException;
+import vn.edu.vnu.uet.group8.server.auth.SessionManager;
 import vn.edu.vnu.uet.group8.server.dao.UserDAO;
+import vn.edu.vnu.uet.group8.server.util.PasswordUtil;
 
 
 /**
@@ -20,9 +24,11 @@ public class AuthService {
   private static final Logger log = LoggerFactory.getLogger(AuthService.class);
 
   private final UserDAO userDAO;
+  private final SessionManager sessionManager;
 
-  public AuthService(UserDAO userDAO) {
+  public AuthService(UserDAO userDAO, SessionManager sessionManager) {
     this.userDAO = userDAO;
+    this.sessionManager = sessionManager;
   }
 
   /**
@@ -31,44 +37,50 @@ public class AuthService {
    * <p>Trả cùng một message cho cả "email sai" và "password sai"
    * để tránh lộ thông tin "email này có tồn tại trong hệ thống không".
    *
-   * @return {@link UserSummaryDTO} nếu thành công
+   * @return {@link LoginResultDTO} nếu thành công
    * @throws ValidationException         nếu email hoặc password để trống
    * @throws InvalidCredentialsException nếu email hoặc password sai
    * @throws AccountLockedException      nếu tài khoản bị khoá hoặc cấm
    * @throws SQLException                nếu lỗi DB
    */
-  public UserSummaryDTO login(String username, String password)
+  public LoginResultDTO login(String email, String password)
       throws SQLException {
 
-    // -- Kiểm tra trống -- không dùng UserPolicy vì đây không phải
-    // kiểm tra format, chỉ kiểm tra có nhập hay không
-    if (username == null || username.isBlank()) {
-      throw new ValidationException("Username không được để trống");
+    // -- Bước 1: Validate input cơ bản
+    if (email == null || email.isBlank()) {
+      throw new ValidationException("Email không được để trống");
     }
     if (password == null || password.isBlank()) {
       throw new ValidationException("Mật khẩu không được để trống");
     }
 
-    // -- Xác thực -- DAO tự BCrypt verify bên trong
-    Optional<User> opt =
-        userDAO.authenticate(username.trim().toLowerCase(), password);
+    // -- Bước 2: Tìm user bằng email
+    // Service chịu trách nhiệm cho logic "tìm -> xác thực -> kiểm tra"
+    // thay vì đẩy hết cho một hàm authenticate() lớn trong DAO.
+    User user = userDAO.findByEmail(email.trim().toLowerCase())
+        .orElseThrow(InvalidCredentialsException::new);
 
-    if (opt.isEmpty()) {
+    // -- Bước 3: Xác thực mật khẩu
+    // Dùng InvalidCredentialsException cho cả "không tìm thấy user" và "sai mật khẩu"
+    // để tránh user enumeration attack.
+    if (!PasswordUtil.verify(password, user.getEncryptedPassword())) {
       throw new InvalidCredentialsException();
     }
 
-    User user = opt.get();
-
-    // -- Kiểm tra trạng thái -- sau khi verify password thành công
+    // -- Bước 4: Kiểm tra trạng thái tài khoản
+    // Chỉ thực hiện sau khi đã xác thực thành công để không lộ thông tin
     // để không lộ "username này có tồn tại không"
     if (user.getStatus() != UserStatus.ACTIVE) {
       throw new AccountLockedException(user.getStatus());
     }
 
-    // -- Ghi nhận lastLogin -- không fail login nếu bước này lỗi
+    // -- Bước 5: Ghi nhận lastLogin (không làm gián đoạn luồng nếu lỗi)
     recordLoginSilently(user);
 
-    return UserSummaryDTO.from(user);
+    String token = sessionManager.createSession(user.getId());
+    UserSummaryDTO userSummary = UserSummaryDTO.from(user);
+
+    return new LoginResultDTO(userSummary, token);
   }
 
   /** Ghi nhận lastLogin, bỏ qua nếu lỗi — không chặn luồng login. */

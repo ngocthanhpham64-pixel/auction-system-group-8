@@ -6,10 +6,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import vn.edu.vnu.uet.group8.common.dto.model.UserProfileDTO;
+import vn.edu.vnu.uet.group8.common.entity.User;
 import vn.edu.vnu.uet.group8.common.entity.UserAdmin;
 import vn.edu.vnu.uet.group8.common.entity.UserMember;
-import vn.edu.vnu.uet.group8.common.entity.User;
-import vn.edu.vnu.uet.group8.server.service.user.UserPolicy;
 import vn.edu.vnu.uet.group8.common.exception.UnauthorizedException;
 import vn.edu.vnu.uet.group8.common.exception.UserNotFoundException;
 import vn.edu.vnu.uet.group8.common.exception.ValidationException;
@@ -133,5 +132,18 @@ public class ProfileService {
     userDAO.updateProfile(member);
     LOGGER.info(
       "Cập nhật profile thành công cho User: {} bởi Requester: {}", targetId, requesterId);
+  }
+
+  public boolean deleteAccount(int userId) {
+    try {
+      userDAO.softDelete(userId);
+      return true;
+    } catch (UserNotFoundException e) {
+      LOGGER.warn("Không tìm thấy tài khoản tài khoản, userId=" + userId);
+      return false;
+    }catch (SQLException e) {
+      LOGGER.warn("Có lỗi khi cố xóa tài khoản + " + e.getMessage());
+      return false;
+    }
   }
 }

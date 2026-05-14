@@ -3,7 +3,6 @@ package vn.edu.vnu.uet.group8.server.service.user;
 import java.sql.SQLException;
 
 import vn.edu.vnu.uet.group8.common.dto.model.UserSummaryDTO;
-import vn.edu.vnu.uet.group8.common.entity.User;
 import vn.edu.vnu.uet.group8.common.entity.UserMember;
 import vn.edu.vnu.uet.group8.common.exception.DuplicateUserException;
 import vn.edu.vnu.uet.group8.server.dao.UserDAO;
@@ -30,6 +29,8 @@ public class RegisterService {
    * @param email    địa chỉ email
    * @param password mật khẩu plain-text — sẽ được hash trước khi lưu
    * @param fullName 
+   * @param phone
+   * @param avatarUrl
    * @return {@link UserSummaryDTO} để Client tự động login sau đăng ký
    * @throws vn.edu.vnu.uet.group8.common.exception.ValidationException
    *     nếu input không hợp lệ

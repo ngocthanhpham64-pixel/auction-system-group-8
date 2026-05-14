@@ -21,7 +21,16 @@ public enum ActionType {
     @SerializedName("user_bids") USER_BIDS,
     @SerializedName("notif_all") NOTIF_GET_ALL,
     @SerializedName("notif_read") NOTIF_MARK_READ,
-    @SerializedName("fav_list") FAVORITE_LIST,
-    @SerializedName("fav_add") FAVORITE_ADD,
-    @SerializedName("fav_remove") FAVORITE_REMOVE
+    // @SerializedName("fav_list") FAVORITE_LIST,
+    // @SerializedName("fav_add") FAVORITE_ADD,
+    // @SerializedName("fav_remove") FAVORITE_REMOVE,
+    @SerializedName("item_create")      ITEM_CREATE,
+    @SerializedName("item_update")      ITEM_UPDATE,
+    @SerializedName("item_delete")      ITEM_DELETE,
+    @SerializedName("item_my_listings") ITEM_MY_LISTINGS,
+    @SerializedName("user_change_password") USER_CHANGE_PASSWORD,
+    @SerializedName("user_withdraw")       USER_WITHDRAW,
+    @SerializedName("wallet_get_transactions") WALLET_GET_TRANSACTIONS, 
+    @SerializedName("notif_delete")    NOTIF_DELETE;
+    // @SerializedName("chat_send_message") CHAT_SEND_MESSAGE; // Chat (nếu triển khai)
 }

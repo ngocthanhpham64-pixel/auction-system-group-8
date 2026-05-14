@@ -1,8 +1,11 @@
 package vn.edu.vnu.uet.group8.server.controller;
 
-import com.google.gson.JsonObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.google.gson.JsonObject;
+
+import vn.edu.vnu.uet.group8.common.dto.model.LoginResultDTO;
 import vn.edu.vnu.uet.group8.common.dto.model.UserSummaryDTO;
 import vn.edu.vnu.uet.group8.common.dto.request.LoginRequest;
 import vn.edu.vnu.uet.group8.common.dto.request.RegisterRequest;
@@ -49,20 +52,14 @@ public class AuthController {
         return ServerResponse.replyError("LOGIN", requestId, "Thiếu payload");
       }
 
-      UserSummaryDTO user = authService.login(payload.getEmail(), payload.getPassword());
-      String token = sessionManager.createSession(user.getUserId());
+      LoginResultDTO result = authService.login(payload.getEmail(), payload.getPassword());
 
-      // Đóng gói cả user + token vào response data
-      JsonObject data = new JsonObject();
-      data.addProperty("userId", user.getUserId());
-      data.addProperty("username", user.getUsername());
-      data.addProperty("token", token);
-
-      log.info("Login thành công: userId={}", user.getUserId());
+      // Log userId thật từ kết quả trả về
+      log.info("Login thành công: userId={}", result.getUserId());
       return ServerResponse.reply("LOGIN", requestId)
           .success(true)
           .message("Đăng nhập thành công")
-          .data(data)
+          .data(result)
           .build();
 
     } catch (Exception e) {
