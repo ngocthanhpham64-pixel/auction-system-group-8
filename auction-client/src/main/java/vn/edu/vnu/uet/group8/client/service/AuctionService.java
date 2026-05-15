@@ -82,8 +82,8 @@ public final class AuctionService {
 
         AuctionClient.getInstance().sendRequest(request, response -> {
             if (response.isSuccess()) {
-                List<Item> items = GsonUtil.toList(response.getData(), Item.class);
-                if (items == null) items = Collections.emptyList();
+                List<Item> parsed = GsonUtil.toList(response.getData(), Item.class);
+                final List<Item> items = parsed != null ? parsed : Collections.emptyList();
                 ClientModel.getInstance().setAuctionItems(items);
                 LOGGER.fine(() -> "Loaded " + items.size() + " items");
             } else {
