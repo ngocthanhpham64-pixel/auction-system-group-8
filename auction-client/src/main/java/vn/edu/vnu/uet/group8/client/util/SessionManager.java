@@ -16,6 +16,8 @@ public final class SessionManager {
     private static volatile  String username ="";
     private static volatile String fullName = "";
     private static volatile String role = "";
+    private static volatile boolean adminFlag;
+    private static volatile String adminLevel;
 
     private SessionManager(){}// không cho tạo instance
 
@@ -35,8 +37,30 @@ public final class SessionManager {
         username = uname != null ? uname :"";
         fullName = fname != null ? fname :"";
         role = userRole != null ? userRole :"";
+        // Tự động xác định quyền admin
+        updateAdminFlags(userRole);
     }
 
+    /**
+     * Dựa vào role string từ server để set adminFlag v adminLevel.
+     * "SUPER_ADMIN" -> super admin, "ADMIN" -> admin thường (moderator)
+     */
+    private static void updateAdminFlags(String roleStr){
+        if ("SUPER_ADMIN".equalsIgnoreCase(roleStr)) {
+            adminFlag = true;
+            adminLevel = "SUPER_ADMIN";
+        } else if ("ADMIN".equalsIgnoreCase(roleStr)) {
+            adminFlag = true;
+            adminLevel = "MODERATOR"; // admin thường
+        } else {
+            adminFlag = false;
+            adminLevel = null;
+        }
+    }
+    public static void setAdmin(boolean admin, String level) {
+        adminFlag = admin;
+        adminLevel = level;
+    }
     /**
      * Xóa toàn bộ thông tin phiên(không ngắt kết nối).*/
     public static void clearSession() {
@@ -45,13 +69,16 @@ public final class SessionManager {
         username = "";
         fullName = "";
         role = "";
+        adminFlag = false;
+        adminLevel = null;
     }
     //----------Đăng nhập------------
     /** Đăng xuất: xóa session, làm sạch model, ngắt kết nối, quay về màn hình login.*/
     public static void logout(){
+        AuctionClient.getInstance().disconnect();
         clearSession();
         ClientModel.getInstance().clearSession();
-        Platform.runLater(()->SceneManager.switchTo("login.fxml"));
+        Platform.runLater(()->SceneManager.switchTo(SceneManager.VIEW_LOGIN));
     }
     //-----------Getter----------
     public static String getAuthToken(){ return authToken;}
@@ -64,11 +91,17 @@ public final class SessionManager {
     public static boolean isLoggedIn(){
         return authToken != null && !authToken.isEmpty();
     }
-
     /** Kiểm tra người dùng hiện tại có quyền admin hay không.*/
     public static boolean isAdmin(){
-        return "ADMIN".equalsIgnoreCase(role);
+        return adminFlag;
     }
+
+    public static boolean isSuperAdmin() {
+        return "SUPER_ADMIN".equalsIgnoreCase(adminLevel);
+    }
+
+    public static boolean isModerator() {
+        return "MODERATOR".equalsIgnoreCase(adminLevel);}
     /**
      * Lấy 1-2 ký tự đầu của tên để hiện thị avatar badge.
      * -Nếu có fullName: lấy chữ cái đầu của từ đầu và từ cuối(vd:Nguyễn Văn A->"NA")
@@ -76,7 +109,7 @@ public final class SessionManager {
      * -Nếu rỗng: trả về "?"
      */
     public static String getAvatarText(){
-        String name = fullName.isBlank() ? username : fullName;
+        String name = (fullName != null && !fullName.isBlank()) ? fullName : username;
         if(name.isBlank()) return "?";
         String [] parts = name.trim().split("\\s+");
         if(parts.length>=2){

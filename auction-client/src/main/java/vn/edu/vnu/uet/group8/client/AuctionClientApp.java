@@ -19,7 +19,7 @@ import vn.edu.vnu.uet.group8.client.util.SceneManager;
 public class AuctionClientApp extends Application {
 
     private static final String SERVER_HOST = "localhost";
-    private static final int    SERVER_PORT = 12345;
+    private static final int    SERVER_PORT = 8080;
 
     @Override
     public void start(Stage primaryStage) {
