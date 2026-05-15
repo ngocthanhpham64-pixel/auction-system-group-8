@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.geometry.Insets?>
+
+<VBox xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="vn.edu.vnu.uet.group8.client.controller.AdminDashboardController"
+      style="-fx-padding: 30;">
+    <Label text="Tổng quan hệ thống" style="-fx-font-size: 24px; -fx-font-weight: bold; -fx-text-fill: #1a1a1a;"/>
+    <Label text="Số liệu thống kê toàn bộ hệ thống Auctiva" style="-fx-text-fill: #888; -fx-font-size: 12px; -fx-padding: 4 0 0 0;"/>
+
+    <GridPane hgap="20" vgap="20" style="-fx-padding: 30 0 0 0;">
+        <padding><Insets top="20"/></padding>
+
+        <VBox GridPane.columnIndex="0" GridPane.rowIndex="0"
+              style="-fx-background-color: white; -fx-padding: 20; -fx-background-radius: 12; -fx-border-color: #EEEEEE; -fx-border-radius: 12;">
+            <Label text="🔨 Phiên đang hoạt động" style="-fx-text-fill: #888; -fx-font-size: 12px;"/>
+            <Label fx:id="lblActiveAuctions" text="0" style="-fx-font-size: 28px; -fx-font-weight: bold; -fx-text-fill: #F97316;"/>
+        </VBox>
+
+        <VBox GridPane.columnIndex="1" GridPane.rowIndex="0"
+              style="-fx-background-color: white; -fx-padding: 20; -fx-background-radius: 12; -fx-border-color: #EEEEEE; -fx-border-radius: 12;">
+            <Label text="👥 Tổng người dùng" style="-fx-text-fill: #888; -fx-font-size: 12px;"/>
+            <Label fx:id="lblTotalUsers" text="0" style="-fx-font-size: 28px; -fx-font-weight: bold; -fx-text-fill: #1a1a1a;"/>
+        </VBox>
+
+        <VBox GridPane.columnIndex="0" GridPane.rowIndex="1"
+              style="-fx-background-color: white; -fx-padding: 20; -fx-background-radius: 12; -fx-border-color: #EEEEEE; -fx-border-radius: 12;">
+            <Label text="💰 Tổng doanh thu" style="-fx-text-fill: #888; -fx-font-size: 12px;"/>
+            <Label fx:id="lblRevenue" text="0" style="-fx-font-size: 28px; -fx-font-weight: bold; -fx-text-fill: #22C55E;"/>
+        </VBox>
+
+        <VBox GridPane.columnIndex="1" GridPane.rowIndex="1"
+              style="-fx-background-color: white; -fx-padding: 20; -fx-background-radius: 12; -fx-border-color: #EEEEEE; -fx-border-radius: 12;">
+            <Label text="📈 Tổng lượt đặt giá" style="-fx-text-fill: #888; -fx-font-size: 12px;"/>
+            <Label fx:id="lblTotalBids" text="0" style="-fx-font-size: 28px; -fx-font-weight: bold; -fx-text-fill: #1a1a1a;"/>
+        </VBox>
+
+        <columnConstraints>
+            <ColumnConstraints percentWidth="50"/>
+            <ColumnConstraints percentWidth="50"/>
+        </columnConstraints>
+    </GridPane>
+</VBox>

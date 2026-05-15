@@ -9,30 +9,16 @@ import javafx.scene.control.TextField;
 
 import vn.edu.vnu.uet.group8.client.service.AuthService;
 import vn.edu.vnu.uet.group8.client.util.SceneManager;
+import vn.edu.vnu.uet.group8.client.util.SessionManager;
 
 import java.net.URL;
 import java.util.ResourceBundle;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
 
-/**
- * LoginController — man hinh dang nhap.
- *
- * Tinh nang:
- *  - Validate email format + password not empty
- *  - Mock account fallback (DEV ONLY) khi BE chua co user
- *  - Loading state khi dang dang nhap
- *  - Enter key submit form
- *  - Error message ro rang
- *
- * Mock accounts cho test:
- *   admin@auctiva.com / 123456
- *   user@auctiva.com  / 123456
- */
 public class LoginController implements Initializable {
 
     private static final Logger LOGGER = Logger.getLogger(LoginController.class.getName());
-
     private static final Pattern EMAIL_PATTERN = Pattern.compile("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+$");
 
     // ===== MOCK ACCOUNTS (DEV ONLY - XOA TRUOC KHI NOP BAI) =====
@@ -54,7 +40,6 @@ public class LoginController implements Initializable {
         setupEnterKeySubmit();
     }
 
-    /** Cho phep nhan Enter trong password field de submit. */
     private void setupEnterKeySubmit() {
         if (pfPassword != null) {
             pfPassword.setOnAction(e -> onLogin());
@@ -71,7 +56,6 @@ public class LoginController implements Initializable {
         String email = tfEmail != null ? tfEmail.getText().trim() : "";
         String password = pfPassword != null ? pfPassword.getText() : "";
 
-        // Validate
         if (email.isEmpty()) {
             showError("Vui long nhap email");
             if (tfEmail != null) tfEmail.requestFocus();
@@ -95,7 +79,9 @@ public class LoginController implements Initializable {
         // ===== MOCK LOGIN (DEV ONLY) =====
         if (isMockAccount(email, password)) {
             LOGGER.info(() -> "Mock login: " + email);
-            SceneManager.switchTo(SceneManager.VIEW_MAIN);
+            // Giả lập session để phân quyền
+            mockSessionFor(email);
+            navigateAfterLogin();
             return;
         }
 
@@ -105,7 +91,7 @@ public class LoginController implements Initializable {
                 () -> {
                     LOGGER.info(() -> "Login thanh cong: " + email);
                     setLoadingState(false);
-                    SceneManager.switchTo(SceneManager.VIEW_MAIN);
+                    navigateAfterLogin();
                 },
                 errorMsg -> {
                     LOGGER.warning("Login that bai: " + errorMsg);
@@ -115,7 +101,30 @@ public class LoginController implements Initializable {
         );
     }
 
-    /** TODO: Xoa method nay khi BE dong bo + DB co user that. */
+    /**
+     * Điều hướng sau khi đăng nhập thành công dựa vào quyền admin.
+     */
+    private void navigateAfterLogin() {
+        if (SessionManager.isAdmin()) {
+            SceneManager.switchTo("AdminLayout.fxml");
+        } else {
+            SceneManager.switchTo(SceneManager.VIEW_MAIN);
+        }
+    }
+
+    /**
+     * Giả lập session cho mock account để kiểm tra phân quyền.
+     * TODO: Xoá khi backend thật đã hoạt động.
+     */
+    private void mockSessionFor(String email) {
+        String token = "mock-token-" + System.currentTimeMillis();
+        int userId = email.equals(MOCK_ADMIN_EMAIL) ? 1 : 2;
+        String username = email.split("@")[0];
+        String fullName = email.equals(MOCK_ADMIN_EMAIL) ? "Admin Mock" : "User Mock";
+        String role = email.equals(MOCK_ADMIN_EMAIL) ? "ADMIN" : "MEMBER";
+        SessionManager.setSession(token, userId, username, fullName, role);
+    }
+
     private boolean isMockAccount(String email, String password) {
         if (MOCK_ADMIN_EMAIL.equals(email) && MOCK_ADMIN_PASS.equals(password)) return true;
         if (MOCK_USER_EMAIL.equals(email) && MOCK_USER_PASS.equals(password)) return true;
@@ -131,13 +140,11 @@ public class LoginController implements Initializable {
     }
 
     @FXML
-    private void onTabLogin() {
-        // Da o LoginView - khong lam gi
-    }
+    private void onTabLogin() { /* da o LoginView */ }
 
     @FXML
     private void onTabRegister() {
-        SceneManager.switchTo("RegisterVIew.fxml");  // FXML co typo "VIew"
+        SceneManager.switchTo("RegisterVIew.fxml");
     }
 
     @FXML
@@ -145,8 +152,6 @@ public class LoginController implements Initializable {
         LOGGER.info("Click quen mat khau");
         showError("Tinh nang dang phat trien");
     }
-
-    // ===== HELPERS =====
 
     private void showError(String message) {
         if (lblError == null) return;

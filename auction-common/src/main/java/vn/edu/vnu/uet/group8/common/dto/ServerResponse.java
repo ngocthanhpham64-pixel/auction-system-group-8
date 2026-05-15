@@ -114,11 +114,11 @@ public final class ServerResponse {
         private Object data;
 
         private Builder(String action) {
-                if (action == null || action.isBlank()) {
-                    throw new IllegalArgumentException("Action không được trống");
-                }
-                this.action = action.trim().toUpperCase();
+            if (action == null || action.isBlank()) {
+                throw new IllegalArgumentException("Action không được trống");
             }
+            this.action = action.trim().toUpperCase();
+        }
         public Builder success(boolean success)   { this.success = success; return this; }
         public Builder message(String message)    { this.message = message; return this; }
         public Builder data(Object data)          { this.data = data; return this; }
@@ -128,27 +128,27 @@ public final class ServerResponse {
 
 
         public ServerResponse build() {
-                // Đảm bảo 1 trong hai chế độ
-                if (requestId != null && eventType != null) {
-                    throw new IllegalStateException("Không thể vừa là reply (có requestId) vừa là broadcast (có eventType)");
-                }
-                if (requestId == null && eventType == null) {
-                    throw new IllegalStateException("Phải chỉ định requestId (reply) hoặc eventType (broadcast)");
-                }
-                return new ServerResponse(this);
+            // Đảm bảo 1 trong hai chế độ
+            if (requestId != null && eventType != null) {
+                throw new IllegalStateException("Không thể vừa là reply (có requestId) vừa là broadcast (có eventType)");
             }
+            if (requestId == null && eventType == null) {
+                throw new IllegalStateException("Phải chỉ định requestId (reply) hoặc eventType (broadcast)");
+            }
+            return new ServerResponse(this);
         }
+    }
 
-        // Debug
-        @Override
-        public String toString() {
-            return "ServerResponse{" +
-                    "action='" + action + '\'' +
-                    ", success=" + success +
-                    ", requestId='" + requestId + '\'' +
-                    ", eventType='" + eventType + '\'' +
-                    ", message='" + message + '\'' +
-                    ", timestamp=" + timestamp +
-                    '}';
+    // Debug
+    @Override
+    public String toString() {
+        return "ServerResponse{" +
+                "action='" + action + '\'' +
+                ", success=" + success +
+                ", requestId='" + requestId + '\'' +
+                ", eventType='" + eventType + '\'' +
+                ", message='" + message + '\'' +
+                ", timestamp=" + timestamp +
+                '}';
     }
 }
