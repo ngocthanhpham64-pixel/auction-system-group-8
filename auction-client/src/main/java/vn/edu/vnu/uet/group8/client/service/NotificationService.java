@@ -7,14 +7,13 @@ import vn.edu.vnu.uet.group8.client.util.SessionManager;
 import vn.edu.vnu.uet.group8.common.dto.NotificationDTO;
 import vn.edu.vnu.uet.group8.common.dto.ServerResponse;
 import vn.edu.vnu.uet.group8.common.enums.ActionType;
+import vn.edu.vnu.uet.group8.common.enums.EventType;
 import vn.edu.vnu.uet.group8.common.util.GsonUtil;
 
 import java.util.List;
 import java.util.function.Consumer;
 
 public final class NotificationService {
-    /** EventType server push - TODO: xác nhận với backend chuỗi chính xác*/
-    public static final String EVENT_NOTIFICATION = "notification";
     private NotificationService(){}
     public static void loadAll(Consumer<List<NotificationDTO>>onSuccess, Consumer<String> onFailure){
         if(!SessionManager.isLoggedIn()){
@@ -65,10 +64,10 @@ public final class NotificationService {
             ClientModel.getInstance().addNotification(notif);
             onNew.accept(notif);
         };
-        ResponseDispatcher.subscribe(EVENT_NOTIFICATION,wrapper);
+        ResponseDispatcher.subscribe(EventType.NOTIFICATION,wrapper);
         return wrapper;
     }
     public static void unsubscribePush(Consumer<ServerResponse> wrapper){
-        ResponseDispatcher.unsubscribe(EVENT_NOTIFICATION, wrapper);
+        ResponseDispatcher.unsubscribe(EventType.NOTIFICATION, wrapper);
     }
 }

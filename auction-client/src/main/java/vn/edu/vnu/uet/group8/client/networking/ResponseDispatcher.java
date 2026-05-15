@@ -2,6 +2,7 @@ package vn.edu.vnu.uet.group8.client.networking;
 
 import javafx.application.Platform;
 import vn.edu.vnu.uet.group8.common.dto.ServerResponse;
+import vn.edu.vnu.uet.group8.common.enums.EventType;
 
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
@@ -43,7 +44,7 @@ public final class ResponseDispatcher {
      * Key = eventType(String do server định nghĩa, ví dụ"auction_update)
      * Value = CopyOnWriteArrayList để thread-safe khi subscribe/unsubscribe
      */
-    private static final ConcurrentHashMap<String, CopyOnWriteArrayList<Consumer<ServerResponse>>> broadcastListeners = new ConcurrentHashMap<>();
+    private static final ConcurrentHashMap<EventType, CopyOnWriteArrayList<Consumer<ServerResponse>>> broadcastListeners = new ConcurrentHashMap<>();
     private static final long CALLBACK_TIMEOUT_MS = 30_000;
     //Scheduler dọn dẹp callback hết hạn
     /**
@@ -85,7 +86,7 @@ public final class ResponseDispatcher {
      * Đăng kí một listener để nhận tất cả broadcast theo eventType
      * -Listener được gọi trên FX Thread mỗi khi server push một event có eventType tương ứng. Nhiều listener có thể đăng ký cùng eventType
      */
-    public static void subscribe(String eventType,Consumer<ServerResponse> listener){
+    public static void subscribe(EventType eventType,Consumer<ServerResponse> listener){
         if(eventType == null || listener == null){
             LOGGER.warning("subscribe() bỏ qua: eventType hoặc listener null");
             return;
@@ -97,7 +98,7 @@ public final class ResponseDispatcher {
      * Hủy đăng ký một broadcast listener
      * -Nên gọi trong cleanup của controller để tránh giữ reference và nhận event không mong muốn
      */
-    public static void unsubscribe(String eventType,Consumer<ServerResponse> listener){
+    public static void unsubscribe(EventType eventType,Consumer<ServerResponse> listener){
         if(eventType == null || listener == null) return;
         CopyOnWriteArrayList<Consumer<ServerResponse>> list = broadcastListeners.get(eventType);
         if(list != null && list.remove(listener)){
@@ -146,8 +147,8 @@ public final class ResponseDispatcher {
         }
         // Bước 2: Xử lý broadcast theo eventType
         // Response không có requestId -> đây là server-push event
-        String eventType = response.getEventType();
-        if (eventType == null || eventType.isBlank()) {
+        EventType eventType = response.getEventType();
+        if (eventType == null) {
             LOGGER.warning(() -> "Response không có requestId lẫn eventType: " + response);
             return;
         }

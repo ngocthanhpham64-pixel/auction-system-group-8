@@ -4,12 +4,10 @@ import vn.edu.vnu.uet.group8.client.model.ClientModel;
 import vn.edu.vnu.uet.group8.client.networking.AuctionClient;
 import vn.edu.vnu.uet.group8.client.networking.ResponseDispatcher;
 import vn.edu.vnu.uet.group8.client.util.SessionManager;
-import vn.edu.vnu.uet.group8.common.dto.AuctionStatusDTO;
-import vn.edu.vnu.uet.group8.common.dto.GetAuctionsRequest;
-import vn.edu.vnu.uet.group8.common.dto.ServerRequest;
-import vn.edu.vnu.uet.group8.common.dto.ServerResponse;
+import vn.edu.vnu.uet.group8.common.dto.*;
 import vn.edu.vnu.uet.group8.common.entity.Item;
 import vn.edu.vnu.uet.group8.common.enums.ActionType;
+import vn.edu.vnu.uet.group8.common.enums.EventType;
 import vn.edu.vnu.uet.group8.common.util.GsonUtil;
 
 import java.util.List;
@@ -23,7 +21,6 @@ public final class AuctionService {
     /**
      * eventType server push khi có bid mới hoặc trạng thái đấu giá thay đổi.
      */
-    public static final String EVENT_AUCTION_STATUS = "auction_status";
     private AuctionService(){}
     /**
      * Tải toàn bộ item đang đấu giá từ server và lưu vào ClientModel.
@@ -88,7 +85,7 @@ public final class AuctionService {
     public static Consumer<ServerResponse> subscribeAuctionStatus (Consumer<AuctionStatusDTO> listener){
         Consumer<ServerResponse> wrapper =
                 response -> handleAuctionStatusBroadCast(response,listener);
-        ResponseDispatcher.subscribe(EVENT_AUCTION_STATUS,wrapper);
+        ResponseDispatcher.subscribe(EventType.PRICE_UPDATE,wrapper);
         return wrapper;
     }
     /**
@@ -96,7 +93,7 @@ public final class AuctionService {
      * Phải truyền đúng wrapper được trả về từ subscribeAuctionStatus.
      */
     public static void unsubscribeAuctionStatus(Consumer<ServerResponse> wrapper){
-        ResponseDispatcher.unsubscribe(EVENT_AUCTION_STATUS,wrapper);
+        ResponseDispatcher.unsubscribe(EventType.PRICE_UPDATE,wrapper);
     }
 
     private static void handleAuctionStatusBroadCast(ServerResponse response,Consumer<AuctionStatusDTO> listener) {
@@ -108,5 +105,24 @@ public final class AuctionService {
         //Cập nhật ClientModel(giá real-time)
         ClientModel.getInstance().updateItemCurrentPrice(status.getItemId(), status.getCurrentPrice());
         listener.accept(status);
+    }
+    /**
+     * Đăng kí nhận sự kiện phiên đấu giá kết thúc.
+     * Trả về wrapper để controller dùng cho unsubscribe
+     */
+    public static Consumer<ServerResponse> subscribeAuctionEnded(Consumer<AuctionEndedDTO> listener){
+        Consumer<ServerResponse> wrapper = response -> {
+            AuctionEndedDTO result = GsonUtil.toObject(response.getData(), AuctionEndedDTO.class);
+            if(result == null) return;
+            listener.accept(result);
+        };
+        ResponseDispatcher.subscribe(EventType.AUCTION_ENDED,wrapper);
+        return wrapper;
+    }
+    /**
+     * Hủy đăng ký nhận sự kiện kết thúc phiên.
+     */
+    public static void unsubscribeAuctionEnded(Consumer<ServerResponse> wrapper){
+        ResponseDispatcher.unsubscribe(EventType.AUCTION_ENDED,wrapper);
     }
 }

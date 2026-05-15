@@ -23,5 +23,10 @@ public enum ActionType {
     @SerializedName("notif_read") NOTIF_MARK_READ,
     @SerializedName("fav_list") FAVORITE_LIST,
     @SerializedName("fav_add") FAVORITE_ADD,
-    @SerializedName("fav_remove") FAVORITE_REMOVE
+    @SerializedName("fav_remove") FAVORITE_REMOVE,
+    @SerializedName("admin_dashboard") ADMIN_DASHBOARD,
+    @SerializedName("admin_get_users") ADMIN_GET_USERS,
+    @SerializedName("admin_update_user_status") ADMIN_UPDATE_USER_STATUS,
+    @SerializedName("admin_get_auctions") ADMIN_GET_AUCTIONS,
+    @SerializedName("admin_cancel_auction") ADMIN_CANCEL_AUCTION,
 }
