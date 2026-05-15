@@ -25,6 +25,16 @@ public class AuctionClientApp extends Application {
     public void start(Stage primaryStage) {
         // 1. Khởi tạo SceneManager
         SceneManager.init(primaryStage);
+        // Set icon cho app (hiện trên taskbar + title bar)
+        try {
+            primaryStage.getIcons().add(
+                    new javafx.scene.image.Image(
+                            getClass().getResourceAsStream("/image/logo.png")
+                    )
+            );
+        } catch (Exception e) {
+            // Bỏ qua nếu không tìm thấy logo - app vẫn chạy
+        }
         primaryStage.setTitle("Auctiva - Live Online Auction");
 
 // Set kích thước cụ thể, không chỉ MIN
