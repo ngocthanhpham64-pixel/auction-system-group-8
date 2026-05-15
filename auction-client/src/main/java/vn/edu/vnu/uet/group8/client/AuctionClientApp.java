@@ -26,8 +26,18 @@ public class AuctionClientApp extends Application {
         // 1. Khởi tạo SceneManager
         SceneManager.init(primaryStage);
         primaryStage.setTitle("Auctiva - Live Online Auction");
+
+// Set kích thước cụ thể, không chỉ MIN
+        primaryStage.setWidth(1280);
+        primaryStage.setHeight(800);
         primaryStage.setMinWidth(1024);
         primaryStage.setMinHeight(700);
+
+// Maximized: mở full màn hình ngay
+        primaryStage.setMaximized(true);
+
+// Center on screen
+        primaryStage.centerOnScreen();
 
         // 2. Kết nối server
         // ✅ Fix: bỏ System.exit(1) — app vẫn mở dù server chưa chạy.
