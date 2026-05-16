@@ -1,7 +1,8 @@
 package vn.edu.vnu.uet.group8.server.dao;
 
+import com.zaxxer.hikari.HikariConfig;
+import com.zaxxer.hikari.HikariDataSource;
 import java.sql.Connection;
-import java.sql.DriverManager;
 import java.sql.SQLException;
 
 public class DatabaseConnection {
@@ -12,10 +13,28 @@ public class DatabaseConnection {
   private static final String PASS = "";
 
   private static volatile DatabaseConnection instance;
-  private Connection connection;
+  private HikariDataSource dataSource;
 
   private DatabaseConnection() throws SQLException {
-    this.connection = DriverManager.getConnection(URL, USER, PASS);
+    try {
+      HikariConfig config = new HikariConfig();
+      config.setJdbcUrl(URL);
+      config.setUsername(USER);
+      config.setPassword(PASS);
+      
+      // Optional optimizations for HikariCP + MySQL
+      config.addDataSourceProperty("cachePrepStmts", "true");
+      config.addDataSourceProperty("prepStmtCacheSize", "250");
+      config.addDataSourceProperty("prepStmtCacheSqlLimit", "2048");
+      
+      // Pool configuration
+      config.setMaximumPoolSize(10);
+      config.setMinimumIdle(2);
+      
+      this.dataSource = new HikariDataSource(config);
+    } catch (Exception e) {
+      throw new SQLException("Failed to initialize HikariCP connection pool", e);
+    }
   }
 
   public static DatabaseConnection getInstance() throws SQLException {
@@ -30,10 +49,6 @@ public class DatabaseConnection {
   }
 
   public Connection getConnection() throws SQLException {
-    // Tự reconnect nếu connection bị đứt
-    if (connection == null || connection.isClosed()) {
-      connection = DriverManager.getConnection(URL, USER, PASS);
-    }
-    return connection;
+    return dataSource.getConnection();
   }
 }

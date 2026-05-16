@@ -4,6 +4,8 @@ import java.time.Instant;
 
 import com.google.gson.Gson;
 
+import vn.edu.vnu.uet.group8.common.enums.EventType;
+
 /**
  * Phản hồi từ server -> client. Hai chế độ:
  * - Reply(requestId != null), thường có action cụ thể
@@ -15,7 +17,7 @@ import com.google.gson.Gson;
 public final class ServerResponse {
     private static final Gson GSON = new Gson();// Dùng cho getData, thread-safe
     private final String action;
-    private final String eventType;// Dùng cho broadcast
+    private final EventType eventType;// Dùng cho broadcast
     private final Instant timestamp;
     private final String requestId; // sao chép lại requestId từ request gốc. CLient gửi request có requestId, server trả về response với cùng resquestId để client biết response này dành chp request nào
     private final boolean success; // kiểm tra thao tác thành công hay không?
@@ -34,7 +36,7 @@ public final class ServerResponse {
 
     // Getters
     public String getAction()      { return action; }
-    public String getEventType()   { return eventType; }
+    public EventType getEventType()   { return eventType; }
     public Instant getTimestamp()  { return timestamp; }
     public String getRequestId()   { return requestId; }
     public boolean isSuccess()     { return success; }
@@ -97,14 +99,14 @@ public final class ServerResponse {
     /**
      * Tạo Builder cho broadcast. Action mặc định là "BROADCAST"
      */
-    public static Builder broadcast(String eventType) {
+    public static Builder broadcast(EventType eventType) {
         return new Builder("BROADCAST").eventType(eventType);
     }
 
     // Builder
     public static class Builder {
         private final String action;
-        private String eventType;
+        private EventType eventType;
         private Instant timestamp;
         private String requestId;
         private boolean success = true;
@@ -121,7 +123,7 @@ public final class ServerResponse {
         public Builder message(String message)    { this.message = message; return this; }
         public Builder data(Object data)          { this.data = data; return this; }
         public Builder requestId(String requestId){ this.requestId = requestId; return this; }
-        public Builder eventType(String eventType){ this.eventType = eventType; return this; }
+        public Builder eventType(EventType eventType){ this.eventType = eventType; return this; }
         public Builder timestamp(Instant timestamp){ this.timestamp = timestamp; return this; }
 
 

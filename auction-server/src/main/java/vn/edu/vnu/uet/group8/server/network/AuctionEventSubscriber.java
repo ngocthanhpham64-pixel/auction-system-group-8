@@ -6,6 +6,7 @@ import org.slf4j.LoggerFactory;
 import vn.edu.vnu.uet.group8.common.dto.response.AuctionEndedBroadcastResponse;
 import vn.edu.vnu.uet.group8.common.dto.response.PriceUpdateBroadcastResponse;
 import vn.edu.vnu.uet.group8.common.dto.response.ServerResponse;
+import vn.edu.vnu.uet.group8.common.enums.EventType;
 import vn.edu.vnu.uet.group8.server.service.auction.AuctionEventBus;
 import vn.edu.vnu.uet.group8.server.service.auction.event.AuctionEndedEvent;
 import vn.edu.vnu.uet.group8.server.service.auction.event.BidPlacedEvent;
@@ -73,10 +74,9 @@ public class AuctionEventSubscriber {
             event.isExtended());
 
     ServerResponse response =
-        ServerResponse.broadcast(EVENT_PRICE_UPDATE)
+        ServerResponse.broadcast(EventType.PRICE_UPDATE)
             .data(payload)
             .message("PRICE_UPDATE")
-            .eventType("PRICE_UPDATE")
             .build();
 
     logger.info(
@@ -108,10 +108,9 @@ public class AuctionEventSubscriber {
               + " kết thúc không có người đặt giá";
 
     ServerResponse response =
-        ServerResponse.broadcast(EVENT_AUCTION_ENDED)
+        ServerResponse.broadcast(EventType.AUCTION_ENDED)
             .data(payload)
             .message(message)
-            .eventType("AUCTION_ENDED")
             .build();
 
     logger.info(

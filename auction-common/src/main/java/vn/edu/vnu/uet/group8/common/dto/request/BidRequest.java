@@ -6,13 +6,23 @@ import java.math.BigDecimal;
  * Yêu cầu đặt giá cho một phiên đấu giá.
  */
 public final class BidRequest {
-    private  int itemId;
-    private  int bidderId;
-    private  BigDecimal amount;
+    private final int itemId;
+    private final int bidderId;
+    private final BigDecimal amount;
 
-    private BidRequest(){};
+    private BidRequest() {
+        this.itemId = 0;
+        this.bidderId = 0;
+        this.amount = null;
+    }
 
     public BidRequest(int itemId,int bidderId,BigDecimal amount){
+        if (itemId <= 0 || bidderId <= 0) {
+            throw new IllegalArgumentException("itemId và bidderId phải > 0");
+        }
+        if (amount == null || amount.compareTo(BigDecimal.ZERO) <= 0) {
+            throw new IllegalArgumentException("Số tiền đặt giá phải lớn hơn 0");
+        }
         this.itemId = itemId;
         this.bidderId = bidderId;
         this.amount = amount;

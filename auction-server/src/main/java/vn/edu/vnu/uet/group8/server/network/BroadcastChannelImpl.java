@@ -9,6 +9,7 @@ import org.slf4j.LoggerFactory;
 import com.google.gson.Gson;
 
 import vn.edu.vnu.uet.group8.common.dto.response.ServerResponse;
+import vn.edu.vnu.uet.group8.common.enums.EventType;
 import vn.edu.vnu.uet.group8.common.util.GsonUtil;
 
 /**
@@ -24,7 +25,7 @@ public class BroadcastChannelImpl implements BroadcastChannel {
   public void addClient(ClientHandler handler) {
     if (handler == null) return;
     clients.add(handler);
-    log.debug("Client mới đăng ký – tổng={}", clients.size());
+    log.debug("Client mới đăng ký - tổng={}", clients.size());
   }
 
   @Override
@@ -44,7 +45,7 @@ public class BroadcastChannelImpl implements BroadcastChannel {
     return clients.size();
   }
 
-  private void pushToAll(ServerResponse response, String eventType) {
+  private void pushToAll(ServerResponse response, EventType eventType) {
     int sent = 0;
     for (ClientHandler client : clients) {
       try {
