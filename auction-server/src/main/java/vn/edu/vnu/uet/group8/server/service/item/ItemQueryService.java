@@ -183,14 +183,15 @@ public class ItemQueryService {
   // Logic Kiểm tra
   // ════════════════════════════════════════════════════
   public List<AuctionItemDTO> getAuctions(GetAuctionsRequest filter) throws SQLException {
-    if (filter.getCategory() != null
-        || filter.getMinPrice() != null
-        || filter.getMaxPrice() != null) {
-      return searchItems(filter.getCategory(), filter.getMinPrice(), filter.getMaxPrice());
-          
-    } else {
+    if (filter == null) {
       return getActiveItems();
     }
+    if (filter.getCategory() != null 
+        || filter.getMinPrice() != null 
+        || filter.getMaxPrice() != null) {
+      return searchItems(filter.getCategory(), filter.getMinPrice(), filter.getMaxPrice());
+    }
+    return getActiveItems();
   }
 
   // ════════════════════════════════════════════════════

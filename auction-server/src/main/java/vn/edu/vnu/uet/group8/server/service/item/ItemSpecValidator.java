@@ -59,10 +59,7 @@ public class ItemSpecValidator {
           "validateSpecs thất bại: category={}, missing={}",
           category, missing);
 
-      throw new ValidationException(
-          "Thiếu thông tin bắt buộc cho danh mục "
-              + category.name() + ": "
-              + String.join(", ", missing));
+      // Không còn throw ValidationException để người dùng có thể để trống specs
     }
 
     logger.debug("validateSpecs hợp lệ: category={}", category);

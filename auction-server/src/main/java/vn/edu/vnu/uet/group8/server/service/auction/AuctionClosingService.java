@@ -265,7 +265,7 @@ public class AuctionClosingService {
     // Bước 4: Broadcast — SAU KHI đã commit DB
     try {
       eventBus.publish(AuctionEndedEvent.sold(
-          itemId, itemTitle, finalPrice, winnerUsername));
+          itemId, itemTitle, finalPrice, winnerId, winnerUsername));
     } catch (Exception e) {
       logger.error("Lỗi khi publish AuctionEndedEvent (SOLD): {}", e.getMessage());
     }

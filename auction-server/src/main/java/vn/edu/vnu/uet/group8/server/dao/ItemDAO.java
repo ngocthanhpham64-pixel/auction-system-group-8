@@ -45,6 +45,7 @@ public class ItemDAO {
         .category(ItemCategory.valueOf(rs.getString("category")))
         .condition(parseCondition(rs.getString("condition_type")))
         .specs(parseSpecs(rs.getString("specs")))
+        .imageUrls(parseImageUrls(rs.getString("image_urls")))
         .status(parseStatus(rs.getString("status")))
         .build();
   }
@@ -56,8 +57,8 @@ public class ItemDAO {
   public void insert(Item item) throws SQLException {
     String sql = """
         INSERT INTO item
-          (seller_id, title, description, category, condition_type, specs, status, is_deleted, created_at)
-        VALUES (?,?,?,?,?,?,?,?,?)
+          (seller_id, title, description, category, condition_type, specs, image_urls, status, is_deleted, created_at)
+        VALUES (?,?,?,?,?,?,?,?,?,?)
         """;
 
     try (Connection conn = getConn(); 
@@ -80,13 +81,19 @@ public class ItemDAO {
         ps.setString(6, serializeSpecs(item.getSpecs()));
       }
 
-      if (item.getStatus() != null)
-          ps.setString(7, item.getStatus().name());
-      else
-          ps.setString(7, ItemStatus.DRAFT.name());
+      if (item.getImageUrls() == null || item.getImageUrls().isEmpty()) {
+        ps.setString(7, null);
+      } else {
+        ps.setString(7, serializeImageUrls(item.getImageUrls()));
+      }
 
-      ps.setBoolean(8, item.isDeleted());
-      ps.setTimestamp(9, Timestamp.from(item.getCreatedAt()));
+      if (item.getStatus() != null)
+          ps.setString(8, item.getStatus().name());
+      else
+          ps.setString(8, ItemStatus.DRAFT.name());
+
+      ps.setBoolean(9, item.isDeleted());
+      ps.setTimestamp(10, Timestamp.from(item.getCreatedAt()));
 
       ps.executeUpdate();
 
@@ -146,7 +153,7 @@ public class ItemDAO {
   public void update(Item item) throws SQLException {
     String sql = """
         UPDATE item
-        SET title = ?, description = ?, condition_type = ?, specs = ?, status = ?
+        SET title = ?, description = ?, condition_type = ?, specs = ?, image_urls = ?, status = ?
         WHERE item_id = ? AND is_deleted = false
         """;
 
@@ -166,12 +173,18 @@ public class ItemDAO {
         ps.setString(4, serializeSpecs(item.getSpecs()));
       }
 
-      if (item.getStatus() != null)
-          ps.setString(5, item.getStatus().name());
-      else
-          ps.setString(5, ItemStatus.DRAFT.name());
+      if (item.getImageUrls() == null || item.getImageUrls().isEmpty()) {
+        ps.setString(5, null);
+      } else {
+        ps.setString(5, serializeImageUrls(item.getImageUrls()));
+      }
 
-      ps.setInt(6, item.getId());
+      if (item.getStatus() != null)
+          ps.setString(6, item.getStatus().name());
+      else
+          ps.setString(6, ItemStatus.DRAFT.name());
+
+      ps.setInt(7, item.getId());
 
       int affected = ps.executeUpdate();
       if (affected == 0)
@@ -257,6 +270,16 @@ public class ItemDAO {
   private String serializeSpecs(Map<String, String> specs) {
       if (specs == null || specs.isEmpty()) return null;
       return GSON.toJson(specs);
+  }
+
+  private List<String> parseImageUrls(String json) {
+    if (json == null || json.isBlank()) return new ArrayList<>();
+    return GSON.fromJson(json, new TypeToken<List<String>>() {}.getType());
+  }
+
+  private String serializeImageUrls(List<String> imageUrls) {
+    if (imageUrls == null || imageUrls.isEmpty()) return null;
+    return GSON.toJson(imageUrls);
   }
 
   private ItemCondition parseCondition(String raw) {

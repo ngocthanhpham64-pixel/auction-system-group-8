@@ -164,6 +164,15 @@ public class BidTransactionDAO {
   }
 
   /**
+   * Dùng để hoàn tiền cho bidder khi phiên đấu giá bị HỦY (CANCELLED) bởi Admin.
+   */
+  public void refundBidderExternal(int bidderId, BigDecimal amount, int sessionId) throws SQLException {
+    try (Connection conn = DatabaseConnection.getInstance().getConnection()) {
+      refundBidder(conn, bidderId, amount, sessionId);
+    }
+  }
+
+  /**
    * Đếm tổng số lần bid của một item.
    */
   public int countByItem(int sessionId) throws SQLException {

@@ -166,7 +166,13 @@ public class BidValidator {
     }
 
     // Kiểm tra bước giá tối thiểu
-    BigDecimal minNextBid = calculateMinNextBid(as.getCurrentPrice());
+    BigDecimal minNextBid;
+    if (as.getBidCount() == 0) {
+      minNextBid = as.getStartingPrice();
+    } else {
+      minNextBid = calculateMinNextBid(as.getCurrentPrice());
+    }
+    
     if (bidAmount.compareTo(minNextBid) < 0) {
       throw new ValidationException(
           String.format(

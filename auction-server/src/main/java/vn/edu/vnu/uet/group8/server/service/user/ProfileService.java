@@ -1,6 +1,7 @@
 package vn.edu.vnu.uet.group8.server.service.user;
 
 import java.sql.SQLException;
+import java.util.List;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -13,6 +14,7 @@ import vn.edu.vnu.uet.group8.common.exception.UnauthorizedException;
 import vn.edu.vnu.uet.group8.common.exception.UserNotFoundException;
 import vn.edu.vnu.uet.group8.common.exception.ValidationException;
 import vn.edu.vnu.uet.group8.server.dao.UserDAO;
+import vn.edu.vnu.uet.group8.server.util.FileUtil;
 
 /**
  * Xử lý nghiệp vụ xem và cập nhật thông tin cá nhân.
@@ -125,8 +127,15 @@ public class ProfileService {
     if (address != null && !address.trim().isEmpty()) {
       member.setAddress(address.trim());
     }
-    if (avatarUrl != null) {
-      member.setAvatarUrl(avatarUrl.trim());
+    if (avatarUrl != null && !avatarUrl.trim().isEmpty()) {
+      String url = avatarUrl.trim();
+      if (!url.startsWith("http")) {
+        List<String> savedUrls = FileUtil.saveBase64Images(List.of(url));
+        if (!savedUrls.isEmpty()) {
+          url = savedUrls.get(0);
+        }
+      }
+      member.setAvatarUrl(url);
     }
 
     userDAO.updateProfile(member);

@@ -1,12 +1,16 @@
 package vn.edu.vnu.uet.group8.server.service.item;
 
+import java.math.BigDecimal;
 import java.sql.SQLException;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Map;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import vn.edu.vnu.uet.group8.common.entity.AuctionSession;
 import vn.edu.vnu.uet.group8.common.entity.Item;
 import vn.edu.vnu.uet.group8.common.entity.User;
 import vn.edu.vnu.uet.group8.common.enums.ItemCategory;
@@ -21,6 +25,7 @@ import vn.edu.vnu.uet.group8.common.exception.ValidationException;
 import vn.edu.vnu.uet.group8.server.dao.AuctionSessionDAO;
 import vn.edu.vnu.uet.group8.server.dao.ItemDAO;
 import vn.edu.vnu.uet.group8.server.dao.UserDAO;
+import vn.edu.vnu.uet.group8.server.util.FileUtil;
 
 /**
  * Xử lý các thao tác ghi liên quan đến Item.
@@ -71,6 +76,7 @@ public class ItemWriteService {
    * @param category    danh mục sản phẩm
    * @param condition   tình trạng sản phẩm
    * @param specs       thông số kỹ thuật theo category
+   * @param imageUrls   mảng đường dẫn hình ảnh sản phẩm
    * @return {@link Item} đã được lưu vào DB và có ID hợp lệ
    * @throws ValidationException   nếu input hoặc specs không hợp lệ
    * @throws UnauthorizedException nếu tài khoản không có quyền bán
@@ -82,7 +88,10 @@ public class ItemWriteService {
       String description,
       ItemCategory category,
       ItemCondition condition,
-      Map<String, String> specs) throws SQLException {
+      Map<String, String> specs,
+      List<String> imageUrls,
+      BigDecimal startPrice,
+      Integer durationHours) throws SQLException {
 
     // -- Kiểm tra seller tồn tại và đang ACTIVE
     User seller = userDAO.findById(sellerId)
@@ -112,15 +121,37 @@ public class ItemWriteService {
     // -- Validate specs theo category
     specValidator.validate(category, specs);
 
-    // -- Tạo entity — DRAFT, chưa có phiên đấu giá
+    // -- Xác định trạng thái ban đầu: Nếu có thông tin đấu giá thì đưa lên sàn luôn
+    boolean isPublishing = (startPrice != null && durationHours != null && durationHours > 0);
+    ItemStatus initStatus = isPublishing ? ItemStatus.LISTED : ItemStatus.DRAFT;
+
+    // -- Chuyển đổi Base64 thành file cứng và lấy link
+    List<String> savedImageUrls = FileUtil.saveBase64Images(imageUrls);
+
+    // -- Tạo entity Item
     Item item = new Item.Builder(sellerId, title, category)
         .description(description)
         .condition(condition)
         .specs(specs)
+        .imageUrls(savedImageUrls)
+        .status(initStatus)
         .build();
 
     itemDAO.insert(item);
     // item.getId() > 0 sau khi insert
+
+    // -- Tạo phiên đấu giá nếu đang Publish
+    if (isPublishing) {
+        Instant now = Instant.now();
+        Instant endTime = now.plus(durationHours, ChronoUnit.HOURS);
+        
+        AuctionSession session = new AuctionSession.Builder(item.getId(), startPrice, now, endTime).build();
+        // Mở phiên lập tức
+        session.transitionStatus(SessionStatus.UPCOMING, SessionStatus.ACTIVE);
+        
+        sessionDAO.insert(session);
+        logger.info("Đã tạo và mở phiên đấu giá cho item {}", item.getId());
+    }
 
     // -- Tự động thêm role SELLER nếu chưa có
     if (!seller.hasRole(UserRole.SELLER)) {
@@ -165,7 +196,8 @@ public class ItemWriteService {
       String title,
       String description,
       vn.edu.vnu.uet.group8.common.enums.ItemCondition condition,
-      Map<String, String> specs) throws SQLException {
+      Map<String, String> specs,
+      List<String> imageUrls) throws SQLException {
 
     Item item = itemDAO.findById(itemId)
         .orElseThrow(() -> new ItemNotFoundException(itemId));
@@ -202,6 +234,9 @@ public class ItemWriteService {
     }
     if (specs != null) {
       item.setSpecs(specs);
+    }
+    if (imageUrls != null) {
+      item.setImageUrls(FileUtil.saveBase64Images(imageUrls));
     }
 
     itemDAO.update(item);

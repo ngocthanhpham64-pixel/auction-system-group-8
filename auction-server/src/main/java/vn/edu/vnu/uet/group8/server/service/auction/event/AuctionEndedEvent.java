@@ -14,35 +14,38 @@ public final class AuctionEndedEvent {
   private final String     itemTitle;
   private final Outcome    outcome;
   private final BigDecimal finalPrice;    // null nếu NO_BID
+  private final Integer    winnerId;      // null nếu NO_BID
   private final String     winnerUsername;// null nếu NO_BID
 
   private AuctionEndedEvent(int itemId, String itemTitle,
       Outcome outcome, BigDecimal finalPrice,
-      String winnerUsername) {
+      Integer winnerId, String winnerUsername) {
     this.itemId         = itemId;
     this.itemTitle      = itemTitle;
     this.outcome        = outcome;
     this.finalPrice     = finalPrice;
+    this.winnerId       = winnerId;
     this.winnerUsername = winnerUsername;
   }
 
   public static AuctionEndedEvent sold(int itemId,
       String itemTitle, BigDecimal finalPrice,
-      String winnerUsername) {
+      Integer winnerId, String winnerUsername) {
     return new AuctionEndedEvent(itemId, itemTitle,
-        Outcome.SOLD, finalPrice, winnerUsername);
+        Outcome.SOLD, finalPrice, winnerId, winnerUsername);
   }
 
   public static AuctionEndedEvent noBid(
       int itemId, String itemTitle) {
     return new AuctionEndedEvent(itemId, itemTitle,
-        Outcome.NO_BID, null, null);
+        Outcome.NO_BID, null, null, null);
   }
 
   public int        getItemId()         { return itemId; }
   public String     getItemTitle()      { return itemTitle; }
   public Outcome    getOutcome()        { return outcome; }
   public BigDecimal getFinalPrice()     { return finalPrice; }
+  public Integer    getWinnerId()       { return winnerId; }
   public String     getWinnerUsername() { return winnerUsername; }
   public boolean    hasSold() {
     return outcome == Outcome.SOLD;

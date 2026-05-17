@@ -10,6 +10,7 @@ import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import vn.edu.vnu.uet.group8.common.dto.model.BidRecord;
 import vn.edu.vnu.uet.group8.common.dto.model.UserBidHistoryDTO;
 import vn.edu.vnu.uet.group8.common.entity.AuctionSession;
 import vn.edu.vnu.uet.group8.common.enums.SessionStatus;
@@ -68,6 +69,7 @@ public class AuctionService {
   private final AntiSnipingService antiSniping;
   private final AuctionEventBus   eventBus;
   private final BidTransactionDAO bidTransactionDAO;
+  private final AutoBidService autoBidService;
 
   public AuctionService(
       AuctionSessionDAO sessionDAO,
@@ -75,13 +77,15 @@ public class AuctionService {
       BidProcessor processor,
       AntiSnipingService antiSniping,
       AuctionEventBus eventBus,
-      BidTransactionDAO bidTransactionDAO) {
+      BidTransactionDAO bidTransactionDAO,
+      AutoBidService autoBidService) {
     this.sessionDAO  = sessionDAO;
     this.validator   = validator;
     this.processor   = processor;
     this.antiSniping = antiSniping;
     this.eventBus    = eventBus;
     this.bidTransactionDAO = bidTransactionDAO;
+    this.autoBidService = autoBidService;
   }
 
   // ════════════════════════════════════════════════════
@@ -239,6 +243,13 @@ public class AuctionService {
                 + ". Chỉ hủy được UPCOMING hoặc ACTIVE");
       }
 
+        // Hoàn tiền cho bidder đang dẫn đầu nếu phiên đang ACTIVE và đã có bid
+        if (session.getHighestBidderId() != null && session.getCurrentPrice() != null) {
+            bidTransactionDAO.refundBidderExternal(session.getHighestBidderId(), session.getCurrentPrice(), sessionId);
+            logger.info("Đã hoàn tiền {} cho user {} do phiên đấu giá {} bị hủy", 
+                session.getCurrentPrice(), session.getHighestBidderId(), sessionId);
+        }
+
       sessionDAO.updateStatus(sessionId, SessionStatus.CANCELLED);
 
       logger.info(
@@ -278,15 +289,26 @@ public class AuctionService {
   /**
    * Lấy lịch sử đặt giá của một phiên đấu giá.
    *
-   * <p>Trả về danh sách các lần đặt giá bao gồm thời gian, số tiền
-   * và tên người đặt (đã được ẩn một phần để bảo mật).
-   
-   * @param sessionId
-   * @return
-   * @throws SQLException
    */
-  public List<BidHistoryEntry> getItemBidHistory(int sessionId) throws SQLException {
-    return bidTransactionDAO.findHistoryByItem(sessionId);
+  public List<BidRecord> getItemBidHistory(int itemId) throws SQLException {
+    AuctionSession session = sessionDAO.findActiveSessionByItemId(itemId)
+        .orElse(sessionDAO.findUpcomingByItemId(itemId).orElse(null));
+        
+    if (session == null) {
+      return java.util.Collections.emptyList();
+    }
+
+    List<BidHistoryEntry> history = bidTransactionDAO.findHistoryByItem(session.getId());
+    
+    return history.stream().map(h -> BidRecord.builder()
+        .bidId(h.bidId())
+        .itemId(itemId)
+        .userId(h.bidderId())
+        .displayName(h.bidderUsername())
+        .amount(h.bidAmount())
+        .placedAt(h.bidTime())
+        .build())
+        .collect(Collectors.toList());
   }
 
   /**
@@ -329,6 +351,34 @@ public class AuctionService {
         .findById(sessionId)
         .orElseThrow(() -> new ItemNotFoundException(
             "Không tìm thấy phiên đấu giá với id=" + sessionId));
+  }
+
+  /**
+   * Kích hoạt cấu hình Proxy Auto-Bid.
+   */
+  public void placeAutoBid(int userId, int itemId, BigDecimal maxPrice) throws SQLException {
+    AuctionSession session = sessionDAO.findActiveSessionByItemId(itemId)
+        .orElseThrow(() -> new AuctionException("Không có phiên đấu giá nào đang hoạt động cho sản phẩm #" + itemId));
+    int sessionId = session.getId();
+
+    ReentrantLock lock = sessionLocks.computeIfAbsent(sessionId, id -> new ReentrantLock());
+    BidResult autoBidResult = null;
+    AntiSnipingResult snipingResult = null;
+
+    lock.lock();
+    try {
+      if (session.getStatus() != SessionStatus.ACTIVE || session.isExpired()) {
+        throw new AuctionException("Phiên đấu giá đã kết thúc hoặc không hợp lệ");
+      }
+      
+      autoBidService.configureAutoBid(userId, sessionId, maxPrice);
+      autoBidResult = autoBidService.resolveAutoBids(session);
+      if (autoBidResult != null) snipingResult = antiSniping.checkAndExtend(session);
+    } finally {
+      lock.unlock();
+    }
+
+    if (autoBidResult != null) publishBidPlacedEvent(autoBidResult, snipingResult);
   }
 
   /**

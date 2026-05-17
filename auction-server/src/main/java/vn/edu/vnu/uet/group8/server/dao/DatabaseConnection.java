@@ -1,16 +1,17 @@
 package vn.edu.vnu.uet.group8.server.dao;
 
-import com.zaxxer.hikari.HikariConfig;
-import com.zaxxer.hikari.HikariDataSource;
 import java.sql.Connection;
 import java.sql.SQLException;
+
+import com.zaxxer.hikari.HikariConfig;
+import com.zaxxer.hikari.HikariDataSource;
 
 public class DatabaseConnection {
   private static final String URL =
       "jdbc:mysql://localhost:3306/auction_db" +
       "?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true";
   private static final String USER = "root";
-  private static final String PASS = "";
+  private static final String PASS = "NgocThanh291@";
 
   private static volatile DatabaseConnection instance;
   private HikariDataSource dataSource;

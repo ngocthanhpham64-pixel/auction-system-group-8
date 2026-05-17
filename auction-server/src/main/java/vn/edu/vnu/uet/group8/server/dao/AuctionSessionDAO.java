@@ -182,21 +182,24 @@ public class AuctionSessionDAO {
 
   public List<AuctionSession> findByPriceRange(ItemCategory category, BigDecimal minPrice, 
     BigDecimal maxPrice) throws SQLException {
-    String sql = """
+    StringBuilder sql = new StringBuilder("""
         SELECT s.* FROM auction_session s
         JOIN item i ON s.item_id = i.item_id
-        WHERE i.category = ?
-          AND s.status = 'ACTIVE'
-          AND s.current_price BETWEEN ? AND ?
+        WHERE s.status = 'ACTIVE'
           AND s.is_deleted = false
           AND i.is_deleted = false
-        ORDER BY s.current_price ASC
-        """;
+        """);
 
-    return queryList(sql, ps -> {
-      ps.setString(1, category.name());
-      ps.setBigDecimal(2, minPrice);
-      ps.setBigDecimal(3, maxPrice);
+    if (category != null) sql.append(" AND i.category = ?");
+    if (minPrice != null) sql.append(" AND s.current_price >= ?");
+    if (maxPrice != null) sql.append(" AND s.current_price <= ?");
+    sql.append(" ORDER BY s.current_price ASC");
+
+    return queryList(sql.toString(), ps -> {
+      int index = 1;
+      if (category != null) ps.setString(index++, category.name());
+      if (minPrice != null) ps.setBigDecimal(index++, minPrice);
+      if (maxPrice != null) ps.setBigDecimal(index++, maxPrice);
     });
   }
 
