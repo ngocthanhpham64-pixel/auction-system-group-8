@@ -1,7 +1,17 @@
 package vn.edu.vnu.uet.group8.common.enums;
-import com.google.gson.annotations.SerializedName;
+
 public enum UserRole {
-    @SerializedName("member")   MEMBER,
-    @SerializedName("seller")   SELLER,
-    @SerializedName("admin")    ADMIN;
+  ADMIN("Quản trị viên"),
+  SELLER("Người bán"),
+  BIDDER("Người mua");
+
+  private final String label;
+
+  UserRole(String label) {
+    this.label = label;
+  }
+
+  public String getLabel() {
+    return label;
+  }
 }

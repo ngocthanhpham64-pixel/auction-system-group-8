@@ -1,12 +1,12 @@
 package vn.edu.vnu.uet.group8.common.util;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.google.gson.reflect.TypeToken;
-
 import java.lang.reflect.Type;
 import java.time.Instant;
 import java.util.List;
+
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.reflect.TypeToken;
 /**
  * Gson instance dùng chung toàn bộ project, đã cấu hình adapter cho Instant
  */
