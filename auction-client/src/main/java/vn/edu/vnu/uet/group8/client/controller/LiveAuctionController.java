@@ -18,9 +18,9 @@ import vn.edu.vnu.uet.group8.client.service.AuctionService;
 import vn.edu.vnu.uet.group8.client.service.BidService;
 import vn.edu.vnu.uet.group8.client.util.AlertUtil;
 import vn.edu.vnu.uet.group8.client.util.SessionManager;
-import vn.edu.vnu.uet.group8.common.dto.AuctionStatusDTO;
-import vn.edu.vnu.uet.group8.common.dto.ServerResponse;
-import vn.edu.vnu.uet.group8.common.entity.Item;
+import vn.edu.vnu.uet.group8.common.dto.model.AuctionStatusDTO;
+import vn.edu.vnu.uet.group8.common.dto.response.ServerResponse;
+import vn.edu.vnu.uet.group8.common.dto.model.AuctionItemDTO;
 
 import java.math.BigDecimal;
 import java.net.URL;
@@ -69,7 +69,7 @@ public class LiveAuctionController implements Initializable {
     @FXML private TextField tfChatInput;
 
     // ===== STATE =====
-    private Item currentItem;
+    private AuctionItemDTO currentItem;
     private BigDecimal currentPrice = BigDecimal.ZERO;
     private final BigDecimal bidStep = new BigDecimal("10000000");
     private Timeline countdown;
@@ -93,11 +93,11 @@ public class LiveAuctionController implements Initializable {
             return;
         }
 
-        if (lblProductName != null && currentItem.getName() != null) {
-            lblProductName.setText(currentItem.getName());
+        if (lblProductName != null && currentItem.getTitle() != null) {
+            lblProductName.setText(currentItem.getTitle());
         }
         if (lblCategory != null && currentItem.getCategory() != null) {
-            lblCategory.setText(currentItem.getCategory());
+            lblCategory.setText(currentItem.getCategory().name());
         }
         if (lblDescription != null && currentItem.getDescription() != null) {
             lblDescription.setText(currentItem.getDescription());
@@ -140,7 +140,7 @@ public class LiveAuctionController implements Initializable {
         if (status == null) return;
 
         // Chi update neu la item dang xem
-        if (currentItem != null && status.getItemId() != currentItem.getId()) return;
+        if (currentItem != null && status.getItemId() != currentItem.getItemId()) return;
 
         BigDecimal oldPrice = currentPrice;
         currentPrice = status.getCurrentPrice() != null ? status.getCurrentPrice() : currentPrice;
@@ -201,7 +201,7 @@ public class LiveAuctionController implements Initializable {
         }
 
         // Real bid
-        BidService.placeBid(currentItem.getId(), amount, response -> {
+        BidService.placeBid(currentItem.getItemId(), amount, response -> {
             if (response != null && response.isSuccess()) {
                 if (tfBidAmount != null) tfBidAmount.clear();
                 LOGGER.info(() -> "Bid thanh cong: " + amount);

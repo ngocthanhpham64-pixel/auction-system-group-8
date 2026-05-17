@@ -1,5 +1,9 @@
 package vn.edu.vnu.uet.group8.client.controller;
 
+import java.net.URL;
+import java.util.ResourceBundle;
+import java.util.logging.Logger;
+
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -14,15 +18,10 @@ import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.layout.HBox;
-
 import vn.edu.vnu.uet.group8.client.service.AdminService;
 import vn.edu.vnu.uet.group8.client.util.AlertUtil;
 import vn.edu.vnu.uet.group8.client.util.SessionManager;
-import vn.edu.vnu.uet.group8.common.dto.UserAdminDTO;
-
-import java.net.URL;
-import java.util.ResourceBundle;
-import java.util.logging.Logger;
+import vn.edu.vnu.uet.group8.common.dto.model.UserAdminDTO;
 
 /**
  * AdminUserListController — quản lý người dùng.
@@ -187,6 +186,7 @@ public class AdminUserListController implements Initializable {
 
     private boolean matchRole(UserAdminDTO u, String filter) {
         if (filter == null || filter.startsWith("Tất cả")) return true;
+        if ("ADMIN".equals(filter)) return u.isAdmin();
         return filter.equals(u.getRole());
     }
 

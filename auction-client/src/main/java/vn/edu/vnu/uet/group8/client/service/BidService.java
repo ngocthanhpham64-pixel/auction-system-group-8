@@ -1,18 +1,19 @@
 package vn.edu.vnu.uet.group8.client.service;
 
-import vn.edu.vnu.uet.group8.client.networking.AuctionClient;
-import vn.edu.vnu.uet.group8.client.util.SessionManager;
-import vn.edu.vnu.uet.group8.common.dto.AutoBidRequest;
-import vn.edu.vnu.uet.group8.common.dto.BidRecord;
-import vn.edu.vnu.uet.group8.common.dto.BidRequest;
-import vn.edu.vnu.uet.group8.common.dto.BidResponse;
-import vn.edu.vnu.uet.group8.common.dto.ServerRequest;
-import vn.edu.vnu.uet.group8.common.enums.ActionType;
-import vn.edu.vnu.uet.group8.common.util.GsonUtil;
-
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Consumer;
+
+import vn.edu.vnu.uet.group8.client.networking.AuctionClient;
+import vn.edu.vnu.uet.group8.client.util.SessionManager;
+import vn.edu.vnu.uet.group8.common.dto.model.BidRecord;
+import vn.edu.vnu.uet.group8.common.dto.request.AutoBidRequest;
+import vn.edu.vnu.uet.group8.common.dto.request.BidRequest;
+import vn.edu.vnu.uet.group8.common.dto.request.ServerRequest;
+import vn.edu.vnu.uet.group8.common.dto.response.BidResponse;
+import vn.edu.vnu.uet.group8.common.enums.ActionType;
+import vn.edu.vnu.uet.group8.common.util.GsonUtil;
 
 /**
  * Service xử lý đặt giá thủ công, auto-bid và lịch sử đặt giá.
@@ -107,11 +108,11 @@ public final class BidService {
             onResult.accept(List.of());
             return;
         }
-        ServerRequest<Integer> request = ServerRequest
-                .<Integer> builder(ActionType.BID_HISTORY)
+        ServerRequest<Map<String, Integer>> request = ServerRequest
+                .<Map<String, Integer>> builder(ActionType.BID_HISTORY)
                 .userId(SessionManager.getUserId())
                 .token(SessionManager.getAuthToken())
-                .payload(itemId)
+                .payload(Map.of("itemId", itemId))
                 .build();
         AuctionClient.getInstance().sendRequest(request,response -> {
             if(response.isSuccess()){

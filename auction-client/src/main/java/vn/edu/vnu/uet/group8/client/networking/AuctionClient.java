@@ -1,16 +1,11 @@
 package vn.edu.vnu.uet.group8.client.networking;
 
-import javafx.application.Platform;
-import vn.edu.vnu.uet.group8.common.dto.ServerRequest;
-import vn.edu.vnu.uet.group8.common.dto.ServerResponse;
-import vn.edu.vnu.uet.group8.common.enums.ActionType;
-import vn.edu.vnu.uet.group8.client.util.SessionManager;
-import vn.edu.vnu.uet.group8.client.model.ClientModel;
-import vn.edu.vnu.uet.group8.client.util.SceneManager;
-import vn.edu.vnu.uet.group8.client.util.AlertUtil;
-import vn.edu.vnu.uet.group8.common.util.GsonUtil;
-
-import java.io.*;
+import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.EOFException;
+import java.io.IOException;
 import java.net.Socket;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -20,6 +15,16 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+
+import javafx.application.Platform;
+import vn.edu.vnu.uet.group8.client.model.ClientModel;
+import vn.edu.vnu.uet.group8.client.util.AlertUtil;
+import vn.edu.vnu.uet.group8.client.util.SceneManager;
+import vn.edu.vnu.uet.group8.client.util.SessionManager;
+import vn.edu.vnu.uet.group8.common.dto.request.ServerRequest;
+import vn.edu.vnu.uet.group8.common.dto.response.ServerResponse;
+import vn.edu.vnu.uet.group8.common.enums.ActionType;
+import vn.edu.vnu.uet.group8.common.util.GsonUtil;
 
 /**
  * AuctionClient - Singleton quản lý kết nối     Socket tới server.
@@ -48,6 +53,8 @@ public final class AuctionClient {
     // Thread pool
     private ExecutorService receiverExecutor;
     private ScheduledExecutorService heartbeatExecutor;
+    private String host;
+    private int port;
 
     // Logger thay vì System.out/err - có timestamp, cấp độ log, dễ debug
     private static final Logger LOGGER = Logger.getLogger(AuctionClient.class.getName());
@@ -65,11 +72,13 @@ public final class AuctionClient {
      * @param port server port (ví dụ 12345)
      * @throws IOException nếu không thể kết nối
      */
-    public  synchronized void connect(String host, int port) throws IOException {
+    public synchronized void connect(String host, int port) throws IOException {
         if (connected.get()) {
             LOGGER.info("Already connected, ignoring connect request.");
             return;
         }
+        this.host = host;
+        this.port = port;
         disconnect();// dọn dẹp kết nối cũ
         socket = new Socket(host, port);
         // Dùng BufferedOutputStream để tăng hiệu suất (giảm số lần write system call)
@@ -86,6 +95,21 @@ public final class AuctionClient {
         receiverExecutor.submit(this::listenLoop);
         // Khởi động heartbeat định kỳ
         startHeartbeat();
+    }
+
+    /**
+     * Thử kết nối lại với thông số cũ nếu đã mất kết nối.
+     */
+    public synchronized boolean reconnect() {
+        if (connected.get()) return true;
+        if (host == null || port == 0) return false;
+        try {
+            connect(host, port);
+            return true;
+        } catch (IOException e) {
+            LOGGER.warning("Reconnect failed: " + e.getMessage());
+            return false;
+        }
     }
 
     /**
@@ -278,4 +302,3 @@ public final class AuctionClient {
         });
     }
 }
-

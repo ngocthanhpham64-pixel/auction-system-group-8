@@ -1,5 +1,11 @@
 package vn.edu.vnu.uet.group8.client.controller;
 
+import java.math.BigDecimal;
+import java.net.URL;
+import java.time.Instant;
+import java.util.List;
+import java.util.ResourceBundle;
+
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.control.Button;
@@ -7,18 +13,12 @@ import javafx.scene.control.Label;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
-
 import vn.edu.vnu.uet.group8.client.model.ClientModel;
 import vn.edu.vnu.uet.group8.client.service.SellerService;
 import vn.edu.vnu.uet.group8.client.util.AlertUtil;
 import vn.edu.vnu.uet.group8.client.util.SceneManager;
-import vn.edu.vnu.uet.group8.common.entity.Item;
-
-import java.math.BigDecimal;
-import java.net.URL;
-import java.time.Instant;
-import java.util.List;
-import java.util.ResourceBundle;
+import vn.edu.vnu.uet.group8.common.dto.model.AuctionItemDTO;
+import vn.edu.vnu.uet.group8.common.enums.SessionStatus;
 
 /**
  * SellerDashboardController — quản lý sản phẩm của seller.
@@ -42,7 +42,7 @@ public class SellerDashboardController implements Initializable {
 
     private Button activeTab;
     private String currentFilter = "all";
-    private List<Item> myItems = List.of();
+    private List<AuctionItemDTO> myItems = List.of();
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
@@ -75,31 +75,32 @@ public class SellerDashboardController implements Initializable {
         lblEmpty.setVisible(false);
         lblEmpty.setManaged(false);
 
-        List<Item> filtered = myItems.stream()
+        List<AuctionItemDTO> filtered = myItems.stream()
                 .filter(this::matchTab)
                 .toList();
 
-        for (Item item : filtered) {
+        for (AuctionItemDTO item : filtered) {
             itemListContainer.getChildren().add(buildItemRow(item));
         }
     }
 
-    private boolean matchTab(Item item) {
-        // TODO: BE cần thêm Item.status (DRAFT/LISTED/SOLD) để filter chính xác
+    private boolean matchTab(AuctionItemDTO item) {
         return switch (currentFilter) {
-            case "draft"  -> false;  // chưa có cách phân biệt draft
-            case "listed" -> isActive(item);
-            case "sold"   -> !isActive(item);
+            case "draft"  -> item.getStatus() == SessionStatus.UPCOMING;
+            case "listed" -> item.getStatus() == SessionStatus.ACTIVE;
+            case "sold"   -> item.getStatus() == SessionStatus.SOLD 
+                          || item.getStatus() == SessionStatus.ENDED_NO_BID 
+                          || item.getStatus() == SessionStatus.CANCELLED;
             default       -> true;
         };
     }
 
-    private boolean isActive(Item item) {
+    private boolean isActive(AuctionItemDTO item) {
         if (item.getEndTime() == null) return false;
         return item.getEndTime().isAfter(Instant.now());
     }
 
-    private HBox buildItemRow(Item item) {
+    private HBox buildItemRow(AuctionItemDTO item) {
         HBox row = new HBox(16);
         row.getStyleClass().add("card");
         row.setStyle("-fx-padding: 16; -fx-background-radius: 12;");
@@ -107,10 +108,10 @@ public class SellerDashboardController implements Initializable {
         VBox info = new VBox(4);
         HBox.setHgrow(info, Priority.ALWAYS);
 
-        Label name = new Label(item.getName());
+        Label name = new Label(item.getTitle());
         name.getStyleClass().add("h3");
 
-        Label category = new Label(item.getCategory() != null ? item.getCategory() : "--");
+        Label category = new Label(item.getCategory() != null ? item.getCategory().name() : "--");
         category.getStyleClass().add("label-info");
 
         Label price = new Label(String.format("%,.0f đ",
@@ -138,11 +139,11 @@ public class SellerDashboardController implements Initializable {
     }
 
     private void updateStats() {
-        int listed = (int) myItems.stream().filter(this::isActive).count();
-        int sold = (int) myItems.stream().filter(it -> !isActive(it)).count();
+        int listed = (int) myItems.stream().filter(it -> it.getStatus() == SessionStatus.ACTIVE).count();
+        int sold = (int) myItems.stream().filter(it -> it.getStatus() == SessionStatus.SOLD).count();
         BigDecimal revenue = myItems.stream()
-                .filter(it -> !isActive(it))
-                .map(Item::getCurrentPrice)
+                .filter(it -> it.getStatus() == SessionStatus.SOLD)
+                .map(AuctionItemDTO::getCurrentPrice)
                 .filter(p -> p != null)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
@@ -159,19 +160,19 @@ public class SellerDashboardController implements Initializable {
         SceneManager.switchTo("CreateItemView.fxml");
     }
 
-    private void onEditItem(Item item) {
+    private void onEditItem(AuctionItemDTO item) {
         // Tạm dùng setCurrentAuctionItem để truyền item sang CreateItemView
         ClientModel.getInstance().setCurrentAuctionItem(item);
         SceneManager.switchTo("CreateItemView.fxml");
     }
 
-    private void onDeleteItem(Item item) {
+    private void onDeleteItem(AuctionItemDTO item) {
         boolean ok = AlertUtil.showConfirm("Xác nhận xóa",
-                "Xóa sản phẩm \"" + item.getName() + "\"?\n"
+                "Xóa sản phẩm \"" + item.getTitle() + "\"?\n"
                         + "Hành động này không thể hoàn tác.");
         if (!ok) return;
 
-        SellerService.deleteItem(item.getId(), success -> {
+        SellerService.deleteItem(item.getItemId(), success -> {
             if (success) {
                 AlertUtil.showInfo("Đã xóa sản phẩm");
                 loadMyListings();

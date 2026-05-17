@@ -1,5 +1,15 @@
 package vn.edu.vnu.uet.group8.client.controller;
 
+import java.math.BigDecimal;
+import java.net.URL;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
+import java.util.ResourceBundle;
+import java.util.logging.Logger;
+
 import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
@@ -9,16 +19,11 @@ import javafx.scene.control.TextInputDialog;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
-
 import vn.edu.vnu.uet.group8.client.model.ClientModel;
 import vn.edu.vnu.uet.group8.client.service.UserService;
 import vn.edu.vnu.uet.group8.client.util.AlertUtil;
-
-import java.math.BigDecimal;
-import java.net.URL;
-import java.util.Optional;
-import java.util.ResourceBundle;
-import java.util.logging.Logger;
+import vn.edu.vnu.uet.group8.common.dto.model.TransactionHistoryEntry;
+import vn.edu.vnu.uet.group8.common.enums.TransactionType;
 
 /**
  * WalletController — quan ly so du + lich su giao dich.
@@ -47,12 +52,14 @@ public class WalletController implements Initializable {
 
     private Button activeTab;
     private String currentFilter = "all";
+    private List<TransactionHistoryEntry> allTransactions = new ArrayList<>();
+    private static final DateTimeFormatter DATE_FORMAT = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm").withZone(ZoneId.systemDefault());
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
         bindBalance();
         activeTab = btnTabAll;
-        renderTransactions();  // Render demo data theo tab dau tien
+        loadTransactions();
     }
 
     /** Binding balance label voi ClientModel.balanceProperty. */
@@ -123,8 +130,32 @@ public class WalletController implements Initializable {
      */
     @FXML
     private void onWithdraw() {
-        AlertUtil.showInfo("Tinh nang rut tien dang phat trien.\n"
-                + "Vui long lien he ho tro de rut tien thu cong.");
+        TextInputDialog dialog = new TextInputDialog();
+        dialog.setTitle("Rut tien");
+        dialog.setHeaderText("Rut tien ve tai khoan ngan hang");
+        dialog.setContentText("So tien (VND):");
+
+        Optional<String> input = dialog.showAndWait();
+        if (input.isEmpty()) return;
+
+        BigDecimal amount = parseAmount(input.get());
+        if (amount == null) {
+            AlertUtil.showWarning("So tien khong hop le");
+            return;
+        }
+
+        boolean confirm = AlertUtil.showConfirm("Xac nhan",
+                "Rut " + formatVnd(amount) + " ve tai khoan ngan hang?");
+        if (!confirm) return;
+
+        LOGGER.info(() -> "Yeu cau rut tien: " + amount);
+        UserService.withdraw(amount, success -> {
+            if (success) {
+                AlertUtil.showInfo("Rut tien thanh cong! -" + formatVnd(amount));
+            } else {
+                AlertUtil.showError("Rut tien that bai. Kiem tra lai so du.");
+            }
+        });
     }
 
     /**
@@ -171,18 +202,69 @@ public class WalletController implements Initializable {
         renderTransactions();
     }
 
-    /**
-     * Render danh sach giao dich theo filter.
-     * Demo: FXML co data san san pham, controller them empty state.
-     */
+    private void loadTransactions() {
+        UserService.loadTransactions(list -> Platform.runLater(() -> {
+            allTransactions = list != null ? list : new ArrayList<>();
+            updateTotalSpent();
+            renderTransactions();
+        }));
+    }
+
+    private void updateTotalSpent() {
+        if (lblTotalSpent == null) return;
+        BigDecimal spent = allTransactions.stream()
+                .filter(t -> t.type() == TransactionType.BID_WIN)
+                .map(TransactionHistoryEntry::amount)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        lblTotalSpent.setText(formatVnd(spent.abs()));
+    }
+
     private void renderTransactions() {
         if (transactionList == null) return;
 
-        // FXML co data demo san - khong xoa
-        // Day la noi tot de filter khi co API getTransactions
-        LOGGER.fine(() -> "Filter giao dich: " + currentFilter);
+        transactionList.getChildren().clear();
+        if (allTransactions.isEmpty()) {
+            Label empty = new Label("Chưa có giao dịch nào");
+            empty.getStyleClass().add("label-info");
+            transactionList.getChildren().add(empty);
+            return;
+        }
+        List<TransactionHistoryEntry> filtered = allTransactions.stream()
+                .filter(this::matchFilter)
+                .toList();
+        for (TransactionHistoryEntry tx : filtered) {
+            transactionList.getChildren().add(buildTransactionRow(tx));
+        }
     }
 
+    private boolean matchFilter(TransactionHistoryEntry tx) {
+        return switch (currentFilter) {
+            case "deposit" -> tx.type() == TransactionType.DEPOSIT || tx.type() == TransactionType.WITHDRAW;
+            case "hold"    -> tx.type() == TransactionType.BID_HOLD || tx.type() == TransactionType.BID_REFUND;
+            case "payment" -> tx.type() == TransactionType.BID_WIN;
+            default        -> true;
+        };
+    }
+
+    private HBox buildTransactionRow(TransactionHistoryEntry tx) {
+        HBox row = new HBox(10);
+        row.setStyle("-fx-padding: 10; -fx-background-color: #f8fafc; -fx-background-radius: 6;");
+        
+        VBox info = new VBox(4);
+        HBox.setHgrow(info, Priority.ALWAYS);
+        
+        Label typeLabel = new Label(tx.type().name());
+        typeLabel.setStyle("-fx-font-weight: bold;");
+        Label dateLabel = new Label(DATE_FORMAT.format(tx.createdAt()));
+        dateLabel.setStyle("-fx-text-fill: #64748b; -fx-font-size: 11px;");
+        info.getChildren().addAll(typeLabel, dateLabel);
+        
+        Label amountLabel = new Label((tx.amount().compareTo(BigDecimal.ZERO) >= 0 ? "+" : "") + formatVnd(tx.amount()));
+        amountLabel.setStyle(tx.amount().compareTo(BigDecimal.ZERO) >= 0 ? "-fx-text-fill: #22c55e; -fx-font-weight: bold;" : "-fx-text-fill: #ef4444; -fx-font-weight: bold;");
+        
+        row.getChildren().addAll(info, amountLabel);
+        return row;
+    }
     // ===== HELPERS =====
 
     /**

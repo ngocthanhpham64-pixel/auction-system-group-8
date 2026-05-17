@@ -1,5 +1,17 @@
 package vn.edu.vnu.uet.group8.client.controller;
 
+import java.io.File;
+import java.math.BigDecimal;
+import java.net.URL;
+import java.nio.file.Files;
+import java.util.ArrayList;
+import java.util.Base64;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.ResourceBundle;
+import java.util.logging.Logger;
+
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.control.Button;
@@ -9,17 +21,12 @@ import javafx.scene.control.Label;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.VBox;
-
+import javafx.stage.FileChooser;
 import vn.edu.vnu.uet.group8.client.service.SellerService;
 import vn.edu.vnu.uet.group8.client.util.AlertUtil;
 import vn.edu.vnu.uet.group8.client.util.SceneManager;
-
-import java.math.BigDecimal;
-import java.net.URL;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.ResourceBundle;
-import java.util.logging.Logger;
+import vn.edu.vnu.uet.group8.common.enums.ItemCategory;
+import vn.edu.vnu.uet.group8.common.enums.ItemCondition;
 
 /**
  * CreateItemController — form dang san pham moi.
@@ -68,6 +75,9 @@ public class CreateItemController implements Initializable {
     @FXML private Label lblError;
     @FXML private Button btnSubmit;
 
+    // Lưu trữ các chuỗi Base64 của ảnh được tải lên
+    private final List<String> base64Images = new ArrayList<>();
+
     @Override
     public void initialize(URL location, ResourceBundle resources) {
         initComboBoxes();
@@ -79,13 +89,13 @@ public class CreateItemController implements Initializable {
     private void initComboBoxes() {
         if (cbCategory != null) {
             cbCategory.getItems().setAll(
-                    "Dong ho cao cap", "Dien tu", "Trang suc", "Nghe thuat",
-                    "Xe co", "Sach quy", "Do co", "Thoi trang", "Khac"
+                    ItemCategory.WATCHES.getLabel(), ItemCategory.ELECTRONICS.getLabel(), ItemCategory.JEWELRY.getLabel(), ItemCategory.ART.getLabel(),
+                    ItemCategory.VEHICLES.getLabel(), ItemCategory.BOOKS.getLabel(), ItemCategory.ANTIQUES.getLabel(), ItemCategory.FASHION.getLabel(), ItemCategory.OTHER.getLabel()
             );
         }
         if (cbCondition != null) {
             cbCondition.getItems().setAll(
-                    "Moi 100%", "Nhu moi (99%)", "Tot (90%)", "Kha (70%)", "Cu (50%)"
+                    ItemCondition.NEW.getLabel(), ItemCondition.LIKE_NEW.getLabel(), ItemCondition.USED.getLabel()
             );
             cbCondition.getSelectionModel().selectFirst();
         }
@@ -130,18 +140,38 @@ public class CreateItemController implements Initializable {
         }
     }
 
+    // Gắn hàm này vào một nút "Thêm ảnh" (vd: btnAddImage) trên giao diện FXML
+    @FXML
+    private void onChooseImage() {
+        FileChooser fileChooser = new FileChooser();
+        fileChooser.setTitle("Chọn hình ảnh sản phẩm");
+        fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("Image Files", "*.png", "*.jpg", "*.jpeg"));
+        
+        File selectedFile = fileChooser.showOpenDialog(null);
+        if (selectedFile != null) {
+            try {
+                byte[] fileContent = Files.readAllBytes(selectedFile.toPath());
+                String encodedString = Base64.getEncoder().encodeToString(fileContent);
+                base64Images.add(encodedString);
+                AlertUtil.showInfo("Đã thêm 1 ảnh (" + selectedFile.getName() + ")");
+            } catch (Exception e) {
+                showError("Lỗi đọc file ảnh");
+            }
+        }
+    }
+
     // ===== SUBMIT =====
 
     @FXML
     private void onSubmit() {
         // Lay input
         String name = safeText(tfName);
-        String category = cbCategory != null ? cbCategory.getValue() : null;
-        String condition = cbCondition != null ? cbCondition.getValue() : null;
+        String categoryLabel = cbCategory != null ? cbCategory.getValue() : null;
+        String conditionLabel = cbCondition != null ? cbCondition.getValue() : null;
         String description = taDescription != null ? taDescription.getText().trim() : "";
 
         // Validate
-        String error = validateRequired(name, category, condition, description);
+        String error = validateRequired(name, categoryLabel, conditionLabel, description);
         if (error != null) {
             showError(error);
             return;
@@ -174,14 +204,24 @@ public class CreateItemController implements Initializable {
             }
         }
 
+        // Chuyển đổi label tiếng Việt sang tên Enum tiếng Anh
+        String categoryEnumName = getCategoryNameFromLabel(categoryLabel);
+        String conditionEnumName = getConditionNameFromLabel(conditionLabel);
+
         // Build specs
         Map<String, String> specs = collectSpecs();
+        
+        if (hasCert) {
+            specs.put("isVerified", "true");
+            specs.put("certBody", certBody);
+            specs.put("certId", certId);
+        }
 
         // Build request
         SellerService.CreateItemRequest request = new SellerService.CreateItemRequest(
-                name, category, condition, description,
+                name, categoryEnumName, conditionEnumName, description,
                 startPrice, bidStep, duration,
-                specs, hasCert, certBody, certId
+                specs, base64Images, hasCert, certBody, certId
         );
 
         // Confirm
@@ -212,7 +252,7 @@ public class CreateItemController implements Initializable {
     }
 
     private String validateRequired(String name, String category, String condition, String description) {
-        if (name.isEmpty()) return "Vui long nhap ten san pham";
+        if (name.isEmpty()) return "Vui long nhap ten san pham"; // 'category' and 'condition' are now labels
         if (name.length() < 5 || name.length() > 100) return "Ten 5-100 ky tu";
         if (category == null) return "Vui long chon danh muc";
         if (condition == null) return "Vui long chon tinh trang";
@@ -331,5 +371,38 @@ public class CreateItemController implements Initializable {
         if (lblError == null) return;
         lblError.setVisible(false);
         lblError.setManaged(false);
+    }
+
+    /**
+     * Chuyển đổi nhãn danh mục tiếng Việt sang tên Enum tiếng Anh.
+     */
+    private String getCategoryNameFromLabel(String label) {
+        if (label == null) return null;
+        for (ItemCategory category : ItemCategory.values()) {
+            if (category.getLabel().equalsIgnoreCase(label)) {
+                return category.name();
+            }
+        }
+        // Fallback hoặc ném lỗi nếu không tìm thấy
+        LOGGER.warning("Unknown category label: " + label);
+        return ItemCategory.OTHER.name(); // Mặc định là OTHER
+    }
+
+    /**
+     * Chuyển đổi nhãn tình trạng tiếng Việt sang tên Enum tiếng Anh.
+     */
+    private String getConditionNameFromLabel(String label) {
+        if (label == null) return null;
+        for (ItemCondition condition : ItemCondition.values()) {
+            if (condition.getLabel().equalsIgnoreCase(label)) {
+                return condition.name();
+            }
+        }
+        // Do các nhãn "Tốt (90%)", "Khá (70%)", "Cũ (50%)" đều map về USED
+        if (label.equals("Tot (90%)") || label.equals("Kha (70%)") || label.equals("Cu (50%)")) {
+            return ItemCondition.USED.name();
+        }
+        LOGGER.warning("Unknown condition label: " + label);
+        return ItemCondition.USED.name(); // Mặc định là USED
     }
 }

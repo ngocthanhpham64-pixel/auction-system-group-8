@@ -1,5 +1,10 @@
 package vn.edu.vnu.uet.group8.client.controller;
 
+import java.net.URL;
+import java.util.Optional;
+import java.util.ResourceBundle;
+import java.util.logging.Logger;
+
 import javafx.application.Platform;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
@@ -15,16 +20,11 @@ import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
 import javafx.scene.control.TextInputDialog;
 import javafx.scene.control.cell.PropertyValueFactory;
-
 import vn.edu.vnu.uet.group8.client.service.AdminService;
 import vn.edu.vnu.uet.group8.client.util.AlertUtil;
 import vn.edu.vnu.uet.group8.client.util.UIFormatter;
-import vn.edu.vnu.uet.group8.common.dto.AuctionSummaryDTO;
-
-import java.net.URL;
-import java.util.Optional;
-import java.util.ResourceBundle;
-import java.util.logging.Logger;
+import vn.edu.vnu.uet.group8.common.dto.model.AuctionItemDTO;
+import vn.edu.vnu.uet.group8.common.enums.SessionStatus;
 
 /**
  * AdminAuctionListController — quản lý phiên đấu giá.
@@ -45,20 +45,20 @@ public class AdminAuctionListController implements Initializable {
 
     private static final Logger LOGGER = Logger.getLogger(AdminAuctionListController.class.getName());
 
-    @FXML private TableView<AuctionSummaryDTO> auctionTable;
-    @FXML private TableColumn<AuctionSummaryDTO, Integer> colId;
-    @FXML private TableColumn<AuctionSummaryDTO, String> colTitle;
-    @FXML private TableColumn<AuctionSummaryDTO, String> colPrice;
-    @FXML private TableColumn<AuctionSummaryDTO, String> colStatus;
-    @FXML private TableColumn<AuctionSummaryDTO, String> colEndTime;
-    @FXML private TableColumn<AuctionSummaryDTO, Void> colAction;
+    @FXML private TableView<AuctionItemDTO> auctionTable;
+    @FXML private TableColumn<AuctionItemDTO, Integer> colId;
+    @FXML private TableColumn<AuctionItemDTO, String> colTitle;
+    @FXML private TableColumn<AuctionItemDTO, String> colPrice;
+    @FXML private TableColumn<AuctionItemDTO, String> colStatus;
+    @FXML private TableColumn<AuctionItemDTO, String> colEndTime;
+    @FXML private TableColumn<AuctionItemDTO, Void> colAction;
 
     // Optional fields
     @FXML private TextField tfSearch;
     @FXML private ComboBox<String> cbFilterStatus;
 
-    private final ObservableList<AuctionSummaryDTO> allAuctions = FXCollections.observableArrayList();
-    private FilteredList<AuctionSummaryDTO> filteredAuctions;
+    private final ObservableList<AuctionItemDTO> allAuctions = FXCollections.observableArrayList();
+    private FilteredList<AuctionItemDTO> filteredAuctions;
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
@@ -70,11 +70,12 @@ public class AdminAuctionListController implements Initializable {
     }
 
     private void setupTable() {
-        colId.setCellValueFactory(new PropertyValueFactory<>("id"));
+        colId.setCellValueFactory(new PropertyValueFactory<>("itemId"));
         colTitle.setCellValueFactory(new PropertyValueFactory<>("title"));
         colPrice.setCellValueFactory(cell ->
                 new SimpleStringProperty(UIFormatter.formatPrice(cell.getValue().getCurrentPrice())));
-        colStatus.setCellValueFactory(new PropertyValueFactory<>("status"));
+        colStatus.setCellValueFactory(cell ->
+                new SimpleStringProperty(cell.getValue().getStatus() != null ? cell.getValue().getStatus().name() : ""));
         colEndTime.setCellValueFactory(cell ->
                 new SimpleStringProperty(UIFormatter.formatInstant(cell.getValue().getEndTime())));
 
@@ -121,11 +122,11 @@ public class AdminAuctionListController implements Initializable {
                     setGraphic(null);
                     return;
                 }
-                AuctionSummaryDTO auction = (AuctionSummaryDTO) getTableRow().getItem();
-                String status = auction.getStatus();
+                AuctionItemDTO auction = (AuctionItemDTO) getTableRow().getItem();
+                SessionStatus status = auction.getStatus();
 
                 // Chỉ cho phép hủy phiên đang ACTIVE
-                btnCancel.setDisable(!"ACTIVE".equals(status));
+                btnCancel.setDisable(SessionStatus.ACTIVE != status);
 
                 btnCancel.setOnAction(e -> cancelAuction(auction));
 
@@ -155,15 +156,15 @@ public class AdminAuctionListController implements Initializable {
         filteredAuctions.setPredicate(a -> matchSearch(a, search) && matchStatus(a, status));
     }
 
-    private boolean matchSearch(AuctionSummaryDTO a, String search) {
+    private boolean matchSearch(AuctionItemDTO a, String search) {
         if (search.isEmpty()) return true;
         String title = a.getTitle() != null ? a.getTitle().toLowerCase() : "";
         return title.contains(search);
     }
 
-    private boolean matchStatus(AuctionSummaryDTO a, String filter) {
+    private boolean matchStatus(AuctionItemDTO a, String filter) {
         if (filter == null || filter.startsWith("Tất cả")) return true;
-        return filter.equals(a.getStatus());
+        return a.getStatus() != null && filter.equals(a.getStatus().name());
     }
 
     // ===== LOAD =====
@@ -180,12 +181,12 @@ public class AdminAuctionListController implements Initializable {
     /** Hủy phiên đang select. */
     @FXML
     public void cancelSelected() {
-        AuctionSummaryDTO auction = auctionTable.getSelectionModel().getSelectedItem();
+        AuctionItemDTO auction = auctionTable.getSelectionModel().getSelectedItem();
         if (auction == null) {
             AlertUtil.showWarning("Vui lòng chọn một phiên đấu giá");
             return;
         }
-        if (!"ACTIVE".equals(auction.getStatus())) {
+        if (SessionStatus.ACTIVE != auction.getStatus()) {
             AlertUtil.showWarning("Chỉ có thể hủy phiên đang ACTIVE.\n"
                     + "Phiên này đang ở trạng thái: " + auction.getStatus());
             return;
@@ -194,7 +195,7 @@ public class AdminAuctionListController implements Initializable {
     }
 
     /** Logic chung — dialog nhập lý do + confirm + gọi service. */
-    private void cancelAuction(AuctionSummaryDTO auction) {
+    private void cancelAuction(AuctionItemDTO auction) {
         // Dialog nhập lý do
         TextInputDialog dialog = new TextInputDialog();
         dialog.setTitle("Hủy phiên đấu giá");
@@ -211,9 +212,9 @@ public class AdminAuctionListController implements Initializable {
                         + (reason.isEmpty() ? "" : "\n\nLý do: " + reason));
         if (!ok) return;
 
-        LOGGER.info(() -> "Cancel auction " + auction.getId() + " - reason: " + reason);
+        LOGGER.info(() -> "Cancel auction " + auction.getItemId() + " - reason: " + reason);
 
-        AdminService.cancelAuction(auction.getId(), success -> Platform.runLater(() -> {
+        AdminService.cancelAuction(auction.getItemId(), success -> Platform.runLater(() -> {
             if (success) {
                 AlertUtil.showInfo("Đã hủy phiên: " + auction.getTitle());
                 loadAuctions();

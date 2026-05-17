@@ -1,5 +1,10 @@
 package vn.edu.vnu.uet.group8.client.controller;
 
+import java.net.URL;
+import java.util.List;
+import java.util.ResourceBundle;
+import java.util.logging.Logger;
+
 import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
@@ -8,16 +13,10 @@ import javafx.scene.control.Label;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
-
 import vn.edu.vnu.uet.group8.client.model.ClientModel;
 import vn.edu.vnu.uet.group8.client.service.NotificationService;
 import vn.edu.vnu.uet.group8.client.util.AlertUtil;
-import vn.edu.vnu.uet.group8.common.dto.NotificationDTO;
-
-import java.net.URL;
-import java.util.List;
-import java.util.ResourceBundle;
-import java.util.logging.Logger;
+import vn.edu.vnu.uet.group8.common.dto.model.NotificationDTO;
 
 /**
  * NotificationController — quan ly thong bao.
@@ -150,7 +149,15 @@ public class NotificationController implements Initializable {
         btnRead.setDisable(n.isRead());
         btnRead.setOnAction(e -> markAsRead(n.getId()));
 
-        row.getChildren().addAll(info, btnRead);
+        Button btnDelete = new Button("Xóa");
+        btnDelete.getStyleClass().add("btn-danger");
+        btnDelete.setOnAction(e -> {
+            NotificationService.deleteNotification(n.getId(), 
+                () -> LOGGER.fine("Deleted notif " + n.getId()),
+                error -> AlertUtil.showError("Lỗi xóa thông báo: " + error));
+        });
+
+        row.getChildren().addAll(info, btnRead, btnDelete);
         return row;
     }
 
@@ -161,7 +168,6 @@ public class NotificationController implements Initializable {
         NotificationService.markRead(notifId,
                 () -> {
                     LOGGER.fine(() -> "Marked read: " + notifId);
-                    renderFromModel();  // ClientModel da update
                 },
                 error -> AlertUtil.showError("Loi: " + error)
         );
@@ -198,9 +204,8 @@ public class NotificationController implements Initializable {
 
     @FXML
     private void onDeleteNotification() {
-        // Method nay duoc FXML goi nhung khong co notif cu the
-        // Co the FXML co button generic - tam thoi placeholder
-        LOGGER.fine("onDeleteNotification triggered");
+        // Được gọi nếu có nút xóa tất cả (tùy chọn UI FXML)
+        AlertUtil.showInfo("Tính năng xóa hàng loạt đang phát triển");
     }
 
     @FXML

@@ -1,5 +1,14 @@
 package vn.edu.vnu.uet.group8.client.controller;
 
+import java.io.IOException;
+import java.net.URL;
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.ResourceBundle;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
 import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
@@ -10,28 +19,22 @@ import javafx.scene.control.Label;
 import javafx.scene.layout.FlowPane;
 
 import vn.edu.vnu.uet.group8.client.model.ClientModel;
-import vn.edu.vnu.uet.group8.client.service.FavoriteService;
 import vn.edu.vnu.uet.group8.client.util.AlertUtil;
-import vn.edu.vnu.uet.group8.common.entity.Item;
-
-import java.io.IOException;
-import java.net.URL;
-import java.time.Instant;
-import java.util.List;
-import java.util.ResourceBundle;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import vn.edu.vnu.uet.group8.common.dto.model.AuctionItemDTO;
 
 /**
- * FavoriteController — danh sach san pham yeu thich.
+ * FavoriteController — quản lý danh sách yêu thích.
  *
- * Tinh nang:
- *  - Load tu FavoriteService.loadAll()
- *  - Binding ClientModel.favoriteItems -> tu refresh
- *  - 3 tab: Tat ca / Dang hoat dong / Da ket thuc
- *  - Clear ended: async voi counter de cho tat ca xong moi reload
- *  - lblActiveCount hien so item dang active
+ * <p>Phiên bản tối giản cho mục đích demo UI:
+ * <ul>
+ *   <li>Đọc trực tiếp từ {@link ClientModel#favoriteItemsProperty()} — không gọi server</li>
+ *   <li>3 tab filter: Tất cả / Đang hoạt động / Đã kết thúc (lọc trên client)</li>
+ *   <li>Nút "Xoá đã kết thúc" gỡ các item đã hết giờ khỏi ClientModel</li>
+ *   <li>Render thẻ sản phẩm bằng cách reuse {@code ProductCard.fxml}</li>
+ * </ul>
+ *
+ * <p>Khi backend bật, có thể tiêm thêm FavoriteService (LOAD/ADD/REMOVE) — kiến trúc
+ * hiện tại không khoá điều đó.
  */
 public class FavoriteController implements Initializable {
 
@@ -44,196 +47,148 @@ public class FavoriteController implements Initializable {
     @FXML private Button btnTabEnded;
 
     private Button activeTab;
+    /** "all" | "active" | "ended" */
     private String currentFilter = "all";
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
         activeTab = btnTabAll;
-        bindFavorites();
-        loadFavorites();
-    }
-
-    /** Binding ClientModel.favoriteItems -> tu update UI. */
-    private void bindFavorites() {
+        // Lắng nghe ClientModel — tự re-render khi danh sách yêu thích thay đổi
         ClientModel.getInstance().favoriteItemsProperty().addListener((obs, oldList, newList) ->
                 Platform.runLater(this::renderFromModel)
         );
+        renderFromModel();
     }
 
-    private void loadFavorites() {
-        showLoading();
-        FavoriteService.loadAll(
-                items -> {
-                    LOGGER.info(() -> "Da tai " + items.size() + " san pham yeu thich");
-                    // ClientModel duoc service update -> listener tu trigger render
-                },
-                error -> {
-                    LOGGER.warning("Loi tai favorites: " + error);
-                    renderError(error);
-                }
-        );
-    }
+    // ===================== RENDER =====================
 
     private void renderFromModel() {
-        List<Item> items = ClientModel.getInstance().getFavoriteItems();
-        render(items);
-    }
-
-    private void showLoading() {
-        if (lblActiveCount != null) {
-            lblActiveCount.setText("Dang tai...");
-        }
-    }
-
-    private void renderError(String error) {
-        favoriteContainer.getChildren().clear();
-        Label err = new Label("Khong the tai danh sach yeu thich");
-        err.getStyleClass().add("label-error");
-        err.setStyle("-fx-padding: 40 0;");
-        favoriteContainer.getChildren().add(err);
-        if (lblActiveCount != null) lblActiveCount.setText("0");
-    }
-
-    private void render(List<Item> items) {
         if (favoriteContainer == null) return;
         favoriteContainer.getChildren().clear();
 
-        if (items == null || items.isEmpty()) {
-            renderEmpty();
+        List<AuctionItemDTO> all = new ArrayList<>(ClientModel.getInstance().getFavoriteItems());
+        List<AuctionItemDTO> shown = filter(all);
+        long activeCnt = all.stream().filter(this::isActive).count();
+
+        if (lblActiveCount != null) {
+            lblActiveCount.setText("Bạn có " + activeCnt + " món đang còn thời gian đấu giá");
+        }
+
+        if (shown.isEmpty()) {
+            Label empty = new Label(emptyMessage());
+            empty.getStyleClass().add("label-info");
+            empty.setStyle("-fx-padding: 40 0; -fx-font-size: 14px;");
+            favoriteContainer.getChildren().add(empty);
             return;
         }
 
-        List<Item> filtered = items.stream().filter(this::matchTab).toList();
-        if (filtered.isEmpty()) {
-            renderEmpty();
-            return;
-        }
-
-        for (Item item : filtered) {
-            Node card = buildProductCard(item);
+        for (AuctionItemDTO item : shown) {
+            Node card = buildCard(item);
             if (card != null) favoriteContainer.getChildren().add(card);
         }
-
-        updateActiveCount(items);
     }
 
-    private void renderEmpty() {
-        Label empty = new Label("Chua co san pham yeu thich");
-        empty.getStyleClass().add("label-info");
-        empty.setStyle("-fx-padding: 40 0;");
-        favoriteContainer.getChildren().add(empty);
-        if (lblActiveCount != null) lblActiveCount.setText("0");
-    }
-
-    private boolean matchTab(Item item) {
+    private String emptyMessage() {
         return switch (currentFilter) {
-            case "active" -> isActive(item);
-            case "ended"  -> !isActive(item);
-            default       -> true;
+            case "active" -> "Không có món yêu thích nào đang còn hoạt động";
+            case "ended"  -> "Chưa có món yêu thích nào đã kết thúc";
+            default       -> "Bạn chưa có món yêu thích nào";
         };
     }
 
-    private boolean isActive(Item item) {
-        return item.getEndTime() != null && item.getEndTime().isAfter(Instant.now());
+    private List<AuctionItemDTO> filter(List<AuctionItemDTO> src) {
+        return switch (currentFilter) {
+            case "active" -> src.stream().filter(this::isActive).toList();
+            case "ended"  -> src.stream().filter(this::isEnded).toList();
+            default       -> src;
+        };
     }
 
-    private void updateActiveCount(List<Item> items) {
-        if (lblActiveCount == null) return;
-        long active = items.stream().filter(this::isActive).count();
-        lblActiveCount.setText(active + " dang dau gia");
+    private boolean isActive(AuctionItemDTO item) {
+        return item.getEndTime() == null || item.getEndTime().isAfter(Instant.now());
     }
 
-    private Node buildProductCard(Item item) {
+    private boolean isEnded(AuctionItemDTO item) {
+        return item.getEndTime() != null && !item.getEndTime().isAfter(Instant.now());
+    }
+
+    private Node buildCard(AuctionItemDTO item) {
         try {
             URL resource = getClass().getResource("/fxml/ProductCard.fxml");
-            if (resource == null) return null;
+            if (resource == null) {
+                LOGGER.warning("Không tìm thấy /fxml/ProductCard.fxml");
+                return null;
+            }
             FXMLLoader loader = new FXMLLoader(resource);
             Node card = loader.load();
             ProductCardController ctrl = loader.getController();
-            ctrl.setItem(String.valueOf(item.getId()), item.getName(),
-                    item.getCurrentPrice(), item.getImageUrl());
-            if (item.isVerified()) ctrl.showCertifiedBadge();
+            ctrl.setItem(String.valueOf(item.getItemId()),
+                    item.getTitle(),
+                    item.getCurrentPrice(),
+                    "");
             return card;
         } catch (IOException e) {
-            LOGGER.log(Level.WARNING, "Loi build card cho item: " + item.getId(), e);
+            LOGGER.log(Level.WARNING, "Lỗi build card cho item " + item.getItemId(), e);
             return null;
         }
     }
 
-    // ===== TABS =====
+    // ===================== TABS =====================
 
-    @FXML private void onTabAll()    { setTab("all", btnTabAll); }
-    @FXML private void onTabActive() { setTab("active", btnTabActive); }
-    @FXML private void onTabEnded()  { setTab("ended", btnTabEnded); }
+    @FXML
+    private void onTabAll() {
+        currentFilter = "all";
+        setActiveTab(btnTabAll);
+        renderFromModel();
+    }
 
-    private void setTab(String filter, Button button) {
-        currentFilter = filter;
+    @FXML
+    private void onTabActive() {
+        currentFilter = "active";
+        setActiveTab(btnTabActive);
+        renderFromModel();
+    }
+
+    @FXML
+    private void onTabEnded() {
+        currentFilter = "ended";
+        setActiveTab(btnTabEnded);
+        renderFromModel();
+    }
+
+    private void setActiveTab(Button target) {
+        if (target == null) return;
         if (activeTab != null) {
             activeTab.getStyleClass().remove("tag-active");
             if (!activeTab.getStyleClass().contains("tag-inactive")) {
                 activeTab.getStyleClass().add("tag-inactive");
             }
         }
-        button.getStyleClass().remove("tag-inactive");
-        if (!button.getStyleClass().contains("tag-active")) {
-            button.getStyleClass().add("tag-active");
+        target.getStyleClass().remove("tag-inactive");
+        if (!target.getStyleClass().contains("tag-active")) {
+            target.getStyleClass().add("tag-active");
         }
-        activeTab = button;
-        renderFromModel();
+        activeTab = target;
     }
 
-    /**
-     * Xoa tat ca san pham da ket thuc khoi yeu thich.
-     * Async safe: dung counter de cho tat ca remove xong moi alert thanh cong.
-     */
+    // ===================== ACTIONS =====================
+
     @FXML
     private void onClearEnded() {
-        List<Item> endedFavs = ClientModel.getInstance().getFavoriteItems()
-                .stream()
-                .filter(it -> !isActive(it))
-                .toList();
-
-        if (endedFavs.isEmpty()) {
-            AlertUtil.showInfo("Khong co san pham da ket thuc");
+        List<AuctionItemDTO> all = new ArrayList<>(ClientModel.getInstance().getFavoriteItems());
+        List<AuctionItemDTO> ended = all.stream().filter(this::isEnded).toList();
+        if (ended.isEmpty()) {
+            AlertUtil.showInfo("Không có món nào đã kết thúc để xoá");
             return;
         }
-
-        boolean ok = AlertUtil.showConfirm("Xac nhan",
-                "Xoa " + endedFavs.size() + " san pham da ket thuc khoi yeu thich?");
+        boolean ok = AlertUtil.showConfirm("Xác nhận",
+                "Xoá " + ended.size() + " món đã kết thúc khỏi danh sách yêu thích?");
         if (!ok) return;
 
-        // Async counter: cho tat ca remove xong moi notify
-        final int total = endedFavs.size();
-        final AtomicInteger completed = new AtomicInteger(0);
-        final AtomicInteger errors = new AtomicInteger(0);
-
-        LOGGER.info(() -> "Bat dau xoa " + total + " san pham");
-
-        for (Item item : endedFavs) {
-            FavoriteService.remove(item.getId(),
-                    () -> {
-                        int done = completed.incrementAndGet();
-                        if (done == total) onClearComplete(total, errors.get());
-                    },
-                    err -> {
-                        errors.incrementAndGet();
-                        int done = completed.incrementAndGet();
-                        if (done == total) onClearComplete(total, errors.get());
-                    }
-            );
+        for (AuctionItemDTO it : ended) {
+            ClientModel.getInstance().removeFavorite(it);
         }
-    }
-
-    private void onClearComplete(int total, int errorCount) {
-        Platform.runLater(() -> {
-            int success = total - errorCount;
-            if (errorCount == 0) {
-                AlertUtil.showInfo("Da xoa " + success + " san pham khoi yeu thich");
-            } else {
-                AlertUtil.showWarning("Da xoa " + success + "/" + total
-                        + ". " + errorCount + " san pham loi.");
-            }
-            // ClientModel da tu update -> listener trigger render
-        });
+        AlertUtil.showInfo("Đã xoá " + ended.size() + " món");
+        // listener trên favoriteItemsProperty sẽ tự re-render
     }
 }

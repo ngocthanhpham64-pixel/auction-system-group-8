@@ -1,8 +1,13 @@
 package vn.edu.vnu.uet.group8.client.controller;
 
+import java.math.BigDecimal;
+import java.net.URL;
+import java.time.Instant;
+import java.util.ResourceBundle;
+import java.util.logging.Logger;
+
 import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
-import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.control.Button;
@@ -11,17 +16,11 @@ import javafx.scene.control.TextField;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.VBox;
 import javafx.util.Duration;
-
 import vn.edu.vnu.uet.group8.client.model.ClientModel;
 import vn.edu.vnu.uet.group8.client.service.BidService;
+import vn.edu.vnu.uet.group8.client.service.FavoriteService;
 import vn.edu.vnu.uet.group8.client.util.AlertUtil;
-import vn.edu.vnu.uet.group8.common.entity.Item;
-
-import java.math.BigDecimal;
-import java.net.URL;
-import java.time.Instant;
-import java.util.ResourceBundle;
-import java.util.logging.Logger;
+import vn.edu.vnu.uet.group8.common.dto.model.AuctionItemDTO;
 
 /**
  * AuctionDetailController — trang chi tiet san pham + dat gia.
@@ -73,7 +72,7 @@ public class AuctionDetailController implements Initializable {
     @FXML private Button btnThumb3;
 
     // ===== STATE =====
-    private Item currentItem;
+    private AuctionItemDTO currentItem;
     private BigDecimal currentPrice = BigDecimal.ZERO;
     private final BigDecimal bidStep = new BigDecimal("10000000");
     private Timeline countdown;
@@ -102,7 +101,7 @@ public class AuctionDetailController implements Initializable {
         if (currentItem == null) return;
 
         if (lblCategory != null && currentItem.getCategory() != null) {
-            lblCategory.setText(currentItem.getCategory());
+            lblCategory.setText(currentItem.getCategory().name());
         }
         if (lblDescription != null && currentItem.getDescription() != null) {
             lblDescription.setText(currentItem.getDescription());
@@ -118,17 +117,19 @@ public class AuctionDetailController implements Initializable {
     private void displayCertInfo() {
         if (lblCertificate == null || currentItem == null) return;
 
-        if (currentItem.isVerified()) {
-            String text = "✓ Da kiem dinh";
-            if (currentItem.getCertBody() != null && !currentItem.getCertBody().isBlank()) {
-                text += " boi " + currentItem.getCertBody();
-            }
-            lblCertificate.setText(text);
-            lblCertificate.setStyle("-fx-text-fill: #22C55E; -fx-font-weight: bold;");
-        } else {
+        // AuctionItemDTO hiện chưa chứa thông tin chứng nhận (Certificate)
+        // Tạm thời comment logic hiển thị lại
+        // if (currentItem.isVerified()) {
+        //     String text = "✓ Da kiem dinh";
+        //     if (currentItem.getCertBody() != null && !currentItem.getCertBody().isBlank()) {
+        //         text += " boi " + currentItem.getCertBody();
+        //     }
+        //     lblCertificate.setText(text);
+        //     lblCertificate.setStyle("-fx-text-fill: #22C55E; -fx-font-weight: bold;");
+        // } else {
             lblCertificate.setText("Chua kiem dinh");
             lblCertificate.setStyle("-fx-text-fill: #9CA3AF;");
-        }
+        // }
     }
 
     // ===== COUNTDOWN =====
@@ -199,10 +200,12 @@ public class AuctionDetailController implements Initializable {
                 "Dat gia " + formatPrice(amount) + "?");
         if (!confirm) return;
 
-        BidService.placeBid(currentItem.getId(), amount, response -> {
+        BidService.placeBid(currentItem.getItemId(), amount, response -> {
             if (response != null && response.isSuccess()) {
                 currentPrice = amount;
                 updatePriceDisplay();
+                // Đồng bộ cập nhật giá mới ra biến toàn cục (để khi back ra ngoài trang Explore, card cũng sẽ cập nhật)
+                ClientModel.getInstance().updateItemCurrentPrice(currentItem.getItemId(), amount);
                 if (tfBidAmount != null) tfBidAmount.clear();
                 AlertUtil.showInfo("Dat gia thanh cong!");
             } else {
@@ -279,7 +282,7 @@ public class AuctionDetailController implements Initializable {
                 return;
             }
 
-            BidService.setAutoBid(currentItem.getId(), max, success -> {
+        BidService.setAutoBid(currentItem.getItemId(), max, success -> {
                 if (success) {
                     AlertUtil.showInfo("Da kich hoat auto-bid voi gia toi da " + formatPrice(max));
                 } else {
@@ -296,13 +299,15 @@ public class AuctionDetailController implements Initializable {
     @FXML
     private void onFavorite() {
         if (currentItem == null) return;
-        boolean isFav = ClientModel.getInstance().isFavorite(currentItem.getId());
+        boolean isFav = ClientModel.getInstance().isFavorite(currentItem.getItemId());
         if (isFav) {
-            ClientModel.getInstance().removeFavorite(currentItem);
-            AlertUtil.showInfo("Da bo khoi yeu thich");
+            FavoriteService.remove(currentItem.getItemId(), 
+                () -> AlertUtil.showInfo("Da bo khoi yeu thich"),
+                error -> AlertUtil.showError("Lỗi: " + error));
         } else {
-            ClientModel.getInstance().addFavorite(currentItem);
-            AlertUtil.showInfo("Da them vao yeu thich");
+            FavoriteService.add(currentItem.getItemId(), 
+                () -> AlertUtil.showInfo("Da them vao yeu thich"),
+                error -> AlertUtil.showError("Lỗi: " + error));
         }
     }
 

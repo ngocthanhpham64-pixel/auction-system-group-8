@@ -1,12 +1,12 @@
 package vn.edu.vnu.uet.group8.client.util;
 
+import java.util.Optional;
+import java.util.logging.Logger;
+
 import javafx.application.Platform;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Alert.AlertType;
 import javafx.scene.control.ButtonType;
-
-import java.util.Optional;
-import java.util.logging.Logger;
 
 
 /**

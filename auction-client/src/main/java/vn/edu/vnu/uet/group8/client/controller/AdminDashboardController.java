@@ -7,7 +7,7 @@ import javafx.scene.control.Label;
 
 import vn.edu.vnu.uet.group8.client.service.AdminService;
 import vn.edu.vnu.uet.group8.client.util.UIFormatter;
-import vn.edu.vnu.uet.group8.common.dto.AdminStatsDTO;
+import vn.edu.vnu.uet.group8.common.dto.model.AdminStatsDTO;
 
 import java.net.URL;
 import java.util.ResourceBundle;

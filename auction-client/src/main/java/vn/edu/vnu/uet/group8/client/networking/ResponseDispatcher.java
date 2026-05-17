@@ -1,9 +1,5 @@
 package vn.edu.vnu.uet.group8.client.networking;
 
-import javafx.application.Platform;
-import vn.edu.vnu.uet.group8.common.dto.ServerResponse;
-import vn.edu.vnu.uet.group8.common.enums.EventType;
-
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -13,6 +9,10 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+
+import javafx.application.Platform;
+import vn.edu.vnu.uet.group8.common.dto.response.ServerResponse;
+import vn.edu.vnu.uet.group8.common.enums.EventType;
 
 
 /**

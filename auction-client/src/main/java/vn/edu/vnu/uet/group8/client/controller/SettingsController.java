@@ -1,5 +1,12 @@
 package vn.edu.vnu.uet.group8.client.controller;
 
+import java.net.URL;
+import java.util.Optional;
+import java.util.ResourceBundle;
+import java.util.logging.Logger;
+import java.util.prefs.Preferences;
+import java.util.regex.Pattern;
+
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.Scene;
@@ -7,16 +14,9 @@ import javafx.scene.control.CheckBox;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextInputDialog;
-
+import vn.edu.vnu.uet.group8.client.service.UserService;
 import vn.edu.vnu.uet.group8.client.util.AlertUtil;
 import vn.edu.vnu.uet.group8.client.util.SessionManager;
-
-import java.net.URL;
-import java.util.Optional;
-import java.util.ResourceBundle;
-import java.util.logging.Logger;
-import java.util.prefs.Preferences;
-import java.util.regex.Pattern;
 
 /**
  * SettingsController — cai dat tai khoan.
@@ -146,6 +146,25 @@ public class SettingsController implements Initializable {
                 "Phai la so");
     }
 
+    private void syncProfileToServer() {
+        String fullname = lblFullName != null ? lblFullName.getText() : "";
+        String phone = lblPhone != null ? lblPhone.getText() : "";
+        String address = lblAddress != null ? lblAddress.getText() : "";
+        
+        // Bỏ qua giá trị mặc định của FXML nếu người dùng chưa sửa
+        if (fullname.isEmpty() || fullname.contains("Tên")) fullname = SessionManager.getFullName();
+        if (phone.isEmpty() || phone.contains("Số")) phone = "0000000000"; // Placeholder an toàn để validate qua
+
+        // Tạm thời truyền null cho avatar, bạn có thể bổ sung biến Base64 từ FileChooser vào đây sau
+        UserService.updateProfile(fullname, phone, address, null, success -> javafx.application.Platform.runLater(() -> {
+            if (success) {
+                AlertUtil.showInfo("Cập nhật thành công và đã đồng bộ với máy chủ!");
+            } else {
+                AlertUtil.showError("Cập nhật thất bại. Vui lòng kiểm tra lại thông tin.");
+            }
+        }));
+    }
+
     /**
      * Generic edit field: dialog + validate + update label.
      * @param fieldLabel ten field hien thi cho user
@@ -180,7 +199,7 @@ public class SettingsController implements Initializable {
             targetLabel.setText(value);
         }
         LOGGER.info(() -> "Da cap nhat " + fieldLabel + " = " + value);
-        AlertUtil.showInfo("Cap nhat thanh cong (cho BE sync server)");
+        syncProfileToServer();
     }
 
     // ===== BAO MAT =====
@@ -219,8 +238,13 @@ public class SettingsController implements Initializable {
             return;
         }
 
-        LOGGER.info("Yeu cau doi mat khau (cho BE bo sung API)");
-        AlertUtil.showInfo("Yeu cau da gui. Cho BE bo sung API.");
+        UserService.changePassword(oldPass.get(), newPass.get(), success -> javafx.application.Platform.runLater(() -> {
+            if (success) {
+                AlertUtil.showInfo("Đổi mật khẩu thành công!");
+            } else {
+                AlertUtil.showError("Đổi mật khẩu thất bại, vui lòng kiểm tra lại mật khẩu cũ.");
+            }
+        }));
     }
 
     @FXML

@@ -1,19 +1,20 @@
 package vn.edu.vnu.uet.group8.client.service;
 
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.function.Consumer;
+import java.util.logging.Logger;
+
 import vn.edu.vnu.uet.group8.client.model.ClientModel;
 import vn.edu.vnu.uet.group8.client.networking.AuctionClient;
 import vn.edu.vnu.uet.group8.client.networking.ResponseDispatcher;
 import vn.edu.vnu.uet.group8.client.util.SessionManager;
-import vn.edu.vnu.uet.group8.common.dto.NotificationDTO;
-import vn.edu.vnu.uet.group8.common.dto.ServerResponse;
+import vn.edu.vnu.uet.group8.common.dto.model.NotificationDTO;
+import vn.edu.vnu.uet.group8.common.dto.response.ServerResponse;
 import vn.edu.vnu.uet.group8.common.enums.ActionType;
 import vn.edu.vnu.uet.group8.common.enums.EventType;
 import vn.edu.vnu.uet.group8.common.util.GsonUtil;
-
-import java.util.Collections;
-import java.util.List;
-import java.util.function.Consumer;
-import java.util.logging.Logger;
 
 /**
  * Service quản lý thông báo (notification).
@@ -102,7 +103,7 @@ public final class NotificationService {
         }
 
         AuctionClient.getInstance().sendAuthenticatedRequest(
-                ActionType.NOTIF_MARK_READ, notificationId,
+                ActionType.NOTIF_MARK_READ, Map.of("notificationId", notificationId),
                 response -> {
                     if (response.isSuccess()) {
                         ClientModel.getInstance().markNotificationRead(notificationId);
@@ -111,6 +112,37 @@ public final class NotificationService {
                     } else {
                         LOGGER.warning(() -> "NOTIF_MARK_READ failed for " + notificationId
                                 + ": " + response.getMessage());
+                        reportFailure(onFailure, response.getMessage());
+                    }
+                });
+    }
+
+    // ========================================
+    // DELETE
+    // ========================================
+
+    /**
+     * Xóa 1 notification khỏi cơ sở dữ liệu và ClientModel.
+     *
+     * @param notificationId ID notification cần xóa
+     * @param onSuccess callback khi thành công
+     * @param onFailure callback khi lỗi
+     */
+    public static void deleteNotification(int notificationId,
+                                          Runnable onSuccess,
+                                          Consumer<String> onFailure) {
+        if (!SessionManager.isLoggedIn()) {
+            reportFailure(onFailure, ERR_NOT_LOGGED_IN);
+            return;
+        }
+        AuctionClient.getInstance().sendAuthenticatedRequest(
+                ActionType.NOTIF_DELETE, Map.of("notificationId", notificationId),
+                response -> {
+                    if (response.isSuccess()) {
+                        // Tự động xóa nội bộ trong ClientModel để UI cập nhật ngay
+                        ClientModel.getInstance().getNotifications().removeIf(n -> n.getId() == notificationId);
+                        if (onSuccess != null) onSuccess.run();
+                    } else {
                         reportFailure(onFailure, response.getMessage());
                     }
                 });
