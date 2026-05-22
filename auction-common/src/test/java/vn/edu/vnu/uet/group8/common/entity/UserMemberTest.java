@@ -25,7 +25,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * <ul>
  *   <li><b>Builder pattern</b> - required + optional + validation</li>
  *   <li><b>Status check</b> - isActive với status ACTIVE/SUSPENDED/BANNED</li>
- *   <li><b>Role logic</b> - hasRole, canBid, canSell, getDisplayRole</li>
+ *   <li><b>Role logic</b> - hasRole, addRole, removeRole, getDisplayRole</li>
  *   <li><b>isAdmin override</b> - luôn return false (UserMember ≠ UserAdmin)</li>
  *   <li><b>Setter validation</b> - phone, fullname không rỗng</li>
  * </ul>
@@ -230,26 +230,35 @@ class UserMemberTest {
         }
 
         @Test
-        @DisplayName("canBid với role BIDDER + status ACTIVE → true")
-        void canBidBidderActive() {
+        @DisplayName("hasRole(BIDDER) phải true sau khi tạo UserMember")
+        void hasRoleBidderMacDinh() {
             UserMember member = createMember();
-            assertTrue(member.canBid(UserRole.BIDDER));
+            assertTrue(member.hasRole(UserRole.BIDDER),
+                    "UserMember mặc định phải có role BIDDER (gán trong constructor)");
         }
 
         @Test
-        @DisplayName("canBid với role BIDDER + status SUSPENDED → false")
-        void canBidBidderSuspended() {
+        @DisplayName("hasRole(SELLER) ban đầu false, sau addRole → true")
+        void addRoleSellerHopLe() {
             UserMember member = createMember();
-            member.setStatus(UserStatus.SUSPENDED);
-            assertFalse(member.canBid(UserRole.BIDDER));
+            assertFalse(member.hasRole(UserRole.SELLER),
+                    "UserMember mặc định không có role SELLER");
+
+            member.addRole(UserRole.SELLER);
+            assertTrue(member.hasRole(UserRole.SELLER),
+                    "Sau addRole(SELLER) phải có role SELLER");
         }
 
         @Test
-        @DisplayName("canBid với role SELLER (không phải BIDDER) → false")
-        void canBidWithSellerRole() {
+        @DisplayName("removeRole xóa role thành công")
+        void removeRoleHopLe() {
             UserMember member = createMember();
-            assertFalse(member.canBid(UserRole.SELLER),
-                    "canBid chỉ true với role BIDDER");
+            member.addRole(UserRole.SELLER);
+            assertTrue(member.hasRole(UserRole.SELLER));
+
+            member.removeRole(UserRole.SELLER);
+            assertFalse(member.hasRole(UserRole.SELLER),
+                    "Sau removeRole(SELLER) phải hết role SELLER");
         }
 
         @Test
