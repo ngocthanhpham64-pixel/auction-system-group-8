@@ -9,7 +9,6 @@ import org.slf4j.LoggerFactory;
 import vn.edu.vnu.uet.group8.server.dao.BidTransactionDAO;
 import vn.edu.vnu.uet.group8.server.dao.BidTransactionDAO.BidExecutionResult;
 import vn.edu.vnu.uet.group8.server.dao.BidTransactionDAO.LeaderInfo;
-
 /**
  * Điều phối luồng xử lý một lần đặt giá đã được validate.
  *
