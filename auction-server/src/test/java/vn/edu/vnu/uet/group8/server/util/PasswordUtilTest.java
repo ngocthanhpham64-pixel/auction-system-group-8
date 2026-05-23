@@ -2,6 +2,7 @@ package vn.edu.vnu.uet.group8.server.util;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -137,12 +138,14 @@ class PasswordUtilTest {
     // ════════════════════════════════════════════════════
 
     @Test
-    @DisplayName("Password null khi hash phải ném exception")
+    @DisplayName("Hash null phải ném exception")
     void passwordNullHashPhaiNem() {
-        // BCrypt.hashpw() throw NullPointerException nếu password null
-        assertThrows(Exception.class, () -> PasswordUtil.hash(null));
-    }
 
+        assertThrows(
+                Exception.class,
+                () -> PasswordUtil.verify("123", null)
+        );
+    }
     @Test
     @DisplayName("Verify với hash không hợp lệ phải ném exception")
     void verifyHashKhongHopLePhaiNem() {

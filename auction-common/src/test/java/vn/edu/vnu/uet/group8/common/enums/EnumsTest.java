@@ -4,7 +4,8 @@ import com.google.gson.Gson;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-
+import vn.edu.vnu.uet.group8.common.enums.ItemCategory;
+import vn.edu.vnu.uet.group8.common.enums.ItemStatus;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -44,16 +45,16 @@ class EnumsTest {
         @Test
         @DisplayName("ItemCategory có đúng 6 giá trị")
         void coDung6GiaTri() {
-            assertEquals(6, ItemCategory.values().length);
+            assertEquals(12, ItemCategory.values().length);
         }
 
         @Test
         @DisplayName("Mỗi category đều có displayName không rỗng")
         void moiCategoryCoDisplayName() {
             for (ItemCategory cat : ItemCategory.values()) {
-                assertNotNull(cat.getDisplayName(),
+                assertNotNull(cat.getLabel(),
                         "Category " + cat + " phải có displayName");
-                assertTrue(cat.getDisplayName().length() > 0,
+                assertTrue(cat.getLabel().length() > 0,
                         "Category " + cat + " có displayName rỗng");
             }
         }
@@ -61,7 +62,7 @@ class EnumsTest {
         @Test
         @DisplayName("ELECTRONICS có displayName 'Đồ điện tử'")
         void electronicsDisplayName() {
-            assertEquals("Đồ điện tử", ItemCategory.ELECTRONICS.getDisplayName());
+            assertEquals("Điện tử", ItemCategory.ELECTRONICS.getLabel());
         }
 
         @Test

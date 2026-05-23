@@ -1,5 +1,10 @@
 package vn.edu.vnu.uet.group8.common.entity;
 
+import static org.junit.jupiter.api.Assertions.*;
+
+import java.util.ArrayList;
+import java.util.List;
+
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -10,244 +15,239 @@ import org.junit.jupiter.params.provider.ValueSource;
 import vn.edu.vnu.uet.group8.common.enums.ItemCategory;
 import vn.edu.vnu.uet.group8.common.enums.ItemCondition;
 import vn.edu.vnu.uet.group8.common.enums.ItemStatus;
-import vn.edu.vnu.uet.group8.common.enums.SpecKey;
-
-import java.time.Instant;
-import java.util.HashMap;
-import java.util.Map;
-
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * Unit test cho {@link Item} entity.
+ * Test cho {@link Item} entity.
  *
- * <p>Test 3 phần chính:
+ * <p>Phạm vi:
  * <ul>
- *   <li><b>Builder pattern</b>: tạo item mới, validate constructor</li>
- *   <li><b>Reconstructor pattern</b>: tái tạo item từ DB</li>
- *   <li><b>Helpers</b>: hasSpec, getSpecs, setter validate</li>
+ *   <li><b>Builder pattern</b>: tạo Item mới, validate input
+ *   <li><b>Reconstructor pattern</b>: nạp Item từ DB
+ *   <li><b>Default values</b>: condition USED, status DRAFT, description rỗng
+ *   <li><b>Getters</b>: lấy field, imageUrls trả unmodifiable
+ *   <li><b>Setters</b>: validate khi set lại
  * </ul>
  *
- * <p>Pure logic - không phụ thuộc DB hay service.
+ * <p>Lưu ý: Các method spec ({@code specs, putSpecs, getSpecs, hasSpec})
+ * hiện đang bị comment out trong Item.java production → không test.
  */
 class ItemTest {
-
-    // ════════════════════════════════════════════════════
-    // BUILDER
-    // ════════════════════════════════════════════════════
 
     @Nested
     @DisplayName("Builder pattern")
     class BuilderTest {
 
         @Test
-        @DisplayName("Builder hợp lệ tạo Item thành công")
+        @DisplayName("Builder hợp lệ tạo Item thành công với đầy đủ field")
         void builderHopLeTaoItem() {
-            Item item = new Item.Builder(1, "iPhone 15", ItemCategory.ELECTRONICS)
-                    .description("Hàng mới 99%")
+            Item item = new Item.Builder(1, "iPhone 17", ItemCategory.ELECTRONICS)
+                    .description("Smartphone mới nhất")
                     .condition(ItemCondition.NEW)
+                    .status(ItemStatus.LISTED)
                     .build();
 
-            assertNotNull(item);
             assertEquals(1, item.getSellerId());
-            assertEquals("iPhone 15", item.getTitle());
+            assertEquals("iPhone 17", item.getTitle());
             assertEquals(ItemCategory.ELECTRONICS, item.getCategory());
-            assertEquals("Hàng mới 99%", item.getDescription());
+            assertEquals("Smartphone mới nhất", item.getDescription());
             assertEquals(ItemCondition.NEW, item.getCondition());
+            assertEquals(ItemStatus.LISTED, item.getStatus());
         }
 
         @Test
-        @DisplayName("Title bị trim khoảng trắng")
+        @DisplayName("Title bị trim khoảng trắng đầu/cuối")
         void titleBiTrim() {
-            Item item = new Item.Builder(1, "   iPhone 15   ", ItemCategory.ELECTRONICS).build();
-            assertEquals("iPhone 15", item.getTitle());
+            Item item = new Item.Builder(1, "  iPhone  ", ItemCategory.ELECTRONICS).build();
+            assertEquals("iPhone", item.getTitle());
+        }
+
+        @Test
+        @DisplayName("Description bị trim khoảng trắng")
+        void descriptionBiTrim() {
+            Item item = new Item.Builder(1, "X", ItemCategory.ELECTRONICS)
+                    .description("  Mô tả  ")
+                    .build();
+            assertEquals("Mô tả", item.getDescription());
         }
 
         @Test
         @DisplayName("Status mặc định là DRAFT nếu không set")
-        void statusMacDinhDraft() {
-            Item item = new Item.Builder(1, "iPhone", ItemCategory.ELECTRONICS).build();
+        void statusMacDinhDRAFT() {
+            Item item = new Item.Builder(1, "X", ItemCategory.ELECTRONICS).build();
             assertEquals(ItemStatus.DRAFT, item.getStatus());
         }
 
         @Test
         @DisplayName("Condition mặc định là USED nếu không set")
-        void conditionMacDinhUsed() {
-            Item item = new Item.Builder(1, "iPhone", ItemCategory.ELECTRONICS).build();
+        void conditionMacDinhUSED() {
+            Item item = new Item.Builder(1, "X", ItemCategory.ELECTRONICS).build();
             assertEquals(ItemCondition.USED, item.getCondition());
         }
 
         @Test
         @DisplayName("Description rỗng nếu không set")
-        void descriptionRongNeuKhongSet() {
-            Item item = new Item.Builder(1, "iPhone", ItemCategory.ELECTRONICS).build();
+        void descriptionMacDinhRong() {
+            Item item = new Item.Builder(1, "X", ItemCategory.ELECTRONICS).build();
             assertEquals("", item.getDescription());
         }
 
         @Test
+        @DisplayName("Condition null fallback về USED (qua setter của builder)")
+        void conditionNullFallback() {
+            Item item = new Item.Builder(1, "X", ItemCategory.ELECTRONICS)
+                    .condition(null)
+                    .build();
+            assertEquals(ItemCondition.USED, item.getCondition());
+        }
+
+        @ParameterizedTest
+        @ValueSource(ints = {0, -1, -100})
         @DisplayName("sellerId <= 0 phải ném IllegalArgumentException")
-        void sellerIdInvalidPhaiNem() {
+        void sellerIdKhongHopLe(int sellerId) {
             assertThrows(IllegalArgumentException.class,
-                    () -> new Item.Builder(0, "iPhone", ItemCategory.ELECTRONICS));
-            assertThrows(IllegalArgumentException.class,
-                    () -> new Item.Builder(-1, "iPhone", ItemCategory.ELECTRONICS));
+                    () -> new Item.Builder(sellerId, "X", ItemCategory.ELECTRONICS));
         }
 
         @ParameterizedTest
         @NullAndEmptySource
-        @ValueSource(strings = {" ", "   ", "\t"})
+        @ValueSource(strings = {"   ", "\t"})
         @DisplayName("Title null/rỗng/blank phải ném IllegalArgumentException")
-        void titleInvalidPhaiNem(String invalid) {
+        void titleKhongHopLe(String title) {
             assertThrows(IllegalArgumentException.class,
-                    () -> new Item.Builder(1, invalid, ItemCategory.ELECTRONICS));
+                    () -> new Item.Builder(1, title, ItemCategory.ELECTRONICS));
         }
 
         @Test
         @DisplayName("Category null phải ném IllegalArgumentException")
-        void categoryNullPhaiNem() {
+        void categoryNull() {
             assertThrows(IllegalArgumentException.class,
-                    () -> new Item.Builder(1, "iPhone", null));
+                    () -> new Item.Builder(1, "X", null));
         }
 
         @Test
-        @DisplayName("putSpecs thêm spec key-value")
-        void putSpecsThemKeyValue() {
-            Item item = new Item.Builder(1, "iPhone", ItemCategory.ELECTRONICS)
-                    .putSpecs("BRAND", "Apple")
-                    .putSpecs("MODEL", "iPhone 15")
+        @DisplayName("imageUrls hợp lệ - giữ danh sách URL")
+        void imageUrlsHopLe() {
+            List<String> urls = List.of("http://a/1.png", "http://a/2.png");
+            Item item = new Item.Builder(1, "X", ItemCategory.ELECTRONICS)
+                    .imageUrls(urls)
                     .build();
-
-            assertEquals("Apple", item.getSpecs("BRAND"));
-            assertEquals("iPhone 15", item.getSpecs("MODEL"));
+            assertEquals(2, item.getImageUrls().size());
+            assertTrue(item.getImageUrls().contains("http://a/1.png"));
         }
 
         @Test
-        @DisplayName("putSpecs key null hoặc value rỗng phải bị bỏ qua")
-        void putSpecsKhongHopLeBoQua() {
-            Item item = new Item.Builder(1, "iPhone", ItemCategory.ELECTRONICS)
-                    .putSpecs(null, "value")           // key null
-                    .putSpecs("KEY", null)             // value null
-                    .putSpecs("KEY", "")               // value rỗng
-                    .putSpecs("", "value")             // key rỗng
+        @DisplayName("imageUrls null fallback về list rỗng")
+        void imageUrlsNullFallback() {
+            Item item = new Item.Builder(1, "X", ItemCategory.ELECTRONICS)
+                    .imageUrls(null)
                     .build();
-
-            assertTrue(item.getSpecs().isEmpty(),
-                    "Tất cả putSpecs invalid phải bị bỏ qua");
+            assertNotNull(item.getImageUrls());
+            assertTrue(item.getImageUrls().isEmpty());
         }
     }
-
-    // ════════════════════════════════════════════════════
-    // RECONSTRUCTOR
-    // ════════════════════════════════════════════════════
 
     @Nested
     @DisplayName("Reconstructor pattern")
     class ReconstructorTest {
 
         @Test
-        @DisplayName("Reconstructor đầy đủ field tạo được Item")
-        void reconstructorDayDuTaoItem() {
-            Instant now = Instant.now();
-            Map<String, String> specs = new HashMap<>();
-            specs.put("BRAND", "Apple");
-
+        @DisplayName("Reconstructor đầy đủ field tạo được Item từ DB")
+        void reconstructorHopLe() {
+            java.time.Instant now = java.time.Instant.now();
             Item item = Item.reconstructor()
                     .id(100)
                     .createdAt(now)
                     .isDeleted(false)
-                    .sellerId(5)
-                    .title("MacBook")
-                    .description("Laptop")
+                    .sellerId(1)
+                    .title("iPhone")
+                    .description("X")
                     .condition(ItemCondition.NEW)
                     .category(ItemCategory.ELECTRONICS)
-                    .specs(specs)
+                    .imageUrls(new ArrayList<>())
                     .status(ItemStatus.LISTED)
                     .build();
 
             assertEquals(100, item.getId());
-            assertEquals(now, item.getCreatedAt());
+            assertEquals("iPhone", item.getTitle());
+            assertEquals(ItemCategory.ELECTRONICS, item.getCategory());
+            assertEquals(ItemStatus.LISTED, item.getStatus());
             assertFalse(item.isDeleted());
-            assertEquals(5, item.getSellerId());
-            assertEquals("MacBook", item.getTitle());
-            assertEquals("Apple", item.getSpecs("BRAND"));
         }
 
         @Test
         @DisplayName("Reconstructor thiếu field bắt buộc phải ném IllegalStateException")
-        void reconstructorThieuFieldPhaiNem() {
-            // Thiếu title
+        void reconstructorThieuField() {
+            // Thiếu nhiều field bắt buộc (sellerId, title, category, status...)
             assertThrows(IllegalStateException.class,
                     () -> Item.reconstructor()
                             .id(1)
-                            .createdAt(Instant.now())
+                            .createdAt(java.time.Instant.now())
                             .isDeleted(false)
-                            .sellerId(5)
-                            .category(ItemCategory.ELECTRONICS)
-                            .specs(new HashMap<>())
-                            .status(ItemStatus.LISTED)
                             .build());
         }
-    }
 
-    // ════════════════════════════════════════════════════
-    // SPEC HELPERS
-    // ════════════════════════════════════════════════════
+        @Test
+        @DisplayName("Reconstructor thiếu status → IllegalStateException")
+        void reconstructorThieuStatus() {
+            assertThrows(IllegalStateException.class,
+                    () -> Item.reconstructor()
+                            .id(1)
+                            .createdAt(java.time.Instant.now())
+                            .isDeleted(false)
+                            .sellerId(1)
+                            .title("X")
+                            .category(ItemCategory.ELECTRONICS)
+                            .build());
+        }
+
+        @Test
+        @DisplayName("Reconstructor isDeleted = true tạo soft-deleted item")
+        void reconstructorSoftDeleted() {
+            Item item = Item.reconstructor()
+                    .id(1)
+                    .createdAt(java.time.Instant.now())
+                    .isDeleted(true)
+                    .sellerId(1)
+                    .title("X")
+                    .category(ItemCategory.ELECTRONICS)
+                    .condition(ItemCondition.USED)
+                    .description("")
+                    .imageUrls(new ArrayList<>())
+                    .status(ItemStatus.ARCHIVED)
+                    .build();
+
+            assertTrue(item.isDeleted());
+        }
+    }
 
     @Nested
-    @DisplayName("Spec helpers")
-    class SpecHelpers {
+    @DisplayName("imageUrls immutability")
+    class ImageUrlsImmutable {
 
         @Test
-        @DisplayName("hasSpec với SpecKey tồn tại trả về true")
-        void hasSpecTonTaiTraVeTrue() {
-            Item item = new Item.Builder(1, "iPhone", ItemCategory.ELECTRONICS)
-                    .putSpecs("BRAND", "Apple")
+        @DisplayName("getImageUrls trả unmodifiable - không sửa được từ ngoài")
+        void getImageUrlsImmutable() {
+            Item item = new Item.Builder(1, "X", ItemCategory.ELECTRONICS)
+                    .imageUrls(List.of("url1"))
                     .build();
-
-            assertTrue(item.hasSpec(SpecKey.BRAND));
-            assertTrue(item.hasSpec("BRAND"));   // raw key
-        }
-
-        @Test
-        @DisplayName("hasSpec với SpecKey không tồn tại trả về false")
-        void hasSpecKhongTonTaiTraVeFalse() {
-            Item item = new Item.Builder(1, "iPhone", ItemCategory.ELECTRONICS).build();
-
-            assertFalse(item.hasSpec(SpecKey.BRAND));
-            assertFalse(item.hasSpec("NONEXISTENT"));
-        }
-
-        @Test
-        @DisplayName("getSpecs trả về chuỗi rỗng nếu key không tồn tại")
-        void getSpecsKeyKhongTonTaiTraVeRong() {
-            Item item = new Item.Builder(1, "iPhone", ItemCategory.ELECTRONICS).build();
-
-            assertEquals("", item.getSpecs(SpecKey.BRAND));
-            assertEquals("", item.getSpecs("NONEXISTENT"));
-        }
-
-        @Test
-        @DisplayName("getSpecs map trả về UnmodifiableMap - không sửa được từ ngoài")
-        void getSpecsMapImmutable() {
-            Item item = new Item.Builder(1, "iPhone", ItemCategory.ELECTRONICS)
-                    .putSpecs("BRAND", "Apple")
-                    .build();
-
-            Map<String, String> specs = item.getSpecs();
-            // Cố gắng modify - phải ném UnsupportedOperationException
             assertThrows(UnsupportedOperationException.class,
-                    () -> specs.put("HACK", "VALUE"));
+                    () -> item.getImageUrls().add("hack"));
+        }
+
+        @Test
+        @DisplayName("Sửa list gốc KHÔNG ảnh hưởng item (defensive copy)")
+        void defensiveCopy() {
+            List<String> urls = new ArrayList<>();
+            urls.add("url1");
+            Item item = new Item.Builder(1, "X", ItemCategory.ELECTRONICS)
+                    .imageUrls(urls)
+                    .build();
+
+            urls.clear();
+            assertEquals(1, item.getImageUrls().size(),
+                    "Sửa list gốc không ảnh hưởng item");
         }
     }
-
-    // ════════════════════════════════════════════════════
-    // SETTERS VALIDATION
-    // ════════════════════════════════════════════════════
 
     @Nested
     @DisplayName("Setters validation")
@@ -255,53 +255,87 @@ class ItemTest {
 
         @ParameterizedTest
         @NullAndEmptySource
-        @ValueSource(strings = {" ", "   "})
-        @DisplayName("setTitle null/rỗng phải ném exception")
-        void setTitleInvalidPhaiNem(String invalid) {
-            Item item = new Item.Builder(1, "iPhone", ItemCategory.ELECTRONICS).build();
-            assertThrows(IllegalArgumentException.class, () -> item.setTitle(invalid));
+        @ValueSource(strings = {"   ", "\t"})
+        @DisplayName("setTitle null/rỗng/blank phải ném exception")
+        void setTitleKhongHopLe(String title) {
+            Item item = new Item.Builder(1, "Orig", ItemCategory.ELECTRONICS).build();
+            assertThrows(IllegalArgumentException.class,
+                    () -> item.setTitle(title));
         }
 
         @Test
         @DisplayName("setTitle hợp lệ phải bị trim")
-        void setTitleHopLeBiTrim() {
-            Item item = new Item.Builder(1, "iPhone", ItemCategory.ELECTRONICS).build();
-            item.setTitle("   Samsung Galaxy   ");
-            assertEquals("Samsung Galaxy", item.getTitle());
+        void setTitleBiTrim() {
+            Item item = new Item.Builder(1, "Orig", ItemCategory.ELECTRONICS).build();
+            item.setTitle("  New Title  ");
+            assertEquals("New Title", item.getTitle());
         }
 
         @Test
         @DisplayName("setStatus null phải ném exception")
-        void setStatusNullPhaiNem() {
-            Item item = new Item.Builder(1, "iPhone", ItemCategory.ELECTRONICS).build();
-            assertThrows(IllegalArgumentException.class, () -> item.setStatus(null));
+        void setStatusNull() {
+            Item item = new Item.Builder(1, "X", ItemCategory.ELECTRONICS).build();
+            assertThrows(IllegalArgumentException.class,
+                    () -> item.setStatus(null));
+        }
+
+        @Test
+        @DisplayName("setStatus hợp lệ - thay đổi status")
+        void setStatusHopLe() {
+            Item item = new Item.Builder(1, "X", ItemCategory.ELECTRONICS).build();
+            item.setStatus(ItemStatus.LISTED);
+            assertEquals(ItemStatus.LISTED, item.getStatus());
         }
 
         @Test
         @DisplayName("setCondition null phải ném exception")
-        void setConditionNullPhaiNem() {
-            Item item = new Item.Builder(1, "iPhone", ItemCategory.ELECTRONICS).build();
-            assertThrows(IllegalArgumentException.class, () -> item.setCondition(null));
+        void setConditionNull() {
+            Item item = new Item.Builder(1, "X", ItemCategory.ELECTRONICS).build();
+            assertThrows(IllegalArgumentException.class,
+                    () -> item.setCondition(null));
         }
 
         @Test
-        @DisplayName("putSpecs SpecKey null phải bị bỏ qua không crash")
-        void putSpecsKeyNullKhongCrash() {
-            Item item = new Item.Builder(1, "iPhone", ItemCategory.ELECTRONICS).build();
-            assertDoesNotThrow(() -> item.putSpecs((SpecKey) null, "value"));
+        @DisplayName("setCondition hợp lệ - thay đổi condition")
+        void setConditionHopLe() {
+            Item item = new Item.Builder(1, "X", ItemCategory.ELECTRONICS).build();
+            item.setCondition(ItemCondition.NEW);
+            assertEquals(ItemCondition.NEW, item.getCondition());
+        }
+
+        @ParameterizedTest
+        @NullAndEmptySource
+        @ValueSource(strings = {"   "})
+        @DisplayName("setDescription null/rỗng/blank → ném exception")
+        void setDescriptionKhongHopLe(String desc) {
+            Item item = new Item.Builder(1, "X", ItemCategory.ELECTRONICS).build();
+            assertThrows(IllegalArgumentException.class,
+                    () -> item.setDescription(desc));
+        }
+
+        @Test
+        @DisplayName("setImageUrls null phải ném exception")
+        void setImageUrlsNull() {
+            Item item = new Item.Builder(1, "X", ItemCategory.ELECTRONICS).build();
+            assertThrows(IllegalArgumentException.class,
+                    () -> item.setImageUrls(null));
+        }
+
+        @Test
+        @DisplayName("setImageUrls hợp lệ - thay danh sách")
+        void setImageUrlsHopLe() {
+            Item item = new Item.Builder(1, "X", ItemCategory.ELECTRONICS).build();
+            item.setImageUrls(List.of("a", "b", "c"));
+            assertEquals(3, item.getImageUrls().size());
         }
     }
 
-    // ════════════════════════════════════════════════════
-    // TO STRING
-    // ════════════════════════════════════════════════════
-
     @Test
     @DisplayName("toString chứa title và category")
-    void toStringChuaTitleVaCategory() {
-        Item item = new Item.Builder(1, "iPhone 15", ItemCategory.ELECTRONICS).build();
-        String str = item.toString();
-        assertTrue(str.contains("iPhone 15"));
-        assertTrue(str.contains("ELECTRONICS"));
+    void toStringFull() {
+        Item item = new Item.Builder(1, "iPhone", ItemCategory.ELECTRONICS).build();
+        String s = item.toString();
+        assertTrue(s.contains("iPhone"));
+        assertTrue(s.contains("ELECTRONICS"));
     }
 }

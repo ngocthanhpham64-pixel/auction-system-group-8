@@ -114,6 +114,7 @@ class BidValidatorFullTest {
         // Set status = ACTIVE và currentPrice = 1.000.000 qua reflection
         setField(session, "status", SessionStatus.ACTIVE);
         setField(session, "currentPrice", CURRENT_PRICE);
+        setField(session, "bidCount", 1);
         return session;
     }
 
