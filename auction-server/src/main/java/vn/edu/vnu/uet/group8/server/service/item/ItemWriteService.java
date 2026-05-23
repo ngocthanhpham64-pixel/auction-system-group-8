@@ -30,7 +30,8 @@ import vn.edu.vnu.uet.group8.server.util.FileUtil;
 /**
  * Xử lý các thao tác ghi liên quan đến Item.
  *
- * <p>Ba hàm chính: tạo mới, cập nhật, xóa mềm.
+ * <p>
+ * Ba hàm chính: tạo mới, cập nhật, xóa mềm.
  * Thời gian đấu giá ({@code startTime}, {@code endTime}) và giá
  * khởi điểm ({@code startingPrice}) KHÔNG thuộc về class này —
  * chúng là thuộc tính của {@code AuctionSession}, được quản lý
@@ -38,24 +39,23 @@ import vn.edu.vnu.uet.group8.server.util.FileUtil;
  */
 public class ItemWriteService {
 
-  private static final Logger logger =
-      LoggerFactory.getLogger(ItemWriteService.class);
+  private static final Logger logger = LoggerFactory.getLogger(ItemWriteService.class);
 
   // Giới hạn số item LISTED đồng thời mỗi seller
   private static final int MAX_LISTED_ITEMS_PER_SELLER = 10;
 
-  private final ItemDAO           itemDAO;
-  private final UserDAO           userDAO;
+  private final ItemDAO itemDAO;
+  private final UserDAO userDAO;
   private final AuctionSessionDAO sessionDAO;
   private final ItemSpecValidator specValidator;
 
   public ItemWriteService(ItemDAO itemDAO,
-                          UserDAO userDAO,
-                          AuctionSessionDAO sessionDAO,
-                          ItemSpecValidator specValidator) {
-    this.itemDAO       = itemDAO;
-    this.userDAO       = userDAO;
-    this.sessionDAO    = sessionDAO;
+      UserDAO userDAO,
+      AuctionSessionDAO sessionDAO,
+      ItemSpecValidator specValidator) {
+    this.itemDAO = itemDAO;
+    this.userDAO = userDAO;
+    this.sessionDAO = sessionDAO;
     this.specValidator = specValidator;
   }
 
@@ -66,7 +66,8 @@ public class ItemWriteService {
   /**
    * Tạo item mới với trạng thái DRAFT.
    *
-   * <p>Chỉ lưu thông tin vật lý của sản phẩm. Thời gian và
+   * <p>
+   * Chỉ lưu thông tin vật lý của sản phẩm. Thời gian và
    * giá khởi điểm được thiết lập sau bởi
    * {@code AuctionSessionService.createSession()}.
    *
@@ -75,7 +76,6 @@ public class ItemWriteService {
    * @param description mô tả chi tiết
    * @param category    danh mục sản phẩm
    * @param condition   tình trạng sản phẩm
-   * @param specs       thông số kỹ thuật theo category
    * @param imageUrls   mảng đường dẫn hình ảnh sản phẩm
    * @return {@link Item} đã được lưu vào DB và có ID hợp lệ
    * @throws ValidationException   nếu input hoặc specs không hợp lệ
@@ -88,7 +88,7 @@ public class ItemWriteService {
       String description,
       ItemCategory category,
       ItemCondition condition,
-      Map<String, String> specs,
+      // Map<String, String> specs,
       List<String> imageUrls,
       BigDecimal startPrice,
       Integer durationHours) throws SQLException {
@@ -104,8 +104,7 @@ public class ItemWriteService {
     }
 
     // -- Kiểm tra giới hạn số item LISTED đồng thời
-    int listedCount =
-        itemDAO.countBySellerAndStatus(sellerId, ItemStatus.LISTED);
+    int listedCount = itemDAO.countBySellerAndStatus(sellerId, ItemStatus.LISTED);
     if (listedCount >= MAX_LISTED_ITEMS_PER_SELLER) {
       throw new ValidationException(
           "Bạn chỉ có thể đăng bán tối đa "
@@ -119,7 +118,7 @@ public class ItemWriteService {
     }
 
     // -- Validate specs theo category
-    specValidator.validate(category, specs);
+    specValidator.validate(category);
 
     // -- Xác định trạng thái ban đầu: Nếu có thông tin đấu giá thì đưa lên sàn luôn
     boolean isPublishing = (startPrice != null && durationHours != null && durationHours > 0);
@@ -132,7 +131,7 @@ public class ItemWriteService {
     Item item = new Item.Builder(sellerId, title, category)
         .description(description)
         .condition(condition)
-        .specs(specs)
+        // .specs(specs)
         .imageUrls(savedImageUrls)
         .status(initStatus)
         .build();
@@ -142,15 +141,15 @@ public class ItemWriteService {
 
     // -- Tạo phiên đấu giá nếu đang Publish
     if (isPublishing) {
-        Instant now = Instant.now();
-        Instant endTime = now.plus(durationHours, ChronoUnit.HOURS);
-        
-        AuctionSession session = new AuctionSession.Builder(item.getId(), startPrice, now, endTime).build();
-        // Mở phiên lập tức
-        session.transitionStatus(SessionStatus.UPCOMING, SessionStatus.ACTIVE);
-        
-        sessionDAO.insert(session);
-        logger.info("Đã tạo và mở phiên đấu giá cho item {}", item.getId());
+      Instant now = Instant.now();
+      Instant endTime = now.plus(durationHours, ChronoUnit.HOURS);
+
+      AuctionSession session = new AuctionSession.Builder(item.getId(), startPrice, now, endTime).build();
+      // Mở phiên lập tức
+      session.transitionStatus(SessionStatus.UPCOMING, SessionStatus.ACTIVE);
+
+      sessionDAO.insert(session);
+      logger.info("Đã tạo và mở phiên đấu giá cho item {}", item.getId());
     }
 
     // -- Tự động thêm role SELLER nếu chưa có
@@ -173,7 +172,8 @@ public class ItemWriteService {
   /**
    * Cập nhật thông tin vật lý của item.
    *
-   * <p>Chỉ cho phép khi item đang ở trạng thái DRAFT —
+   * <p>
+   * Chỉ cho phép khi item đang ở trạng thái DRAFT —
    * không cho sửa khi đã LISTED (đang có phiên đấu giá).
    * Nguyên tắc: người mua đã xem thông tin rồi thì không
    * được phép thay đổi để tránh gian lận.
@@ -196,7 +196,7 @@ public class ItemWriteService {
       String title,
       String description,
       vn.edu.vnu.uet.group8.common.enums.ItemCondition condition,
-      Map<String, String> specs,
+      // Map<String, String> specs,
       List<String> imageUrls) throws SQLException {
 
     Item item = itemDAO.findById(itemId)
@@ -212,7 +212,7 @@ public class ItemWriteService {
     boolean hasRunningSession = sessionDAO
         .findByItemId(itemId).stream()
         .anyMatch(s -> s.getStatus() == SessionStatus.ACTIVE
-                    || s.getStatus() == SessionStatus.UPCOMING);
+            || s.getStatus() == SessionStatus.UPCOMING);
 
     if (hasRunningSession) {
       throw new AuctionException(
@@ -220,7 +220,7 @@ public class ItemWriteService {
     }
 
     // -- Validate specs mới theo category của item (category không đổi)
-    specValidator.validate(item.getCategory(), specs);
+    specValidator.validate(item.getCategory());
 
     // -- Áp dụng thay đổi
     if (title != null && !title.isBlank()) {
@@ -232,9 +232,9 @@ public class ItemWriteService {
     if (condition != null) {
       item.setCondition(condition);
     }
-    if (specs != null) {
-      item.setSpecs(specs);
-    }
+    // if (specs != null) {
+    // item.setSpecs(specs);
+    // }
     if (imageUrls != null) {
       item.setImageUrls(FileUtil.saveBase64Images(imageUrls));
     }
@@ -253,14 +253,16 @@ public class ItemWriteService {
   /**
    * Xóa mềm item — đánh dấu {@code is_deleted = true}.
    *
-   * <p>Logic theo đúng hướng bạn đề xuất:
+   * <p>
+   * Logic theo đúng hướng bạn đề xuất:
    * <ol>
-   *   <li>Kiểm tra chủ sở hữu
-   *   <li>Query session — nếu có bất kỳ session ACTIVE → từ chối
-   *   <li>Soft delete
+   * <li>Kiểm tra chủ sở hữu
+   * <li>Query session — nếu có bất kỳ session ACTIVE → từ chối
+   * <li>Soft delete
    * </ol>
    *
-   * <p>Không xóa vật lý vì lịch sử đấu giá và bid_transaction
+   * <p>
+   * Không xóa vật lý vì lịch sử đấu giá và bid_transaction
    * vẫn tham chiếu đến itemId — xóa vật lý gây vỡ FK.
    *
    * @param requesterId ID người thực hiện — phải là seller hoặc admin
@@ -281,8 +283,8 @@ public class ItemWriteService {
         .orElseThrow(() -> new UnauthorizedException(
             "xóa item — người dùng không tồn tại"));
 
-    boolean isOwner   = item.getSellerId() == requesterId;
-    boolean isAdmin   = requester.isAdmin();
+    boolean isOwner = item.getSellerId() == requesterId;
+    boolean isAdmin = requester.isAdmin();
 
     if (!isOwner && !isAdmin) {
       throw new UnauthorizedException(
@@ -292,8 +294,7 @@ public class ItemWriteService {
     // -- Từ chối nếu có session ACTIVE
     // Theo đúng hướng giải quyết của bạn:
     // gọi AuctionSessionDAO.findByItemId() → kiểm tra ACTIVE
-    List<vn.edu.vnu.uet.group8.common.entity.AuctionSession>
-        sessions = sessionDAO.findByItemId(itemId);
+    List<vn.edu.vnu.uet.group8.common.entity.AuctionSession> sessions = sessionDAO.findByItemId(itemId);
 
     boolean hasActiveSession = sessions.stream()
         .anyMatch(s -> s.getStatus() == SessionStatus.ACTIVE);

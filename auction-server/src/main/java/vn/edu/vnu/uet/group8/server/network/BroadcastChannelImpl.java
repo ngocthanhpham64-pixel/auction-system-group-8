@@ -1,5 +1,6 @@
 package vn.edu.vnu.uet.group8.server.network;
 
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -20,6 +21,7 @@ public class BroadcastChannelImpl implements BroadcastChannel {
   private static final Gson GSON = GsonUtil.GSON;
 
   private final Set<ClientHandler> clients = ConcurrentHashMap.newKeySet();
+  private final Map<Integer, Set<ClientHandler>> userSessions = new ConcurrentHashMap<>();
 
   @Override
   public void addClient(ClientHandler handler) {
@@ -32,6 +34,14 @@ public class BroadcastChannelImpl implements BroadcastChannel {
   public void removeClient(ClientHandler handler) {
     if (handler == null) return;
     clients.remove(handler);
+    
+    Integer boundUserId = handler.getUserId();
+    if (boundUserId != null) {
+      Set<ClientHandler> sessions = userSessions.get(boundUserId);
+      if (sessions != null) {
+        sessions.remove(handler);
+      }
+    }
     log.debug("Client rời đi - còn lại={}", clients.size());
   }
 
@@ -43,6 +53,41 @@ public class BroadcastChannelImpl implements BroadcastChannel {
   @Override
   public int getConnectedClientCount() {
     return clients.size();
+  }
+
+  @Override
+  public void registerUser(int userId, ClientHandler handler) {
+    if (handler == null) return;
+    userSessions.computeIfAbsent(userId, k -> ConcurrentHashMap.newKeySet()).add(handler);
+    log.debug("User {} đã map với một kết nối socket", userId);
+  }
+
+  @Override
+  public void unregisterUser(int userId, ClientHandler handler) {
+    if (handler == null) return;
+    Set<ClientHandler> sessions = userSessions.get(userId);
+    if (sessions != null) {
+      sessions.remove(handler);
+    }
+  }
+
+  @Override
+  public void sendToUser(int userId, ServerResponse response) {
+    Set<ClientHandler> sessions = userSessions.get(userId);
+    if (sessions == null || sessions.isEmpty()) {
+      log.debug("User {} không online, bỏ qua gửi tin nhắn cá nhân", userId);
+      return;
+    }
+    int sent = 0;
+    for (ClientHandler client : sessions) {
+      try {
+        client.send(response);
+        sent++;
+      } catch (Exception e) {
+        removeClient(client);
+      }
+    }
+    log.debug("Gửi tới User {}: sent={}/{}", userId, sent, sessions.size());
   }
 
   private void pushToAll(ServerResponse response, EventType eventType) {

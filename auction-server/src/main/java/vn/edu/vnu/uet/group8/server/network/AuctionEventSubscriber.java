@@ -3,13 +3,16 @@ package vn.edu.vnu.uet.group8.server.network;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import vn.edu.vnu.uet.group8.common.dto.model.NotificationDTO;
 import vn.edu.vnu.uet.group8.common.dto.response.AuctionEndedBroadcastResponse;
 import vn.edu.vnu.uet.group8.common.dto.response.PriceUpdateBroadcastResponse;
 import vn.edu.vnu.uet.group8.common.dto.response.ServerResponse;
 import vn.edu.vnu.uet.group8.common.enums.EventType;
+import vn.edu.vnu.uet.group8.common.enums.NotificationType;
 import vn.edu.vnu.uet.group8.server.service.auction.AuctionEventBus;
 import vn.edu.vnu.uet.group8.server.service.auction.event.AuctionEndedEvent;
 import vn.edu.vnu.uet.group8.server.service.auction.event.BidPlacedEvent;
+import vn.edu.vnu.uet.group8.server.service.user.NotificationService;
 
 /**
  * Subscriber nhận domain event từ EventBus,
@@ -32,9 +35,11 @@ public class AuctionEventSubscriber {
   // Đây mới là nơi hợp lý để có BroadcastChannel
   // vì đây đang ở tầng Network
   private final BroadcastChannel channel;
+  private final NotificationService notificationService;
 
-  public AuctionEventSubscriber(BroadcastChannel channel) {
+  public AuctionEventSubscriber(BroadcastChannel channel, NotificationService notificationService) {
     this.channel = channel;
+    this.notificationService = notificationService;
   }
 
   /**
@@ -85,6 +90,24 @@ public class AuctionEventSubscriber {
         channel.getConnectedClientCount());
 
     channel.broadcast(response);
+
+    // Tự động sinh Notification cho người dùng bị vượt giá (nếu có)
+    Integer prevBidderId = event.getPrevBidderId();
+    if (prevBidderId != null && !prevBidderId.equals(event.getBidderId())) {
+      try {
+        NotificationDTO notif = notificationService.createNotification(
+            prevBidderId,
+            "Bị vượt giá!",
+            "Giá của bạn tại sản phẩm #" + event.getItemId() + " vừa bị vượt qua. Hãy đặt giá mới để giành lại vị trí dẫn đầu!",
+            NotificationType.OUTBID
+        );
+        ServerResponse notifResponse = ServerResponse.broadcast(EventType.NOTIFICATION).data(notif).build();
+        
+        channel.sendToUser(prevBidderId, notifResponse); // Gửi trực tiếp Socket đến chính chủ
+      } catch (Exception e) {
+        logger.error("Lỗi tạo thông báo OUTBID cho user {}: {}", prevBidderId, e.getMessage());
+      }
+    }
   }
 
   /**
@@ -119,5 +142,24 @@ public class AuctionEventSubscriber {
         channel.getConnectedClientCount());
 
     channel.broadcast(response);
+
+    // Tự động sinh Notification cho người thắng (nếu có)
+    if (event.hasSold()) {
+      try {
+        Integer winnerId = event.getWinnerId(); 
+        if (winnerId != null && winnerId > 0) {
+          NotificationDTO notif = notificationService.createNotification(
+              winnerId,
+              "Thắng đấu giá!",
+              "Chúc mừng bạn đã thắng phiên đấu giá sản phẩm: " + event.getItemTitle() + " với giá " + event.getFinalPrice() + " VND.",
+              NotificationType.AUCTION_WON
+          );
+          ServerResponse notifResponse = ServerResponse.broadcast(EventType.NOTIFICATION).data(notif).build();
+          channel.sendToUser(winnerId, notifResponse);
+        }
+      } catch (Exception e) {
+        logger.error("Lỗi tạo thông báo AUCTION_WON: {}", e.getMessage());
+      }
+    }
   }
 }

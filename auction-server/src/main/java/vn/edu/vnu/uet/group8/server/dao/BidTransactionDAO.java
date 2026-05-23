@@ -80,7 +80,7 @@ public class BidTransactionDAO {
 
     try {
       // -- Bước 1: Atomic price update với optimistic lock
-      int affected = updateItemPrice(conn, sessionId, bidAmount);
+      int affected = updateItemPrice(conn, sessionId, bidAmount, bidderId);
       if (affected == 0) {
         // affected = 0: có bid khác vào trước, giá đã cao hơn bidAmount
         throw new BidOutpricedException(
@@ -177,7 +177,7 @@ public class BidTransactionDAO {
    */
   public int countByItem(int sessionId) throws SQLException {
     String sql =
-        "SELECT COUNT(*) FROM bid_transaction WHERE item_id = ?";
+        "SELECT COUNT(*) FROM bid_transaction WHERE session_id = ?";
 
     try (Connection conn = DatabaseConnection.getInstance().getConnection();
         PreparedStatement ps = conn.prepareStatement(sql)) {
@@ -266,11 +266,12 @@ public class BidTransactionDAO {
    *
    * @return số row affected -- 0 nếu có bid khác vào trước
    */
-  private int updateItemPrice(Connection conn, int sessionId, BigDecimal bidAmount)
+  private int updateItemPrice(Connection conn, int sessionId, BigDecimal bidAmount, int bidderId)
       throws SQLException {
     String sql =
         "UPDATE auction_session"
             + " SET current_price = ?,"
+            + "     highest_bidder_id = ?,"
             + "     bid_count = bid_count + 1"
             + " WHERE session_id = ?"
             + "   AND current_price < ?"
@@ -279,8 +280,9 @@ public class BidTransactionDAO {
 
     try (PreparedStatement ps = conn.prepareStatement(sql)) {
       ps.setBigDecimal(1, bidAmount);
-      ps.setInt(2, sessionId);
-      ps.setBigDecimal(3, bidAmount);
+      ps.setInt(2, bidderId);
+      ps.setInt(3, sessionId);
+      ps.setBigDecimal(4, bidAmount);
       return ps.executeUpdate();
     }
   }
@@ -416,7 +418,7 @@ public class BidTransactionDAO {
 
   /** Đếm bid trong cùng transaction -- tránh đọc stale data. */
   private int countByItemInTx(Connection conn, int sessionId) throws SQLException {
-    String sql = "SELECT COUNT(*) FROM bid_transaction WHERE item_id = ?";
+    String sql = "SELECT COUNT(*) FROM bid_transaction WHERE session_id = ?";
     try (PreparedStatement ps = conn.prepareStatement(sql)) {
       ps.setInt(1, sessionId);
       try (ResultSet rs = ps.executeQuery()) {

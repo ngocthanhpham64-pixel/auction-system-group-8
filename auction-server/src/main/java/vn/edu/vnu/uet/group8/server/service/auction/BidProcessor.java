@@ -9,6 +9,7 @@ import org.slf4j.LoggerFactory;
 import vn.edu.vnu.uet.group8.server.dao.BidTransactionDAO;
 import vn.edu.vnu.uet.group8.server.dao.BidTransactionDAO.BidExecutionResult;
 import vn.edu.vnu.uet.group8.server.dao.BidTransactionDAO.LeaderInfo;
+
 /**
  * Điều phối luồng xử lý một lần đặt giá đã được validate.
  *
@@ -46,21 +47,21 @@ public class BidProcessor {
   public BidResult process(BidContext context) throws SQLException {
     int bidderId = context.getBidder().getId();
     int itemId = context.getItem().getId();
-
+    int sessionId = context.getAuctionSession().getId();
 
     logger.info("Bắt đầu process bid: bidderId={}, itemId={}, auctionSessionId={}, amount={}",
-        bidderId, itemId, context.getAuctionSession().getId(), context.getBidAmount());
+        bidderId, itemId, sessionId, context.getBidAmount());
 
     // -- Bước 1: Tìm leader hiện tại trước khi update
     // Cần biết ai đang dẫn đầu để hoàn tiền đúng người
     Optional<LeaderInfo> prevLeader =
-        bidTransactionDAO.findCurrentLeader(itemId);
+        bidTransactionDAO.findCurrentLeader(sessionId);
 
     // -- Bước 2: Ủy quyền toàn bộ DB operation cho DAO
     // BidProcessor không biết gì về SQL hay Connection
     BidExecutionResult result = bidTransactionDAO.executeBid(
         bidderId,
-        itemId,
+        sessionId,
         context.getBidAmount(),
         prevLeader);
 

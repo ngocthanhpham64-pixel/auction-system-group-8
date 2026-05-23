@@ -7,8 +7,7 @@ import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
 
 public class DatabaseConnection {
-  private static final String URL =
-      "jdbc:mysql://localhost:3306/auction_db" +
+  private static final String URL = "jdbc:mysql://localhost:3306/auction_db_test" +
       "?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true";
   private static final String USER = "root";
   private static final String PASS = "NgocThanh291@";
@@ -22,16 +21,16 @@ public class DatabaseConnection {
       config.setJdbcUrl(URL);
       config.setUsername(USER);
       config.setPassword(PASS);
-      
+
       // Optional optimizations for HikariCP + MySQL
       config.addDataSourceProperty("cachePrepStmts", "true");
       config.addDataSourceProperty("prepStmtCacheSize", "250");
       config.addDataSourceProperty("prepStmtCacheSqlLimit", "2048");
-      
+
       // Pool configuration
       config.setMaximumPoolSize(10);
       config.setMinimumIdle(2);
-      
+
       this.dataSource = new HikariDataSource(config);
     } catch (Exception e) {
       throw new SQLException("Failed to initialize HikariCP connection pool", e);

@@ -18,6 +18,7 @@ import com.google.gson.Gson;
 import vn.edu.vnu.uet.group8.common.entity.AuctionSession;
 import vn.edu.vnu.uet.group8.common.enums.ItemCategory;
 import vn.edu.vnu.uet.group8.common.enums.SessionStatus;
+import vn.edu.vnu.uet.group8.common.dto.request.GetAuctionsRequest.SortOption;
 
 public class AuctionSessionDAO {
 
@@ -58,8 +59,8 @@ public class AuctionSessionDAO {
         VALUES (?,?,?,?,?,?,?,?,?)
         """;
 
-    try (Connection conn = getConn(); 
-       PreparedStatement ps = conn.prepareStatement(
+    try (Connection conn = getConn();
+        PreparedStatement ps = conn.prepareStatement(
             sql, Statement.RETURN_GENERATED_KEYS)) {
 
       ps.setInt(1, session.getItemId());
@@ -95,11 +96,12 @@ public class AuctionSessionDAO {
         WHERE session_id = ? AND is_deleted = false
         """;
 
-    try (Connection conn = getConn(); 
+    try (Connection conn = getConn();
         PreparedStatement ps = conn.prepareStatement(sql)) {
       ps.setInt(1, sessionId);
       try (ResultSet rs = ps.executeQuery()) {
-        if (rs.next()) return Optional.of(mapRow(rs));
+        if (rs.next())
+          return Optional.of(mapRow(rs));
       }
     }
     return Optional.empty();
@@ -115,19 +117,19 @@ public class AuctionSessionDAO {
     return queryList(sql, ps -> ps.setInt(1, itemId));
   }
 
-
   public Optional<AuctionSession> findActiveSessionByItemId(int itemId) throws SQLException {
     String sql = """
         SELECT * FROM auction_session
-        WHERE item_id = ? 
-          AND status = 'ACTIVE' 
+        WHERE item_id = ?
+          AND status = 'ACTIVE'
           AND is_deleted = false
         """;
-    try (Connection conn = getConn(); 
+    try (Connection conn = getConn();
         PreparedStatement ps = conn.prepareStatement(sql)) {
       ps.setInt(1, itemId);
       try (ResultSet rs = ps.executeQuery()) {
-          if (rs.next()) return Optional.of(mapRow(rs));
+        if (rs.next())
+          return Optional.of(mapRow(rs));
       }
     }
     return Optional.empty();
@@ -135,18 +137,19 @@ public class AuctionSessionDAO {
 
   public Optional<AuctionSession> findUpcomingByItemId(int itemId) throws SQLException {
     String sql = """
-            SELECT * 
-            FROM auction_session
-            Where item_id = ?
-              AND (status = 'UPCOMING')
-              AND is_deleted = false
-          """;
-    
-    try (Connection conn = getConn(); 
+          SELECT *
+          FROM auction_session
+          Where item_id = ?
+            AND (status = 'UPCOMING')
+            AND is_deleted = false
+        """;
+
+    try (Connection conn = getConn();
         PreparedStatement ps = conn.prepareStatement(sql)) {
       ps.setInt(1, itemId);
       try (ResultSet rs = ps.executeQuery()) {
-          if (rs.next()) return Optional.of(mapRow(rs));
+        if (rs.next())
+          return Optional.of(mapRow(rs));
       }
     }
     return Optional.empty();
@@ -177,11 +180,12 @@ public class AuctionSessionDAO {
         ORDER BY end_time DESC
         """;
 
-    return queryList(sql, ps -> {});
+    return queryList(sql, ps -> {
+    });
   }
 
-  public List<AuctionSession> findByPriceRange(ItemCategory category, BigDecimal minPrice, 
-    BigDecimal maxPrice) throws SQLException {
+  public List<AuctionSession> findByPriceRange(ItemCategory category, BigDecimal minPrice,
+      BigDecimal maxPrice, SortOption sortBy) throws SQLException {
     StringBuilder sql = new StringBuilder("""
         SELECT s.* FROM auction_session s
         JOIN item i ON s.item_id = i.item_id
@@ -190,16 +194,33 @@ public class AuctionSessionDAO {
           AND i.is_deleted = false
         """);
 
-    if (category != null) sql.append(" AND i.category = ?");
-    if (minPrice != null) sql.append(" AND s.current_price >= ?");
-    if (maxPrice != null) sql.append(" AND s.current_price <= ?");
-    sql.append(" ORDER BY s.current_price ASC");
+    if (category != null)
+      sql.append(" AND i.category = ?");
+    if (minPrice != null)
+      sql.append(" AND s.current_price >= ?");
+    if (maxPrice != null)
+      sql.append(" AND s.current_price <= ?");
+
+    if (sortBy != null) {
+      switch (sortBy) {
+        case NEWEST -> sql.append(" ORDER BY s.created_at DESC");
+        case ENDING_SOON -> sql.append(" ORDER BY s.end_time ASC");
+        case PRICE_ASC -> sql.append(" ORDER BY s.current_price ASC");
+        case PRICE_DESC -> sql.append(" ORDER BY s.current_price DESC");
+        case HOT -> sql.append(" ORDER BY s.bid_count DESC, s.current_price DESC");
+      }
+    } else {
+      sql.append(" ORDER BY s.current_price ASC");
+    }
 
     return queryList(sql.toString(), ps -> {
       int index = 1;
-      if (category != null) ps.setString(index++, category.name());
-      if (minPrice != null) ps.setBigDecimal(index++, minPrice);
-      if (maxPrice != null) ps.setBigDecimal(index++, maxPrice);
+      if (category != null)
+        ps.setString(index++, category.name());
+      if (minPrice != null)
+        ps.setBigDecimal(index++, minPrice);
+      if (maxPrice != null)
+        ps.setBigDecimal(index++, maxPrice);
     });
   }
 
@@ -231,6 +252,17 @@ public class AuctionSessionDAO {
     });
   }
 
+  public List<AuctionSession> findWonSessionsByUserId(int userId) throws SQLException {
+    String sql = """
+        SELECT * FROM auction_session
+        WHERE highest_bidder_id = ?
+          AND status = 'SOLD'
+          AND is_deleted = false
+        ORDER BY end_time DESC
+        """;
+    return queryList(sql, ps -> ps.setInt(1, userId));
+  }
+
   // ═══════════════════════════════════════════════════
   // UPDATE METHODS
   // ═══════════════════════════════════════════════════
@@ -247,7 +279,7 @@ public class AuctionSessionDAO {
           AND is_deleted = false
         """;
 
-    try (Connection conn = getConn(); 
+    try (Connection conn = getConn();
         PreparedStatement ps = conn.prepareStatement(sql)) {
       ps.setBigDecimal(1, newPrice);
       ps.setInt(2, bidderId);
@@ -267,7 +299,7 @@ public class AuctionSessionDAO {
         WHERE session_id = ?
         """;
 
-    try (Connection conn = getConn(); 
+    try (Connection conn = getConn();
         PreparedStatement ps = conn.prepareStatement(sql)) {
       ps.setString(1, newStatus.name());
       ps.setInt(2, sessionId);
@@ -284,7 +316,7 @@ public class AuctionSessionDAO {
           AND is_deleted = false
         """;
 
-    try (Connection conn = getConn(); 
+    try (Connection conn = getConn();
         PreparedStatement ps = conn.prepareStatement(sql)) {
       ps.setTimestamp(1, Timestamp.from(newEndTime));
       ps.setInt(2, sessionId);
@@ -299,7 +331,7 @@ public class AuctionSessionDAO {
         WHERE session_id = ?
         """;
 
-    try (Connection conn = getConn(); 
+    try (Connection conn = getConn();
         PreparedStatement ps = conn.prepareStatement(sql)) {
       ps.setInt(1, sessionId);
       ps.executeUpdate();
@@ -312,22 +344,23 @@ public class AuctionSessionDAO {
 
   private List<AuctionSession> queryList(String sql, SqlConsumer<PreparedStatement> binder) throws SQLException {
     List<AuctionSession> result = new ArrayList<>();
-    try (Connection conn = getConn(); 
+    try (Connection conn = getConn();
         PreparedStatement ps = conn.prepareStatement(sql)) {
       binder.accept(ps);
       try (ResultSet rs = ps.executeQuery()) {
-          while (rs.next()) result.add(mapRow(rs));
+        while (rs.next())
+          result.add(mapRow(rs));
       }
     }
     return result;
   }
 
   private Instant toInstant(Timestamp ts) {
-      return ts != null ? ts.toInstant() : null;
+    return ts != null ? ts.toInstant() : null;
   }
 
   @FunctionalInterface
   private interface SqlConsumer<T> {
-      void accept(T t) throws SQLException;
+    void accept(T t) throws SQLException;
   }
 }

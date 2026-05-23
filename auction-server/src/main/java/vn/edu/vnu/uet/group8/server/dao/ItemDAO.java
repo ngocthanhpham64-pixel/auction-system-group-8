@@ -42,9 +42,9 @@ public class ItemDAO {
         .sellerId(rs.getInt("seller_id"))
         .title(rs.getString("title"))
         .description(rs.getString("description"))
-        .category(ItemCategory.valueOf(rs.getString("category")))
+        .category(parseCategory(rs.getString("category")))
         .condition(parseCondition(rs.getString("condition_type")))
-        .specs(parseSpecs(rs.getString("specs")))
+        // .specs(parseSpecs(rs.getString("specs")))
         .imageUrls(parseImageUrls(rs.getString("image_urls")))
         .status(parseStatus(rs.getString("status")))
         .build();
@@ -57,43 +57,43 @@ public class ItemDAO {
   public void insert(Item item) throws SQLException {
     String sql = """
         INSERT INTO item
-          (seller_id, title, description, category, condition_type, specs, image_urls, status, is_deleted, created_at)
-        VALUES (?,?,?,?,?,?,?,?,?,?)
+          (seller_id, title, description, category, condition_type, image_urls, status, is_deleted, created_at)
+        VALUES (?,?,?,?,?,?,?,?,?)
         """;
 
-    try (Connection conn = getConn(); 
-          PreparedStatement ps = conn.prepareStatement(
+    try (Connection conn = getConn();
+        PreparedStatement ps = conn.prepareStatement(
             sql, Statement.RETURN_GENERATED_KEYS)) {
 
-      ps.setInt(1,         item.getSellerId());
-      ps.setString(2,      item.getTitle());
-      ps.setString(3,      item.getDescription());
-      ps.setString(4,      item.getCategory().name());
+      ps.setInt(1, item.getSellerId());
+      ps.setString(2, item.getTitle());
+      ps.setString(3, item.getDescription());
+      ps.setString(4, item.getCategory().name());
 
       if (item.getCondition() != null)
-          ps.setString(5, item.getCondition().name());
+        ps.setString(5, item.getCondition().name());
       else
-          ps.setNull(5, Types.VARCHAR);
+        ps.setNull(5, Types.VARCHAR);
 
-      if (item.getSpecs() == null || item.getSpecs().isEmpty()) {
-        ps.setString(6, null);
-      } else {
-        ps.setString(6, serializeSpecs(item.getSpecs()));
-      }
+      // if (item.getSpecs() == null || item.getSpecs().isEmpty()) {
+      // ps.setString(6, null);
+      // } else {
+      // ps.setString(6, serializeSpecs(item.getSpecs()));
+      // }
 
       if (item.getImageUrls() == null || item.getImageUrls().isEmpty()) {
-        ps.setString(7, null);
+        ps.setString(6, null);
       } else {
-        ps.setString(7, serializeImageUrls(item.getImageUrls()));
+        ps.setString(6, serializeImageUrls(item.getImageUrls()));
       }
 
       if (item.getStatus() != null)
-          ps.setString(8, item.getStatus().name());
+        ps.setString(7, item.getStatus().name());
       else
-          ps.setString(8, ItemStatus.DRAFT.name());
+        ps.setString(7, ItemStatus.DRAFT.name());
 
-      ps.setBoolean(9, item.isDeleted());
-      ps.setTimestamp(10, Timestamp.from(item.getCreatedAt()));
+      ps.setBoolean(8, item.isDeleted());
+      ps.setTimestamp(9, Timestamp.from(item.getCreatedAt()));
 
       ps.executeUpdate();
 
@@ -113,11 +113,12 @@ public class ItemDAO {
         WHERE item_id = ? AND is_deleted = false
         """;
 
-    try (Connection conn = getConn(); 
+    try (Connection conn = getConn();
         PreparedStatement ps = conn.prepareStatement(sql)) {
       ps.setInt(1, itemId);
       try (ResultSet rs = ps.executeQuery()) {
-        if (rs.next()) return Optional.of(mapRow(rs));
+        if (rs.next())
+          return Optional.of(mapRow(rs));
       }
     }
     return Optional.empty();
@@ -133,6 +134,19 @@ public class ItemDAO {
     return queryList(sql, ps -> ps.setInt(1, sellerId));
   }
 
+  public List<Item> findBySellerAndStatus(int sellerId, ItemStatus status) throws SQLException {
+    String sql = """
+        SELECT * FROM item
+        WHERE seller_id = ? AND status = ? AND is_deleted = false
+        ORDER BY created_at DESC
+        """;
+
+    return queryList(sql, ps -> {
+      ps.setInt(1, sellerId);
+      ps.setString(2, status.name());
+    });
+  }
+
   public void updateSpecs(int itemId, Map<String, String> specs) throws SQLException {
     String sql = """
         UPDATE item
@@ -140,7 +154,7 @@ public class ItemDAO {
         WHERE item_id = ? AND is_deleted = false
         """;
 
-    try (Connection conn = getConn(); 
+    try (Connection conn = getConn();
         PreparedStatement ps = conn.prepareStatement(sql)) {
       ps.setString(1, serializeSpecs(specs));
       ps.setInt(2, itemId);
@@ -153,38 +167,38 @@ public class ItemDAO {
   public void update(Item item) throws SQLException {
     String sql = """
         UPDATE item
-        SET title = ?, description = ?, condition_type = ?, specs = ?, image_urls = ?, status = ?
+        SET title = ?, description = ?, condition_type = ?, image_urls = ?, status = ?
         WHERE item_id = ? AND is_deleted = false
         """;
 
-    try (Connection conn = getConn(); 
+    try (Connection conn = getConn();
         PreparedStatement ps = conn.prepareStatement(sql)) {
       ps.setString(1, item.getTitle());
       ps.setString(2, item.getDescription());
 
       if (item.getCondition() != null)
-          ps.setString(3, item.getCondition().name());
+        ps.setString(3, item.getCondition().name());
       else
-          ps.setNull(3, Types.VARCHAR);
+        ps.setNull(3, Types.VARCHAR);
 
-      if (item.getSpecs() == null || item.getSpecs().isEmpty()) {
-        ps.setString(4, null);
-      } else {
-        ps.setString(4, serializeSpecs(item.getSpecs()));
-      }
+      // if (item.getSpecs() == null || item.getSpecs().isEmpty()) {
+      // ps.setString(4, null);
+      // } else {
+      // ps.setString(4, serializeSpecs(item.getSpecs()));
+      // }
 
       if (item.getImageUrls() == null || item.getImageUrls().isEmpty()) {
-        ps.setString(5, null);
+        ps.setString(4, null);
       } else {
-        ps.setString(5, serializeImageUrls(item.getImageUrls()));
+        ps.setString(4, serializeImageUrls(item.getImageUrls()));
       }
 
       if (item.getStatus() != null)
-          ps.setString(6, item.getStatus().name());
+        ps.setString(5, item.getStatus().name());
       else
-          ps.setString(6, ItemStatus.DRAFT.name());
+        ps.setString(5, ItemStatus.DRAFT.name());
 
-      ps.setInt(7, item.getId());
+      ps.setInt(6, item.getId());
 
       int affected = ps.executeUpdate();
       if (affected == 0)
@@ -199,7 +213,7 @@ public class ItemDAO {
         WHERE item_id = ?
         """;
 
-    try (Connection conn = getConn(); 
+    try (Connection conn = getConn();
         PreparedStatement ps = conn.prepareStatement(sql)) {
       ps.setInt(1, itemId);
       int affected = ps.executeUpdate();
@@ -216,7 +230,7 @@ public class ItemDAO {
         )
         """;
 
-    try (Connection conn = getConn(); 
+    try (Connection conn = getConn();
         PreparedStatement ps = conn.prepareStatement(sql)) {
       ps.setInt(1, itemId);
       ps.setInt(2, sellerId);
@@ -228,13 +242,13 @@ public class ItemDAO {
 
   public int countBySellerAndStatus(int sellerId, ItemStatus status) throws SQLException {
     String sql = """
-        SELECT COUNT(*) 
-        FROM item
-        WHERE seller_id = ? 
-          AND status = ?
-      """;
+          SELECT COUNT(*)
+          FROM item
+          WHERE seller_id = ?
+            AND status = ?
+        """;
 
-    try (Connection conn = getConn(); 
+    try (Connection conn = getConn();
         PreparedStatement ps = conn.prepareStatement(sql)) {
       ps.setInt(1, sellerId);
       ps.setString(2, status.name());
@@ -249,13 +263,14 @@ public class ItemDAO {
   // ═══════════════════════════════════════════════════
 
   private List<Item> queryList(String sql, SqlConsumer<PreparedStatement> binder)
-          throws SQLException {
+      throws SQLException {
     List<Item> result = new ArrayList<>();
-    try (Connection conn = getConn(); 
+    try (Connection conn = getConn();
         PreparedStatement ps = conn.prepareStatement(sql)) {
       binder.accept(ps);
       try (ResultSet rs = ps.executeQuery()) {
-          while (rs.next()) result.add(mapRow(rs));
+        while (rs.next())
+          result.add(mapRow(rs));
       }
     }
     return result;
@@ -264,36 +279,53 @@ public class ItemDAO {
   private Map<String, String> parseSpecs(String json) {
     if (json == null || json.isBlank())
       return new HashMap<>();
-    return GSON.fromJson(json, new TypeToken<Map<String, String>>() {}.getType());
+    return GSON.fromJson(json, new TypeToken<Map<String, String>>() {
+    }.getType());
   }
 
   private String serializeSpecs(Map<String, String> specs) {
-      if (specs == null || specs.isEmpty()) return null;
-      return GSON.toJson(specs);
+    if (specs == null || specs.isEmpty())
+      return null;
+    return GSON.toJson(specs);
   }
 
   private List<String> parseImageUrls(String json) {
-    if (json == null || json.isBlank()) return new ArrayList<>();
-    return GSON.fromJson(json, new TypeToken<List<String>>() {}.getType());
+    if (json == null || json.isBlank())
+      return new ArrayList<>();
+    return GSON.fromJson(json, new TypeToken<List<String>>() {
+    }.getType());
   }
 
   private String serializeImageUrls(List<String> imageUrls) {
-    if (imageUrls == null || imageUrls.isEmpty()) return null;
+    if (imageUrls == null || imageUrls.isEmpty())
+      return null;
     return GSON.toJson(imageUrls);
   }
 
+  private ItemCategory parseCategory(String raw) {
+    if (raw == null || raw.isBlank())
+      return ItemCategory.OTHER;
+    try {
+      return ItemCategory.valueOf(raw);
+    } catch (IllegalArgumentException e) {
+      return ItemCategory.OTHER;
+    }
+  }
+
   private ItemCondition parseCondition(String raw) {
-      if (raw == null || raw.isBlank()) return null;
-      return ItemCondition.valueOf(raw);
+    if (raw == null || raw.isBlank())
+      return null;
+    return ItemCondition.valueOf(raw);
   }
 
   private ItemStatus parseStatus(String raw) {
-      if (raw == null || raw.isBlank()) return ItemStatus.DRAFT;
-      return ItemStatus.valueOf(raw);
+    if (raw == null || raw.isBlank())
+      return ItemStatus.DRAFT;
+    return ItemStatus.valueOf(raw);
   }
 
   @FunctionalInterface
   private interface SqlConsumer<T> {
-      void accept(T t) throws SQLException;
+    void accept(T t) throws SQLException;
   }
 }

@@ -13,6 +13,7 @@ import vn.edu.vnu.uet.group8.common.dto.response.ServerResponse;
 import vn.edu.vnu.uet.group8.server.auth.SessionManager;
 import vn.edu.vnu.uet.group8.server.network.RequestParser;
 import vn.edu.vnu.uet.group8.server.service.user.AuthService;
+import vn.edu.vnu.uet.group8.server.service.user.PasswordService;
 import vn.edu.vnu.uet.group8.server.service.user.RegisterService;
 
 /**
@@ -29,13 +30,16 @@ public class AuthController {
 
   private final AuthService authService;
   private final RegisterService registerService;
+  private final PasswordService passwordService;
   private final SessionManager sessionManager;
 
   public AuthController(AuthService authService,
                         RegisterService registerService,
+                        PasswordService passwordService,
                         SessionManager sessionManager) {
     this.authService = authService;
     this.registerService = registerService;
+    this.passwordService = passwordService;
     this.sessionManager = sessionManager;
   }
 
@@ -123,5 +127,50 @@ public class AuthController {
         .success(true)
         .message("pong")
         .build();
+  }
+
+  /**
+   * AUTH_REQUEST_OTP — Yêu cầu gửi mã OTP để đặt lại mật khẩu.
+   */
+  public ServerResponse handleRequestOtp(JsonObject request, String requestId) {
+    try {
+      JsonObject payload = request.has("payload") && request.get("payload").isJsonObject() 
+          ? request.getAsJsonObject("payload") : request;
+      String email = RequestParser.requireString(payload, "email");
+      String otp = passwordService.requestOtpForPasswordReset(email);
+
+      log.info("Đã xử lý yêu cầu gửi OTP cho email: {}", email);
+      return ServerResponse.reply("AUTH_REQUEST_OTP", requestId)
+          .success(true)
+          .message("Mã OTP đã được gửi đến email. (Hãy xem trong Console của Server)")
+          .data(otp)
+          .build();
+    } catch (Exception e) {
+      return ServerResponse.replyError("AUTH_REQUEST_OTP", requestId, e.getMessage());
+    }
+  }
+
+  /**
+   * AUTH_RESET_PASSWORD — Đặt lại mật khẩu bằng mã OTP.
+   */
+  public ServerResponse handleResetPassword(JsonObject request, String requestId) {
+    try {
+      JsonObject payload = request.has("payload") && request.get("payload").isJsonObject() 
+          ? request.getAsJsonObject("payload") : request;
+      String email = RequestParser.requireString(payload, "email");
+      String otp = RequestParser.requireString(payload, "otp");
+      String newPassword = RequestParser.requireString(payload, "newPassword");
+      
+      passwordService.resetPasswordWithOtp(email, otp, newPassword);
+      
+      log.info("Email {} đã đặt lại mật khẩu thành công bằng OTP", email);
+
+      return ServerResponse.reply("AUTH_RESET_PASSWORD", requestId)
+          .success(true)
+          .message("Đặt lại mật khẩu thành công. Bạn có thể đăng nhập ngay bây giờ.")
+          .build();
+    } catch (Exception e) {
+      return ServerResponse.replyError("AUTH_RESET_PASSWORD", requestId, e.getMessage());
+    }
   }
 }

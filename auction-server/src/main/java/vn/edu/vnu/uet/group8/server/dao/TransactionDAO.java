@@ -83,7 +83,7 @@ public class TransactionDAO {
    */
   public List<TransactionHistoryEntry> getTransactionsByUserId(int userId) throws SQLException {
     String sql = """
-        SELECT transaction_id, amount, transaction_type, created_at
+        SELECT transaction_id, amount, transaction_type, description, created_at
         FROM wallet_transaction
         WHERE user_id = ?
         ORDER BY created_at DESC
@@ -99,6 +99,7 @@ public class TransactionDAO {
               rs.getString("transaction_id"),
               rs.getBigDecimal("amount"),
               parseToTransactionType(rs.getString("transaction_type")),
+              rs.getString("description"),
               rs.getTimestamp("created_at").toInstant()));
         }
       }

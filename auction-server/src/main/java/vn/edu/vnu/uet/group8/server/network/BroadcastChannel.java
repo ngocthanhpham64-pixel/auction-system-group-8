@@ -7,4 +7,7 @@ public interface BroadcastChannel {
   void removeClient(ClientHandler handler);
   void broadcast(ServerResponse response);
   int getConnectedClientCount();
+  void registerUser(int userId, ClientHandler handler);
+  void unregisterUser(int userId, ClientHandler handler);
+  void sendToUser(int userId, ServerResponse response);
 }

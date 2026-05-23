@@ -15,7 +15,7 @@ import vn.edu.vnu.uet.group8.common.enums.EventType;
  */
 
 public final class ServerResponse {
-    private static final Gson GSON = new Gson();// Dùng cho getData, thread-safe
+    private static final Gson GSON = vn.edu.vnu.uet.group8.common.util.GsonUtil.GSON;// Dùng cho getData, thread-safe
     private final String action;
     private final EventType eventType;// Dùng cho broadcast
     private final Instant timestamp;

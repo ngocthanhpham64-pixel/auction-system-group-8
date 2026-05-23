@@ -39,6 +39,7 @@ public final class GetAuctionsRequest {
         ENDING_SOON, // Sắp kết thúc
         PRICE_ASC, // Giá tăng dần
         PRICE_DESC, // Giá giảm dần
+        HOT, // Đang hot, nhiều lượt bid
     }
 
     // No-arg constructor: private, chỉ để GSON deserialize

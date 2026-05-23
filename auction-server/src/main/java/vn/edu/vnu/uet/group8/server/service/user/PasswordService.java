@@ -68,9 +68,8 @@ public class PasswordService {
       throw new ValidationException("Mật khẩu mới phải khác mật khẩu cũ");
     }
 
-    // -- Hash mật khẩu mới trước khi lưu xuống DB
-    String hashedNewPassword = PasswordUtil.hash(newPassword);
-    userDAO.updatePassword(userId, hashedNewPassword);
+    // -- DAO đã tự hash, không cần hash lại ở đây
+    userDAO.updatePassword(userId, newPassword);
   }
 
   public String requestOtpForPasswordReset(String email) throws SQLException {
@@ -118,8 +117,7 @@ public class PasswordService {
     User user = userDAO.findByEmail(normalizedEmail)
         .orElseThrow(() -> new ValidationException("Email không tồn tại trong hệ thống"));
         
-    String hashedNewPassword = PasswordUtil.hash(newPassword);
-    userDAO.updatePassword(user.getId(), hashedNewPassword);
+    userDAO.updatePassword(user.getId(), newPassword);
     
     otpStore.remove(normalizedEmail); // Xóa OTP sau khi dùng thành công
     log.info("User {} đã đặt lại mật khẩu thành công qua OTP", user.getId());

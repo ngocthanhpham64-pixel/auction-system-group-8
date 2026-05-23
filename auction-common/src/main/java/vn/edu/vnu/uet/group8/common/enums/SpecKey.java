@@ -29,4 +29,22 @@ public enum SpecKey {
   // Đồ cổ
   ERA, PROVENANCE, CERTIFICATE, RARITY,
 
+  // WATCHES
+  YEAR, ORIGIN, WARRANTY,
+
+  // JEWELRY
+  WEIGHT,
+
+  // ART
+  ARTIST, DIMENSIONS,
+
+  // VEHICLES
+  MILEAGE,
+
+  // BOOKS
+  AUTHOR, PUBLISHER,
+
+  // ANTIQUES
+  PERIOD
+  
 }

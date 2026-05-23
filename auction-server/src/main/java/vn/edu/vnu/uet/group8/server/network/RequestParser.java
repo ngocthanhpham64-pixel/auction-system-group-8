@@ -73,6 +73,11 @@ public final class RequestParser {
     return el.getAsString();
   }
 
+  public static String optionalString(JsonObject request, String field) {
+    JsonElement el = request.get(field);
+    return (el == null || el.isJsonNull()) ? null : el.getAsString();
+  }
+
   public static int requireInt(JsonObject request, String field) {
     JsonElement el = request.get(field);
     if (el == null || el.isJsonNull()) {

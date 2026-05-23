@@ -7,9 +7,13 @@ import com.google.gson.JsonObject;
 
 import vn.edu.vnu.uet.group8.common.dto.response.ServerResponse;
 import vn.edu.vnu.uet.group8.server.auth.SessionManager;
+import vn.edu.vnu.uet.group8.server.controller.AdminController;
 import vn.edu.vnu.uet.group8.server.controller.AuthController;
 import vn.edu.vnu.uet.group8.server.controller.BidController;
+import vn.edu.vnu.uet.group8.server.controller.FavoriteController;
 import vn.edu.vnu.uet.group8.server.controller.ItemController;
+import vn.edu.vnu.uet.group8.server.controller.NotificationController;
+import vn.edu.vnu.uet.group8.server.controller.RatingController;
 import vn.edu.vnu.uet.group8.server.controller.UserController;
 
 /**
@@ -29,17 +33,29 @@ public class AppDispatcher {
   private final ItemController itemController;
   private final BidController bidController;
   private final UserController userController;
+  private final AdminController adminController;
+  private final NotificationController notificationController;
+  private final FavoriteController favoriteController;
+  private final RatingController ratingController;
   private final SessionManager sessionManager;
 
   public AppDispatcher(AuthController authController,
                        ItemController itemController,
                        BidController bidController,
                        UserController userController,
+                       AdminController adminController,
+                       NotificationController notificationController,
+                       FavoriteController favoriteController,
+                       RatingController ratingController,
                        SessionManager sessionManager) {
     this.authController = authController;
     this.itemController = itemController;
     this.bidController = bidController;
     this.userController = userController;
+    this.adminController = adminController;
+    this.notificationController = notificationController;
+    this.favoriteController = favoriteController;
+    this.ratingController = ratingController;
     this.sessionManager = sessionManager;
   }
 
@@ -61,6 +77,8 @@ public class AppDispatcher {
       // có thể gửi upper/lower — chuẩn hoá thành UPPER.
       String normalized = action.toUpperCase();
 
+      log.info("Dispatching: action='{}' (normalized='{}'), requestId={}", action, normalized, requestId);
+
       switch (normalized) {
         // ---- Anonymous actions ----
         case "LOGIN":
@@ -69,6 +87,10 @@ public class AppDispatcher {
           return authController.handleRegister(request, requestId);
         case "HEARTBEAT":
           return authController.handleHeartbeat(requestId);
+        case "AUTH_REQUEST_OTP":
+          return authController.handleRequestOtp(request, requestId);
+        case "AUTH_RESET_PASSWORD":
+          return authController.handleResetPassword(request, requestId);
 
         // ---- Authenticated actions ----
         default:
@@ -91,7 +113,9 @@ public class AppDispatcher {
     String token = RequestParser.getToken(request);
     int userId = sessionManager.validateToken(token);
     if (userId == -1) {
-      return ServerResponse.replyError(action, requestId,
+      log.warn("Authentication failed for action {}: Token is invalid or expired. Token used: {}", 
+               action, (token != null ? "EXISTS" : "NULL"));
+      return ServerResponse.replyError(action, requestId, 
           "Phiên đăng nhập không hợp lệ hoặc đã hết hạn");
     }
 
@@ -101,17 +125,20 @@ public class AppDispatcher {
 
       // Item
       case "ITEM_GET_ALL":
+      case "ITEM_ALL":
         return itemController.handleGetAll(request, requestId);
       case "ITEM_GET_DETAIL":
         return itemController.handleGetDetail(request, requestId);
       case "ITEM_CREATE":
-        return itemController.handleCreateItem(request, requestId);
+        return itemController.handleCreateItem(request, requestId, userId);
+      case "ITEM_COMMENT":
+        return itemController.handleItemComment(request, requestId);
       
     
       // Bid
       case "BID_PLACE":
         return bidController.handlePlaceBid(request, requestId, userId);
-      case "ITEM_BID_HISTORY":
+      case "BID_HISTORY":
         return bidController.handleItemBidHistory(request, requestId);
       case "USER_BIDS":
         return bidController.handleUserBidHistory(request, requestId, userId);
@@ -121,23 +148,62 @@ public class AppDispatcher {
         return itemController.handleUpdateItem(request, requestId, userId);
       case "ITEM_DELETE":
         return itemController.handleDeleteItem(request, requestId, userId);
-      // case "BID_AUTO":
-      //   return bidController.handleAutoBid(request, requestId, userId);
+      case "BID_AUTO":
+        return bidController.handleAutoBid(request, requestId, userId);
       // case "BID_HISTORY":
       //   return bidController.handleBidHistory(request, requestId, userId);
 
       // User
       case "USER_PROFILE":
         return userController.handleGetProfile(request, requestId, userId);
+      case "USER_PURCHASE_HISTORY":
+        return itemController.handleGetPurchaseHistory(request, requestId, userId);
       case "USER_DEPOSIT":
         return userController.handleDeposit(request, requestId, userId);
       case "USER_WITHDRAW":
         return userController.handleWithdraw(request, requestId, userId);
-      case "USER_GET_TRANSACTIONS":
+      case "WALLET_GET_TRANSACTIONS":
         return userController.handleGetTransactions(request, requestId, userId);
       case "USER_CHANGE_PASSWORD":
         return userController.handleChangePassword(request, requestId, userId);
+      case "USER_UPDATE_PROFILE":
+        return userController.handleUpdateProfile(request, requestId, userId);
 
+      // Admin
+      case "ADMIN_DASHBOARD":
+        return adminController.handleDashboard(requestId, userId);
+      case "ADMIN_GET_USERS":
+        return adminController.handleGetUsers(requestId, userId);
+      case "ADMIN_UPDATE_USER_STATUS":
+        return adminController.handleUpdateUserStatus(request, requestId, userId);
+      case "ADMIN_GET_AUCTIONS":
+        return adminController.handleGetAuctions(requestId, userId);
+      case "ADMIN_CANCEL_AUCTION":
+        return adminController.handleCancelAuction(request, requestId, userId);
+
+      // Notifications
+      case "NOTIF_GET_ALL":
+      case "NOTIF_ALL":
+        return notificationController.handleGetAll(requestId, userId);
+      case "NOTIF_MARK_READ":
+        return notificationController.handleMarkRead(request, requestId, userId);
+      case "NOTIF_DELETE":
+        return notificationController.handleDelete(request, requestId, userId);
+
+      // Favorites
+      case "FAVORITE_LIST":
+        return favoriteController.handleGetList(requestId, userId);
+      case "FAVORITE_ADD":
+        return favoriteController.handleAdd(request, requestId, userId);
+      case "FAVORITE_REMOVE":
+        return favoriteController.handleRemove(request, requestId, userId);
+
+      case "USER_RATE_SELLER":
+        return ratingController.handleRateSeller(request, requestId, userId);
+      case "USER_GET_SELLER_REVIEWS":
+        return ratingController.handleGetSellerReviews(request, requestId);
+      case "USER_GET_SELLER_COMMENTS":
+        return ratingController.handleGetSellerComments(request, requestId);
 
       default:
         log.warn("Action không xác định: {}", action);

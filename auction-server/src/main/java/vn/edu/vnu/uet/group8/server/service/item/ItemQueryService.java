@@ -12,14 +12,17 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import vn.edu.vnu.uet.group8.common.dto.model.AuctionItemDTO;
+import vn.edu.vnu.uet.group8.common.dto.model.CommentDTO;
 import vn.edu.vnu.uet.group8.common.dto.request.GetAuctionsRequest;
 import vn.edu.vnu.uet.group8.common.entity.AuctionSession;
 import vn.edu.vnu.uet.group8.common.entity.Item;
 import vn.edu.vnu.uet.group8.common.entity.User;
+import vn.edu.vnu.uet.group8.common.entity.UserMember;
 import vn.edu.vnu.uet.group8.common.enums.ItemCategory;
 import vn.edu.vnu.uet.group8.common.exception.ItemNotFoundException;
 import vn.edu.vnu.uet.group8.server.dao.AuctionSessionDAO;
 import vn.edu.vnu.uet.group8.server.dao.BidTransactionDAO;
+import vn.edu.vnu.uet.group8.server.dao.CommentDAO;
 import vn.edu.vnu.uet.group8.server.dao.ItemDAO;
 import vn.edu.vnu.uet.group8.server.dao.UserDAO;
 
@@ -43,15 +46,18 @@ public class ItemQueryService {
   private final AuctionSessionDAO sessionDAO;
   private final UserDAO           userDAO;
   private final BidTransactionDAO bidTransactionDAO;
+  private final CommentDAO commentDAO;
 
   public ItemQueryService(ItemDAO itemDAO,
                           AuctionSessionDAO sessionDAO,
                           UserDAO userDAO,
-                          BidTransactionDAO bidTransactionDAO) {
+                          BidTransactionDAO bidTransactionDAO,
+                          CommentDAO commentDAO) {
     this.itemDAO    = itemDAO;
     this.sessionDAO = sessionDAO;
     this.userDAO    = userDAO;
     this.bidTransactionDAO = bidTransactionDAO;
+    this.commentDAO = commentDAO;
   }
 
   // ════════════════════════════════════════════════════
@@ -83,12 +89,19 @@ public class ItemQueryService {
     Optional<AuctionSession> sessionComing =
         sessionDAO.findUpcomingByItemId(itemId);
 
-    String sellerUsername = resolveSellerUsername(
-        item.getSellerId());
+    User seller = userDAO.findById(item.getSellerId()).orElse(null);
+    String sellerUsername = seller != null ? seller.getUsername() : "seller#" + item.getSellerId();
+    BigDecimal sellerRating = null;
+    int totalItemsSold = 0;
+    if (seller instanceof vn.edu.vnu.uet.group8.common.entity.UserMember) {
+        vn.edu.vnu.uet.group8.common.entity.UserMember sm = (vn.edu.vnu.uet.group8.common.entity.UserMember) seller;
+        sellerRating = sm.getSellerRating();
+        totalItemsSold = sm.getTotalItemsSold();
+    }
 
     if (!sessionActive.isPresent() && !sessionComing.isPresent()) {
       // Item chưa có phiên — trả DTO không có giá và thời gian
-      return AuctionItemDTO.from(null, item, sellerUsername, 0);
+      return AuctionItemDTO.from(null, item, sellerUsername, 0, sellerRating, totalItemsSold);
     }
 
     AuctionSession session = sessionActive.isPresent() ? sessionActive.get() : sessionComing.get();
@@ -99,7 +112,7 @@ public class ItemQueryService {
 
     // bidCount lấy từ session — không cần query BidTransactionDAO
     return AuctionItemDTO.from(
-        session, item, sellerUsername, session.getBidCount());
+        session, item, sellerUsername, session.getBidCount(), sellerRating, totalItemsSold);
   }
 
   // ════════════════════════════════════════════════════
@@ -132,10 +145,10 @@ public class ItemQueryService {
    */
   public List<AuctionItemDTO> searchItems(
       ItemCategory category, BigDecimal minPrice,
-      BigDecimal maxPrice) throws SQLException {
+      BigDecimal maxPrice, GetAuctionsRequest.SortOption sortBy) throws SQLException {
 
     List<AuctionSession> sessions =
-        sessionDAO.findByPriceRange(category, minPrice, maxPrice);
+        sessionDAO.findByPriceRange(category, minPrice, maxPrice, sortBy);
 
     return buildDtoList(sessions);
   }
@@ -155,28 +168,83 @@ public class ItemQueryService {
 
     List<AuctionItemDTO> result = new ArrayList<>();
     for (Item item : items) {
-      Optional<AuctionSession> sessionActive =
-        sessionDAO.findActiveSessionByItemId(item.getId());
-    
-      Optional<AuctionSession> sessionComing =
-          sessionDAO.findUpcomingByItemId(item.getId());
+      Optional<AuctionSession> sessionOpt = findRelevantSession(item.getId());
+      User seller = userDAO.findById(item.getSellerId()).orElse(null);
+      String sellerUsername = seller != null ? seller.getUsername() : "seller#" + item.getSellerId();
+      BigDecimal sellerRating = null;
+      int totalItemsSold = 0;
+      if (seller instanceof UserMember) {
+          UserMember sm = (UserMember) seller;
+          sellerRating = sm.getSellerRating();
+          totalItemsSold = sm.getTotalItemsSold();
+      }
 
-      String sellerUsername =
-          resolveSellerUsername(item.getSellerId());
-
-      if (sessionActive.isPresent() || sessionComing.isPresent()) {
-        AuctionSession session = sessionActive.isPresent() ? 
-                  sessionActive.get() : sessionComing.get();
+      if (sessionOpt.isPresent()) {
+        AuctionSession session = sessionOpt.get();
         result.add(AuctionItemDTO.from(
             session, item, sellerUsername,
-            session.getBidCount()));
+            session.getBidCount(), sellerRating, totalItemsSold));
       } else {
         result.add(AuctionItemDTO.from(
-            null, item, sellerUsername, 0));
+            null, item, sellerUsername, 0, sellerRating, totalItemsSold));
       }
     }
 
     return result;
+  }
+
+  public List<AuctionItemDTO> getMyItemsByStatus(int sellerId, vn.edu.vnu.uet.group8.common.enums.ItemStatus status)
+      throws SQLException {
+
+    List<Item> items = itemDAO.findBySellerAndStatus(sellerId, status);
+
+    List<AuctionItemDTO> result = new ArrayList<>();
+    for (Item item : items) {
+      Optional<AuctionSession> sessionOpt = findRelevantSession(item.getId());
+      User seller = userDAO.findById(item.getSellerId()).orElse(null);
+      String sellerUsername = seller != null ? seller.getUsername() : "seller#" + item.getSellerId();
+      BigDecimal sellerRating = null;
+      int totalItemsSold = 0;
+      if (seller instanceof UserMember) {
+          UserMember sm = (UserMember) seller;
+          sellerRating = sm.getSellerRating();
+          totalItemsSold = sm.getTotalItemsSold();
+      }
+
+      if (sessionOpt.isPresent()) {
+        AuctionSession session = sessionOpt.get();
+        result.add(AuctionItemDTO.from(
+            session, item, sellerUsername,
+            session.getBidCount(), sellerRating, totalItemsSold));
+      } else {
+        result.add(AuctionItemDTO.from(
+            null, item, sellerUsername, 0, sellerRating, totalItemsSold));
+      }
+    }
+
+    return result;
+  }
+
+  private Optional<AuctionSession> findRelevantSession(int itemId) throws SQLException {
+    Optional<AuctionSession> sessionActive = sessionDAO.findActiveSessionByItemId(itemId);
+    if (sessionActive.isPresent()) return sessionActive;
+
+    Optional<AuctionSession> sessionComing = sessionDAO.findUpcomingByItemId(itemId);
+    if (sessionComing.isPresent()) return sessionComing;
+
+    List<AuctionSession> sessions = sessionDAO.findByItemId(itemId);
+    if (!sessions.isEmpty()) {
+      return Optional.of(sessions.get(0));
+    }
+
+    return Optional.empty();
+  }
+
+  // ════════════════════════════════════════════════════
+  // Comment
+  // ════════════════════════════════════════════════════
+  public List<CommentDTO> getCommentsForAnItemId(int item_id) {
+    return commentDAO.getCommentsForAnItemId(item_id);
   }
 
   // ════════════════════════════════════════════════════
@@ -184,14 +252,14 @@ public class ItemQueryService {
   // ════════════════════════════════════════════════════
   public List<AuctionItemDTO> getAuctions(GetAuctionsRequest filter) throws SQLException {
     if (filter == null) {
-      return getActiveItems();
+      return searchItems(null, null, null, GetAuctionsRequest.SortOption.NEWEST);
     }
-    if (filter.getCategory() != null 
-        || filter.getMinPrice() != null 
-        || filter.getMaxPrice() != null) {
-      return searchItems(filter.getCategory(), filter.getMinPrice(), filter.getMaxPrice());
-    }
-    return getActiveItems();
+    return searchItems(filter.getCategory(), filter.getMinPrice(), filter.getMaxPrice(), filter.getSortBy());
+  }
+
+  public List<AuctionItemDTO> getWonItems(int winnerId) throws SQLException {
+    List<AuctionSession> wonSessions = sessionDAO.findWonSessionsByUserId(winnerId);
+    return buildDtoList(wonSessions);
   }
 
   // ════════════════════════════════════════════════════
@@ -206,8 +274,8 @@ public class ItemQueryService {
   private List<AuctionItemDTO> buildDtoList(
       List<AuctionSession> sessions) throws SQLException {
 
-    // Cache: sellerId → username — tránh query lặp lại
-    Map<Integer, String> sellerCache = new HashMap<>();
+    // Cache: sellerId → User — tránh query lặp lại
+    Map<Integer, User> userCache = new HashMap<>();
     List<AuctionItemDTO> result = new ArrayList<>();
 
     for (AuctionSession session : sessions) {
@@ -226,21 +294,24 @@ public class ItemQueryService {
       int sellerId = item.getSellerId();
 
       // Dùng cache, chỉ query DB khi chưa có
-      String sellerUsername = sellerCache.computeIfAbsent(
-          sellerId, id -> {
-            try {
-              return resolveSellerUsername(id);
-            } catch (SQLException e) {
-              logger.warn(
-                  "Không lấy được username sellerId={}: {}",
-                  id, e.getMessage());
-              return "seller#" + id;
-            }
-          });
+      User seller = userCache.get(sellerId);
+      if (seller == null && !userCache.containsKey(sellerId)) {
+        seller = userDAO.findById(sellerId).orElse(null);
+        userCache.put(sellerId, seller);
+      }
+
+      String sellerUsername = seller != null ? seller.getUsername() : "seller#" + sellerId;
+      BigDecimal sellerRating = null;
+      int totalItemsSold = 0;
+      if (seller instanceof UserMember) {
+          UserMember sm = (UserMember) seller;
+          sellerRating = sm.getSellerRating();
+          totalItemsSold = sm.getTotalItemsSold();
+      }
 
       result.add(AuctionItemDTO.from(
           session, item, sellerUsername,
-          session.getBidCount()));
+          session.getBidCount(), sellerRating, totalItemsSold));
     }
 
     return result;

@@ -32,7 +32,7 @@ public final class UserMember extends User {
 
   private UserMember(Reconstructor r) {
     super(r.id, r.createdAt, r.isDeleted, r.username, r.email, r.fullname,
-          r.encryptedPassword, r.status, r.roles, r.lastLogin);
+        r.encryptedPassword, r.status, r.roles, r.lastLogin);
     this.phone = r.phone;
     this.address = r.address;
     this.avatarUrl = r.avatarUrl;
@@ -61,71 +61,104 @@ public final class UserMember extends User {
     private Instant createdAt;
     private Boolean isDeleted;
     private String username;
-    private String fullname;        // nullable
+    private String fullname; // nullable
     private String encryptedPassword;
     private String email;
     private UserStatus status;
     private Set<UserRole> roles;
-    private Instant lastLogin;      // nullable — chưa login lần nào
+    private Instant lastLogin; // nullable — chưa login lần nào
     private BigDecimal balance;
-    private String phone;           
-    private String address;         // nullable       
-    private String avatarUrl;       // nullable
-    private int totalBidsPlaced;    // nullable
-    private int totalItemsSold;     // nullable
+    private String phone;
+    private String address; // nullable
+    private String avatarUrl; // nullable
+    private int totalBidsPlaced; // nullable
+    private int totalItemsSold; // nullable
     private BigDecimal sellerRating;// nullable — chưa có đánh giá
 
     // Các method set không validate — tin tưởng DB
     public Reconstructor id(int id) {
-      this.id = id; return this;
+      this.id = id;
+      return this;
     }
+
     public Reconstructor createdAt(Instant v) {
-      this.createdAt = v; return this;
+      this.createdAt = v;
+      return this;
     }
+
     public Reconstructor isDeleted(boolean v) {
-      this.isDeleted = v; return this;
+      this.isDeleted = v;
+      return this;
     }
+
     public Reconstructor username(String v) {
-      this.username = v; return this;
+      this.username = v;
+      return this;
     }
+
     public Reconstructor email(String v) {
-      this.email = v; return this;
+      this.email = v;
+      return this;
     }
+
     public Reconstructor encryptedPassword(String v) {
-      this.encryptedPassword = v; return this;
+      this.encryptedPassword = v;
+      return this;
     }
+
     public Reconstructor status(UserStatus v) {
-      this.status = v; return this;
+      this.status = v;
+      return this;
     }
+
     public Reconstructor roles(Set<UserRole> v) {
-      this.roles = v; return this;
+      this.roles = v;
+      return this;
     }
+
     public Reconstructor lastLogin(Instant v) {
-      this.lastLogin = v; return this;   // null = chưa login
+      this.lastLogin = v;
+      return this; // null = chưa login
     }
+
     public Reconstructor balance(BigDecimal v) {
-      this.balance = v; return this;
+      this.balance = v;
+      return this;
     }
+
     public Reconstructor fullname(String v) {
-      this.fullname = v; return this;
+      this.fullname = v;
+      return this;
     }
+
     public Reconstructor phone(String v) {
-      this.phone = v; return this;
+      this.phone = v;
+      return this;
     }
+
     public Reconstructor sellerRating(BigDecimal v) {
-      this.sellerRating = v; return this;
+      this.sellerRating = v;
+      return this;
     }
+
     public Reconstructor address(String v) {
-      this.address = v; return this;
+      this.address = v;
+      return this;
     }
+
     public Reconstructor avatarUrl(String v) {
-      this.avatarUrl = v; return this;
+      this.avatarUrl = v;
+      return this;
     }
+
     public Reconstructor totalBidsPlaced(int v) {
-      this.totalBidsPlaced = v; return this;
+      this.totalBidsPlaced = v;
+      return this;
     }
+
     public Reconstructor totalItemsSold(int v) {
-      this.totalItemsSold = v; return this;
+      this.totalItemsSold = v;
+      return this;
     }
 
     /**
@@ -134,16 +167,16 @@ public final class UserMember extends User {
      */
     public UserMember build() {
       // Chỉ check các NOT NULL column trong DB
-      requireNonNull(id,                "id");
-      requireNonNull(createdAt,         "createdAt");
-      requireNonNull(isDeleted,         "isDeleted");
-      requireNonNull(username,          "username");
-      requireNonNull(email,             "email");
+      requireNonNull(id, "id");
+      requireNonNull(createdAt, "createdAt");
+      requireNonNull(isDeleted, "isDeleted");
+      requireNonNull(username, "username");
+      requireNonNull(email, "email");
       requireNonNull(encryptedPassword, "encryptedPassword");
-      requireNonNull(status,            "status");
-      requireNonNull(roles,             "roles");
-      requireNonNull(balance,           "balance");
-      requireNonNull(phone,             "phone");
+      requireNonNull(status, "status");
+      requireNonNull(roles, "roles");
+      requireNonNull(balance, "balance");
+      requireNonNull(phone, "phone");
       // lastLogin, sellerRating, avatarUrl, fullname,
       // totalBidsPlaced, totalItemsSold, address → nullable, không check
 
@@ -152,20 +185,20 @@ public final class UserMember extends User {
 
     private void requireNonNull(Object value, String fieldName) {
       if (value == null)
-          throw new IllegalStateException(
-              "Reconstructor thiếu field bắt buộc: [" + fieldName + "]. "
-              + "Kiểm tra lại UserDAO.mapRow()");
+        throw new IllegalStateException(
+            "Reconstructor thiếu field bắt buộc: [" + fieldName + "]. "
+                + "Kiểm tra lại UserDAO.mapRow()");
     }
-}
+  }
+
   // ════════════════════════════════════════════════════
   // BUILDER
   // ════════════════════════════════════════════════════
   public static class Builder extends User.Builder<Builder> {
     // Optional
-    private String fullname;
-    private String phone    = "";
-    private String address  = "";
-    private String avatarUrl= "";
+    private String phone = "";
+    private String address = "";
+    private String avatarUrl = "";
     private BigDecimal balance = BigDecimal.ZERO;
     private int totalBidsPlaced = 0;
     private int totalItemsSold = 0;
@@ -175,8 +208,8 @@ public final class UserMember extends User {
       super(username, email, encryptedPassword);
     }
 
-    public Builder fullName(String fullname) {
-      this.fullname = fullname == null ? "" : fullname.trim();
+    public Builder fullname(String fullname) {
+      super.fullname(fullname);
       return this;
     }
 
@@ -237,9 +270,9 @@ public final class UserMember extends User {
 
     private void requireNonNull(Object value, String fieldName) {
       if (value == null)
-          throw new IllegalStateException(
-              "User thiếu field bắt buộc: [" + fieldName + "]. "
-              + "Hãy kiểm tra lại");
+        throw new IllegalStateException(
+            "User thiếu field bắt buộc: [" + fieldName + "]. "
+                + "Hãy kiểm tra lại");
     }
   }
 
@@ -290,15 +323,14 @@ public final class UserMember extends User {
     this.avatarUrl = avatarUrl;
   }
 
-
   // /** Gọi sau khi tổng hợp rating mới từ bảng ratings */
   // public void updateSellerRating(BigDecimal rating) {
-  //   if (rating != null
-  //       && (rating.compareTo(BigDecimal.ZERO) < 0
-  //       || rating.compareTo(new BigDecimal("5.0")) > 0))
-  //         throw new IllegalArgumentException(
-  //           "Rating phải trong khoảng 0.0 - 5.0");
-  //     this.sellerRating = rating;
+  // if (rating != null
+  // && (rating.compareTo(BigDecimal.ZERO) < 0
+  // || rating.compareTo(new BigDecimal("5.0")) > 0))
+  // throw new IllegalArgumentException(
+  // "Rating phải trong khoảng 0.0 - 5.0");
+  // this.sellerRating = rating;
   // }
 
   // ════════════════════════════════════════════════════
@@ -309,6 +341,7 @@ public final class UserMember extends User {
       throw new IllegalArgumentException(message);
     }
   }
+
   // ════════════════════════════════════════════════════
   // OVERRIDE từ User
   // ════════════════════════════════════════════════════
@@ -317,27 +350,29 @@ public final class UserMember extends User {
     checkRequiredString(fullname, "Họ tên không được trống");
     super.setFullname(fullname);
   }
+
   @Override
   public boolean isAdmin() {
     return false;
   }
+
   @Override
   public String getDisplayRole() {
     if (hasRole(UserRole.SELLER) && hasRole(UserRole.BIDDER))
-        return "Người mua & Người bán";
+      return "Người mua & Người bán";
     if (hasRole(UserRole.SELLER))
-        return "Người bán";
+      return "Người bán";
     return "Người mua";
   }
 
   @Override
-    public String toString() {
-        return "MemberUser{" +
-               "id='"        + getId()      + '\'' +
-               ", username='" + getUsername() + '\'' +
-               ", fullName='" + getFullname()   + '\'' +
-               ", status="   + getStatus() +
-               ", roles="    + getRoles()  +
-               '}';
-    }
+  public String toString() {
+    return "MemberUser{" +
+        "id='" + getId() + '\'' +
+        ", username='" + getUsername() + '\'' +
+        ", fullName='" + getFullname() + '\'' +
+        ", status=" + getStatus() +
+        ", roles=" + getRoles() +
+        '}';
+  }
 }

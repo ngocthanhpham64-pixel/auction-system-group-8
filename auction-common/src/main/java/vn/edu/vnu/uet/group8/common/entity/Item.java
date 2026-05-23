@@ -1,8 +1,10 @@
 package vn.edu.vnu.uet.group8.common.entity;
 
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import vn.edu.vnu.uet.group8.common.enums.ItemCategory;
@@ -24,7 +26,8 @@ public final class Item extends Entity implements SpecAccessor {
   private String title;
   private String description;
   private ItemCondition condition;
-  private Map<String, String> specs;
+  // private Map<String, String> specs;
+  private List<String> imageUrls;
   private ItemStatus status;
 
   private Item(Builder b) {
@@ -34,7 +37,8 @@ public final class Item extends Entity implements SpecAccessor {
     this.category = b.category;
     this.description = b.description != null ? b.description : "";
     this.condition = b.condition;
-    this.specs = b.specs != null ? new HashMap<>(b.specs) : new HashMap<>();
+    // this.specs = b.specs != null ? new HashMap<>(b.specs) : new HashMap<>();
+    this.imageUrls = b.imageUrls != null ? new ArrayList<>(b.imageUrls) : new ArrayList<>();
     this.status = b.status != null ? b.status : ItemStatus.DRAFT;
   }
 
@@ -45,7 +49,8 @@ public final class Item extends Entity implements SpecAccessor {
     this.category = r.category;
     this.description = r.description;
     this.condition = r.condition;
-    this.specs = r.specs != null ? new HashMap<>(r.specs) : new HashMap<>();
+    // this.specs = r.specs != null ? new HashMap<>(r.specs) : new HashMap<>();
+    this.imageUrls = r.imageUrls != null ? new ArrayList<>(r.imageUrls) : new ArrayList<>();
     this.status = r.status;
   }
 
@@ -66,18 +71,63 @@ public final class Item extends Entity implements SpecAccessor {
     private ItemCondition condition;
     private ItemCategory category;
     private Map<String, String> specs;
+    private List<String> imageUrls;
     private ItemStatus status;
 
-    public Reconstructor id(int id) { this.id = id; return this; }
-    public Reconstructor createdAt(Instant v) { this.createdAt = v; return this; }
-    public Reconstructor isDeleted(boolean v) { this.isDeleted = v; return this; }
-    public Reconstructor sellerId(int v) { this.sellerId = v; return this; }
-    public Reconstructor title(String v) { this.title = v; return this; }
-    public Reconstructor description(String v) { this.description = v; return this; }
-    public Reconstructor condition(ItemCondition v) { this.condition = v; return this; }
-    public Reconstructor category(ItemCategory v) { this.category = v; return this; }
-    public Reconstructor specs(Map<String, String> v) { this.specs = v; return this; }
-    public Reconstructor status(ItemStatus itemStatus) { this.status = itemStatus; return this; }
+    public Reconstructor id(int id) {
+      this.id = id;
+      return this;
+    }
+
+    public Reconstructor createdAt(Instant v) {
+      this.createdAt = v;
+      return this;
+    }
+
+    public Reconstructor isDeleted(boolean v) {
+      this.isDeleted = v;
+      return this;
+    }
+
+    public Reconstructor sellerId(int v) {
+      this.sellerId = v;
+      return this;
+    }
+
+    public Reconstructor title(String v) {
+      this.title = v;
+      return this;
+    }
+
+    public Reconstructor description(String v) {
+      this.description = v;
+      return this;
+    }
+
+    public Reconstructor condition(ItemCondition v) {
+      this.condition = v;
+      return this;
+    }
+
+    public Reconstructor category(ItemCategory v) {
+      this.category = v;
+      return this;
+    }
+
+    // public Reconstructor specs(Map<String, String> v) {
+    // this.specs = v;
+    // return this;
+    // }
+
+    public Reconstructor imageUrls(List<String> v) {
+      this.imageUrls = v;
+      return this;
+    }
+
+    public Reconstructor status(ItemStatus itemStatus) {
+      this.status = itemStatus;
+      return this;
+    }
 
     public Item build() {
       requireNonNull(id, "id");
@@ -86,7 +136,7 @@ public final class Item extends Entity implements SpecAccessor {
       requireNonNull(sellerId, "sellerId");
       requireNonNull(title, "title");
       requireNonNull(category, "category");
-      requireNonNull(specs, "specs");
+      // requireNonNull(specs, "specs");
       requireNonNull(status, "status");
       return new Item(this);
     }
@@ -107,14 +157,18 @@ public final class Item extends Entity implements SpecAccessor {
 
     private String description = "";
     private ItemCondition condition = ItemCondition.USED;
-    private Map<String, String> specs = new HashMap<>();
+    // private Map<String, String> specs = new HashMap<>();
+    private List<String> imageUrls = new ArrayList<>();
     private ItemStatus status;
 
     public Builder(int sellerId, String title, ItemCategory category) {
-      if (sellerId <= 0) throw new IllegalArgumentException("sellerId không tồn tại");
-      if (title == null || title.isBlank()) throw new IllegalArgumentException("Tiêu đề item không được trống");
-      if (category == null) throw new IllegalArgumentException("Category không được null");
-      
+      if (sellerId <= 0)
+        throw new IllegalArgumentException("sellerId không tồn tại");
+      if (title == null || title.isBlank())
+        throw new IllegalArgumentException("Tiêu đề item không được trống");
+      if (category == null)
+        throw new IllegalArgumentException("Category không được null");
+
       this.sellerId = sellerId;
       this.title = title.trim();
       this.category = category;
@@ -130,8 +184,13 @@ public final class Item extends Entity implements SpecAccessor {
       return this;
     }
 
-    public Builder specs(Map<String, String> specs) {
-      this.specs = specs != null ? new HashMap<>(specs) : new HashMap<>();
+    // public Builder specs(Map<String, String> specs) {
+    // this.specs = specs != null ? new HashMap<>(specs) : new HashMap<>();
+    // return this;
+    // }
+
+    public Builder imageUrls(List<String> imageUrls) {
+      this.imageUrls = imageUrls != null ? new ArrayList<>(imageUrls) : new ArrayList<>();
       return this;
     }
 
@@ -140,12 +199,13 @@ public final class Item extends Entity implements SpecAccessor {
       return this;
     }
 
-    public Builder putSpecs(String key, String value) {
-      if (key != null && !key.isBlank() && value != null && !value.isBlank()) {
-        this.specs.put(key, value);
-      }
-      return this;
-    }
+    // public Builder putSpecs(String key, String value) {
+    // if (key != null && !key.isBlank() && value != null && !value.isBlank()) {
+    // this.specs.put(key, value);
+    // }
+    // return this;
+    // }
+
     public Item build() {
       return new Item(this);
     }
@@ -154,23 +214,61 @@ public final class Item extends Entity implements SpecAccessor {
   // ════════════════════════════════════════════════════
   // GETTERS
   // ════════════════════════════════════════════════════
-  public int getSellerId() { return sellerId; }
-  public String getTitle() { return title; }
-  public ItemCategory getCategory() { return category; }
-  public String getDescription() { return description; }
-  public ItemCondition getCondition() { return condition; }
-  public Map<String, String> getSpecs() { return Collections.unmodifiableMap(specs); }
-  public ItemStatus getStatus() { return status; }
+  public int getSellerId() {
+    return sellerId;
+  }
+
+  public String getTitle() {
+    return title;
+  }
+
+  public ItemCategory getCategory() {
+    return category;
+  }
+
+  public String getDescription() {
+    return description;
+  }
+
+  public ItemCondition getCondition() {
+    return condition;
+  }
+
+  // public Map<String, String> getSpecs() {
+  // return Collections.unmodifiableMap(specs);
+  // }
+
+  public List<String> getImageUrls() {
+    return Collections.unmodifiableList(imageUrls);
+  }
+
+  public ItemStatus getStatus() {
+    return status;
+  }
 
   // ════════════════════════════════════════════════════
   // SPEC HELPERS
   // ════════════════════════════════════════════════════
-  public String getSpecs(SpecKey key) { return specs.getOrDefault(key.name(), ""); }
-  public String getSpecs(String rawKey) { return specs.getOrDefault(rawKey, ""); }
-  public boolean hasSpec(SpecKey key) { return specs.containsKey(key.name()); }
-  public boolean hasSpec(String rawKey) { return specs.containsKey(rawKey); }
-  @Override
-  public Map<String, String> getRawSpecs() { return Collections.unmodifiableMap(specs); }
+  // public String getSpecs(SpecKey key) {
+  // return specs.getOrDefault(key.name(), "");
+  // }
+
+  // public String getSpecs(String rawKey) {
+  // return specs.getOrDefault(rawKey, "");
+  // }
+
+  // public boolean hasSpec(SpecKey key) {
+  // return specs.containsKey(key.name());
+  // }
+
+  // public boolean hasSpec(String rawKey) {
+  // return specs.containsKey(rawKey);
+  // }
+
+  // @Override
+  // public Map<String, String> getRawSpecs() {
+  // return Collections.unmodifiableMap(specs);
+  // }
 
   // ════════════════════════════════════════════════════
   // SETTERS CÓ KIỂM SOÁT
@@ -182,12 +280,12 @@ public final class Item extends Entity implements SpecAccessor {
     this.title = title.trim();
   }
 
-  public void setSpecs(Map<String, String> specs) {
-    if (specs == null) {
-      throw new IllegalArgumentException("Specs không được null");
-    }
-    this.specs = specs;
-  }
+  // public void setSpecs(Map<String, String> specs) {
+  // if (specs == null) {
+  // throw new IllegalArgumentException("Specs không được null");
+  // }
+  // this.specs = specs;
+  // }
 
   public void setDescription(String description) {
     if (description == null || description.isBlank()) {
@@ -203,16 +301,24 @@ public final class Item extends Entity implements SpecAccessor {
     this.condition = condition;
   }
 
-  public void putSpecs(SpecKey key, String value) {
-    if (key == null) return;
-    if (value != null && !value.isBlank()) {
-      specs.put(key.name(), value.trim());
+  public void setImageUrls(List<String> imageUrls) {
+    if (imageUrls == null) {
+      throw new IllegalArgumentException("Image URLs không được null");
     }
+    this.imageUrls = new ArrayList<>(imageUrls);
   }
 
-  public void putCustomSpec(String rawKey, String value) {
-    specs.put("custom_" + rawKey, value);
-  }
+  // public void putSpecs(SpecKey key, String value) {
+  // if (key == null)
+  // return;
+  // if (value != null && !value.isBlank()) {
+  // specs.put(key.name(), value.trim());
+  // }
+  // }
+
+  // public void putCustomSpec(String rawKey, String value) {
+  // specs.put("custom_" + rawKey, value);
+  // }
 
   public void setStatus(ItemStatus status) {
     if (status == null) {
@@ -227,10 +333,10 @@ public final class Item extends Entity implements SpecAccessor {
   @Override
   public String toString() {
     return "Item{" +
-            "id='"           + getId()        + '\'' +
-            ", title='"      + title          + '\'' +
-            ", category="    + category       +
-            ", isDeleted="   + isDeleted()    +
-            '}';
+        "id='" + getId() + '\'' +
+        ", title='" + title + '\'' +
+        ", category=" + category +
+        ", isDeleted=" + isDeleted() +
+        '}';
   }
 }

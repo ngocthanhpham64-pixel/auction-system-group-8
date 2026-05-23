@@ -7,10 +7,11 @@ import org.slf4j.LoggerFactory;
 
 import com.google.gson.JsonObject;
 
+import vn.edu.vnu.uet.group8.common.dto.model.BidRecord;
 import vn.edu.vnu.uet.group8.common.dto.model.UserBidHistoryDTO;
+import vn.edu.vnu.uet.group8.common.dto.request.AutoBidRequest;
 import vn.edu.vnu.uet.group8.common.dto.request.BidRequest;
 import vn.edu.vnu.uet.group8.common.dto.response.ServerResponse;
-import vn.edu.vnu.uet.group8.server.dao.BidTransactionDAO.BidHistoryEntry;
 import vn.edu.vnu.uet.group8.server.network.RequestParser;
 import vn.edu.vnu.uet.group8.server.service.auction.AuctionService;
 
@@ -65,33 +66,41 @@ public class BidController {
   }
 
   /**
-   * BID_AUTO — placeholder cho proxy bidding.
-   * Service chưa implement → trả "not supported".
+   * BID_AUTO — proxy bidding.
    */
-  // public ServerResponse handleAutoBid(JsonObject request, String requestId,
-  //                                     int authenticatedUserId) {
-  //   log.debug("BID_AUTO chưa hỗ trợ — userId={}", authenticatedUserId);
-  //   return ServerResponse.replyError("BID_AUTO", requestId,
-  //       "Tính năng đặt giá tự động chưa được hỗ trợ");
-  // }
+  public ServerResponse handleAutoBid(JsonObject request, String requestId,
+                                      int authenticatedUserId) {
+    try {
+      AutoBidRequest payload = RequestParser.getPayload(request, AutoBidRequest.class);
+      if (payload == null) {
+        return ServerResponse.replyError("BID_AUTO", requestId, "Thiếu payload");
+      }
+
+      auctionService.placeAutoBid(authenticatedUserId, payload.getItemId(), payload.getMaxPrice());
+      return ServerResponse.reply("BID_AUTO", requestId).success(true).message("Thiết lập giá tự động thành công").build();
+    } catch (Exception e) {
+      log.warn("BID_AUTO thất bại userId={}: {}", authenticatedUserId, e.getMessage());
+      return ServerResponse.replyError("BID_AUTO", requestId, "Lỗi: " + e.getMessage());
+    }
+  }
 
   // Lịch sử bid của 1 phiên/món hàng (Cho trang chi tiết sản phẩm)
   public ServerResponse handleItemBidHistory(JsonObject request, String requestId) {
     try {
-      if (!request.has("sessionId")) {
-         return ServerResponse.replyError("ITEM_BID_HISTORY", requestId, "Thiếu sessionId");
-      }
-      int sessionId = request.get("sessionId").getAsInt();
+      JsonObject payload = request.has("payload") && request.get("payload").isJsonObject()
+          ? request.getAsJsonObject("payload") : request;
+
+      int itemId = RequestParser.requireInt(payload, "itemId");
       
-      // Trả về List<BidHistoryEntry>
-      List<BidHistoryEntry> history = auctionService.getItemBidHistory(sessionId);
-      return ServerResponse.reply("ITEM_BID_HISTORY", requestId)
+      // Trả về List<BidRecord> chuẩn form FE
+      List<BidRecord> history = auctionService.getItemBidHistory(itemId);
+      return ServerResponse.reply("BID_HISTORY", requestId)
                               .success(true)
                               .data(history)
                               .build();
     } catch (Exception e) {
       log.error("Lỗi khi lấy lịch sử phiên={}: {}", request, e.getMessage());
-      return ServerResponse.replyError("ITEM_BID_HISTORY", requestId, "Lỗi server: " + e.getMessage());
+      return ServerResponse.replyError("BID_HISTORY", requestId, "Lỗi server: " + e.getMessage());
     }
   }
 

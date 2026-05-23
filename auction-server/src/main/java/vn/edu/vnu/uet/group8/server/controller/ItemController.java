@@ -1,7 +1,8 @@
 package vn.edu.vnu.uet.group8.server.controller;
 
+import java.math.BigDecimal;
 import java.util.List;
-import java.util.Map;
+// import java.util.Map;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -9,11 +10,14 @@ import org.slf4j.LoggerFactory;
 import com.google.gson.JsonObject;
 
 import vn.edu.vnu.uet.group8.common.dto.model.AuctionItemDTO;
+import vn.edu.vnu.uet.group8.common.dto.model.CommentDTO;
 import vn.edu.vnu.uet.group8.common.dto.request.GetAuctionsRequest;
 import vn.edu.vnu.uet.group8.common.dto.response.ServerResponse;
 import vn.edu.vnu.uet.group8.common.entity.Item;
 import vn.edu.vnu.uet.group8.common.enums.ItemCategory;
 import vn.edu.vnu.uet.group8.common.enums.ItemCondition;
+import vn.edu.vnu.uet.group8.common.enums.ItemStatus;
+import vn.edu.vnu.uet.group8.common.util.GsonUtil;
 import vn.edu.vnu.uet.group8.server.network.RequestParser;
 import vn.edu.vnu.uet.group8.server.service.item.ItemQueryService;
 import vn.edu.vnu.uet.group8.server.service.item.ItemWriteService;
@@ -21,7 +25,8 @@ import vn.edu.vnu.uet.group8.server.service.item.ItemWriteService;
 /**
  * Controller cho domain Item: GET_ALL, GET_DETAIL.
  *
- * <p>Phần CREATE/UPDATE/DELETE item (ItemWriteService) chưa có action
+ * <p>
+ * Phần CREATE/UPDATE/DELETE item (ItemWriteService) chưa có action
  * trong ActionType enum — tạm thời chưa expose. Khi cần, mở rộng enum
  * + thêm handler ở đây.
  */
@@ -42,13 +47,13 @@ public class ItemController {
   /**
    * ITEM_GET_ALL — lấy danh sách item đang đấu giá, có thể có filter.
    *
-   * <p>Nếu payload có GetAuctionsRequest với category/minPrice/maxPrice
+   * <p>
+   * Nếu payload có GetAuctionsRequest với category/minPrice/maxPrice
    * → dùng searchItems(). Không có filter → dùng getActiveItems().
    */
   public ServerResponse handleGetAll(JsonObject request, String requestId) {
     try {
-      GetAuctionsRequest filter =
-          RequestParser.getPayload(request, GetAuctionsRequest.class);
+      GetAuctionsRequest filter = RequestParser.getPayload(request, GetAuctionsRequest.class);
 
       List<AuctionItemDTO> items = itemQueryService.getAuctions(filter);
 
@@ -75,7 +80,8 @@ public class ItemController {
       // itemId có thể nằm trong payload hoặc trực tiếp ở root
       JsonObject payload = request.has("payload")
           && request.get("payload").isJsonObject()
-          ? request.getAsJsonObject("payload") : request;
+              ? request.getAsJsonObject("payload")
+              : request;
 
       int itemId = RequestParser.requireInt(payload, "itemId");
       AuctionItemDTO item = itemQueryService.getItemDetail(itemId);
@@ -93,26 +99,55 @@ public class ItemController {
     }
   }
 
+  public ServerResponse handleGetPurchaseHistory(JsonObject request, String requestId, int authenticatedUserId) {
+    try {
+      List<AuctionItemDTO> items = itemQueryService.getWonItems(authenticatedUserId);
+      return ServerResponse.reply("USER_PURCHASE_HISTORY", requestId)
+          .success(true)
+          .message("Lấy lịch sử mua hàng thành công")
+          .data(items)
+          .build();
+    } catch (Exception e) {
+      log.error("Lỗi USER_PURCHASE_HISTORY", e);
+      return ServerResponse.replyError("USER_PURCHASE_HISTORY", requestId, "Lỗi: " + e.getMessage());
+    }
+  }
+
   // ═══════════════════════════════════════════════════
   // Quản lý sản phẩm
   // ═══════════════════════════════════════════════════
-  public ServerResponse handleCreateItem(JsonObject request, String requestId) {
+  public ServerResponse handleCreateItem(
+      JsonObject request, String requestId, int authenticatedUserId) {
     try {
       JsonObject payload = request.has("payload")
           && request.get("payload").isJsonObject()
-          ? request.getAsJsonObject("payload") : request;
+              ? request.getAsJsonObject("payload")
+              : request;
 
-      int sellerId = RequestParser.requireInt(payload, "sellerId");
       String title = RequestParser.requireString(payload, "title");
       String description = RequestParser.requireString(payload, "description");
+
       ItemCategory category = ItemCategory.valueOf(
-        RequestParser.requireString(payload, "category"));
+          RequestParser.requireString(payload, "category"));
       ItemCondition condition = ItemCondition.valueOf(
-        RequestParser.requireString(payload, "condition"));
-      Map<String, String> specs = RequestParser.requireMap(payload, "specs");
-      
+          RequestParser.requireString(payload, "condition"));
+      // Map<String, String> specs = RequestParser.optionalMap(payload, "specs");
+
+      List<String> imageUrls = null;
+      if (payload.has("imageUrls") && payload.get("imageUrls").isJsonArray()) {
+        imageUrls = GsonUtil.toList(payload.get("imageUrls"), String.class);
+      }
+
+      // Lấy thêm thông tin đấu giá (nếu có)
+      BigDecimal startPrice = null;
+      if (payload.has("startPrice") && !payload.get("startPrice").isJsonNull()) {
+        startPrice = new BigDecimal(payload.get("startPrice").getAsString());
+      }
+      Integer durationHours = RequestParser.optionalInt(payload, "durationHours");
+
       Item item = itemWriteService.createItem(
-        sellerId, title, description, category, condition, specs);
+          authenticatedUserId, title, description, category, condition, imageUrls,
+          startPrice, durationHours);
 
       return ServerResponse.reply("ITEM_CREATE", requestId)
           .success(true)
@@ -124,7 +159,7 @@ public class ItemController {
       log.error("Lỗi ITEM_CREATE", e);
       return ServerResponse.replyError("ITEM_CREATE", requestId,
           "Lỗi: " + e.getMessage());
-          
+
     }
   }
 
@@ -137,7 +172,19 @@ public class ItemController {
    */
   public ServerResponse handleGetMyListings(JsonObject request, String requestId, int authenticatedUserId) {
     try {
-      List<AuctionItemDTO> items = itemQueryService.getMyItems(authenticatedUserId);
+      JsonObject payload = request.has("payload")
+          && request.get("payload").isJsonObject()
+              ? request.getAsJsonObject("payload")
+              : request;
+
+      String statusStr = RequestParser.optionalString(payload, "status");
+      List<AuctionItemDTO> items;
+      if (statusStr != null && !statusStr.isBlank()) {
+        ItemStatus status = ItemStatus.valueOf(statusStr.toUpperCase().trim());
+        items = itemQueryService.getMyItemsByStatus(authenticatedUserId, status);
+      } else {
+        items = itemQueryService.getMyItems(authenticatedUserId);
+      }
 
       log.debug("ITEM_MY_LISTINGS trả về {} items cho user {}", items.size(), authenticatedUserId);
       return ServerResponse.reply("ITEM_MY_LISTINGS", requestId)
@@ -161,25 +208,31 @@ public class ItemController {
     try {
       JsonObject payload = request.has("payload")
           && request.get("payload").isJsonObject()
-          ? request.getAsJsonObject("payload") : request;
+              ? request.getAsJsonObject("payload")
+              : request;
 
       int itemId = RequestParser.requireInt(payload, "itemId");
-      
+
       // Các trường tùy chọn (chỉ cập nhật những gì client gửi lên)
-      String title = RequestParser.requireString(payload, "title");
-      String description = RequestParser.requireString(payload, "description");
-      
+      String title = RequestParser.optionalString(payload, "title");
+      String description = RequestParser.optionalString(payload, "description");
+
       ItemCondition condition = null;
       if (payload.has("condition")) {
         condition = ItemCondition.valueOf(RequestParser.requireString(payload, "condition"));
       }
 
-      Map<String, String> specs = null;
-      if (payload.has("specs")) {
-        specs = RequestParser.requireMap(payload, "specs");
+      // Map<String, String> specs = null;
+      // if (payload.has("specs")) {
+      // specs = RequestParser.optionalMap(payload, "specs");
+      // }
+
+      List<String> imageUrls = null;
+      if (payload.has("imageUrls") && payload.get("imageUrls").isJsonArray()) {
+        imageUrls = vn.edu.vnu.uet.group8.common.util.GsonUtil.toList(payload.get("imageUrls"), String.class);
       }
 
-      itemWriteService.updateItem(authenticatedUserId, itemId, title, description, condition, specs);
+      itemWriteService.updateItem(authenticatedUserId, itemId, title, description, condition, imageUrls);
 
       return ServerResponse.reply("ITEM_UPDATE", requestId)
           .success(true)
@@ -200,10 +253,11 @@ public class ItemController {
     try {
       JsonObject payload = request.has("payload")
           && request.get("payload").isJsonObject()
-          ? request.getAsJsonObject("payload") : request;
+              ? request.getAsJsonObject("payload")
+              : request;
 
       int itemId = RequestParser.requireInt(payload, "itemId");
-      
+
       itemWriteService.deleteItem(authenticatedUserId, itemId);
 
       return ServerResponse.reply("ITEM_DELETE", requestId)
@@ -214,6 +268,32 @@ public class ItemController {
     } catch (Exception e) {
       log.error("Lỗi ITEM_DELETE", e);
       return ServerResponse.replyError("ITEM_DELETE", requestId,
+          "Lỗi: " + e.getMessage());
+    }
+  }
+
+  /**
+   * Lấy danh sách comment của 1 vật phẩm
+   */
+  public ServerResponse handleItemComment(JsonObject request, String requestId) {
+    try {
+      JsonObject payload = request.has("payload")
+          && request.get("payload").isJsonObject()
+              ? request.getAsJsonObject("payload")
+              : request;
+
+      int itemId = RequestParser.requireInt(payload, "itemId");
+
+      List<CommentDTO> comments = itemQueryService.getCommentsForAnItemId(itemId);
+
+      return ServerResponse.reply("ITEM_COMMENT", requestId)
+          .success(true)
+          .message("Lấy danh sách comment thành công")
+          .data(comments)
+          .build();
+    } catch (Exception e) {
+      log.error("Lỗi ITEM_COMMENT", e);
+      return ServerResponse.replyError("ITEM_COMMENT", requestId,
           "Lỗi: " + e.getMessage());
     }
   }

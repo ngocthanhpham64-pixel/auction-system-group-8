@@ -90,15 +90,12 @@ public class UserController {
       BigDecimal newBalance = balanceService.topUpBalance(
           authenticatedUserId, amount, transactionId, method);
 
-      JsonObject data = new JsonObject();
-      data.addProperty("newBalance", newBalance.toPlainString());
-
       log.info("User {} nạp {} thành công, balance mới = {}",
           authenticatedUserId, amount, newBalance);
       return ServerResponse.reply("USER_DEPOSIT", requestId)
           .success(true)
           .message("Nạp tiền thành công")
-          .data(data)
+          .data(newBalance)
           .build();
 
     } catch (Exception e) {
@@ -112,6 +109,7 @@ public class UserController {
   // ═══════════════════════════════════════════════════
   // Quản lý tài khoản
   // ═══════════════════════════════════════════════════
+
   // Đổi mật khẩu
   public ServerResponse handleChangePassword(JsonObject request, String requestId, int authenticatedUserId) {
     try {
@@ -156,15 +154,12 @@ public class UserController {
       BigDecimal newBalance = balanceService.withdrawBalance(
           authenticatedUserId, amount, transactionId, method);
 
-      // JsonObject data = new JsonObject();
-      // data.addProperty("newBalance", newBalance.toPlainString());
-
       log.info("User {} rút {} thành công, balance mới = {}",
           authenticatedUserId, amount, newBalance);
       return ServerResponse.reply("USER_WITHDRAW", requestId)
           .success(true)
           .message("Rút tiền thành công")
-          // .data(data)
+          .data(newBalance)
           .build();
 
     } catch (Exception e) {
@@ -186,6 +181,34 @@ public class UserController {
     } catch (Exception e) {
       log.error("Lỗi lấy lịch sử giao dịch userId={}: {}", authenticatedUserId, e.getMessage());
       return ServerResponse.replyError("USER_TRANSACTIONS", requestId, "Lỗi: " + e.getMessage());
+    }
+  }
+
+  // Cập nhật hồ sơ
+  public ServerResponse handleUpdateProfile(JsonObject request, String requestId, int authenticatedUserId) {
+    try {
+      JsonObject payload = request.has("payload")
+          && request.get("payload").isJsonObject()
+          ? request.getAsJsonObject("payload") : new JsonObject();
+      
+      String fullname = RequestParser.requireString(payload, "fullname");
+      String phone = RequestParser.requireString(payload, "phone");
+      String address = RequestParser.optionalString(payload, "address");
+      String avatarUrl = RequestParser.optionalString(payload, "avatarUrl");
+
+      log.info("Processing Profile Update for user {}: fullname={}, phone={}", authenticatedUserId, fullname, phone);
+
+      profileService.updateProfile(authenticatedUserId, authenticatedUserId, fullname, phone, address, avatarUrl);
+
+      log.info("User {} updated profile successfully", authenticatedUserId);
+
+      return ServerResponse.reply("USER_UPDATE_PROFILE", requestId)
+          .success(true)
+          .message("Cập nhật hồ sơ thành công")
+          .build();
+    } catch (Exception e) {
+      log.error("Lỗi khi cập nhật hồ sơ userId={}: {}", authenticatedUserId, e.getMessage());
+      return ServerResponse.replyError("USER_UPDATE_PROFILE", requestId, "Lỗi: " + e.getMessage());
     }
   }
 

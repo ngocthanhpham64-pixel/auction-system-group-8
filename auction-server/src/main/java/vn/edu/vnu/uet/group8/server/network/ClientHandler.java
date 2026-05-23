@@ -14,6 +14,7 @@ import org.slf4j.LoggerFactory;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 
+import vn.edu.vnu.uet.group8.common.dto.model.LoginResultDTO;
 import vn.edu.vnu.uet.group8.common.dto.response.ServerResponse;
 import vn.edu.vnu.uet.group8.common.util.GsonUtil;
 
@@ -28,6 +29,7 @@ public class ClientHandler implements Runnable {
   private DataInputStream in;
   private DataOutputStream out;
   private String clientAddr;
+  private Integer userId;
 
   public ClientHandler(Socket socket,
                        AppDispatcher dispatcher,
@@ -35,6 +37,10 @@ public class ClientHandler implements Runnable {
     this.socket = socket;
     this.dispatcher = dispatcher;
     this.broadcastChannel = broadcastChannel;
+  }
+
+  public Integer getUserId() {
+    return this.userId;
   }
 
   @Override
@@ -60,8 +66,14 @@ public class ClientHandler implements Runnable {
   private void readLoop() {
     while (!socket.isClosed()) {
       try {
-        String jsonRequest = in.readUTF();
-        log.debug("[{}] Nhận: {}", clientAddr, jsonRequest);
+        int length = in.readInt();
+        if (length <= 0 || length > 16 * 1024 * 1024) {
+          throw new IOException("Độ dài gói tin request không hợp lệ hoặc quá lớn: " + length);
+        }
+        byte[] bytes = new byte[length];
+        in.readFully(bytes);
+        String jsonRequest = new String(bytes, java.nio.charset.StandardCharsets.UTF_8);
+        log.info("[{}] RAW REQUEST RECEIVED: {}", clientAddr, jsonRequest);
 
         JsonObject request;
         try {
@@ -79,6 +91,21 @@ public class ClientHandler implements Runnable {
         }
 
         ServerResponse response = dispatcher.dispatch(request);
+        
+        // Tự động map Socket này với User nếu đây là một yêu cầu đăng nhập thành công
+        if (response.isSuccess() && "LOGIN".equals(response.getAction())) {
+          Object data = response.getData();
+          if (data instanceof LoginResultDTO result) {
+            this.userId = result.getUserId();
+            broadcastChannel.registerUser(this.userId, this);
+          }
+        } else if (response.isSuccess() && "LOGOUT".equals(response.getAction())) {
+          if (this.userId != null) {
+            broadcastChannel.unregisterUser(this.userId, this);
+            this.userId = null;
+          }
+        }
+        
         send(response);
 
       } catch (EOFException e) {
@@ -95,7 +122,9 @@ public class ClientHandler implements Runnable {
     if (out == null || socket.isClosed()) return;
     try {
       String json = GSON.toJson(response);
-      out.writeUTF(json);
+      byte[] bytes = json.getBytes(java.nio.charset.StandardCharsets.UTF_8);
+      out.writeInt(bytes.length);
+      out.write(bytes);
       out.flush();
       log.debug("[{}] Gửi: {}", clientAddr, json);
     } catch (IOException e) {
@@ -106,7 +135,6 @@ public class ClientHandler implements Runnable {
   private void cleanup() {
     broadcastChannel.removeClient(this);   // ✅ giữ nguyên
     try {
-      if (in != null) in.close();
       if (in != null) in.close();
       if (out != null) out.close();
       if (socket != null && !socket.isClosed()) socket.close();

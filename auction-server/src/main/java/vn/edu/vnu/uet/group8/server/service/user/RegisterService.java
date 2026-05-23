@@ -11,7 +11,8 @@ import vn.edu.vnu.uet.group8.server.util.PasswordUtil;
 /**
  * Xử lý nghiệp vụ đăng ký tài khoản mới.
  *
- * <p>Ném exception khi có lỗi — không trả {@code ResponseDTO}.
+ * <p>
+ * Ném exception khi có lỗi — không trả {@code ResponseDTO}.
  * {@code ClientHandler} bắt exception và tự build response.
  */
 public class RegisterService {
@@ -25,17 +26,22 @@ public class RegisterService {
   /**
    * Đăng ký tài khoản mới.
    *
-   * @param username tên đăng nhập
-   * @param email    địa chỉ email
-   * @param password mật khẩu plain-text — sẽ được hash trước khi lưu
-   * @param fullName 
+   * @param username  tên đăng nhập
+   * @param email     địa chỉ email
+   * @param password  mật khẩu plain-text — sẽ được hash trước khi lưu
+   * @param fullName
    * @param phone
    * @param avatarUrl
    * @return {@link UserSummaryDTO} để Client tự động login sau đăng ký
    * @throws vn.edu.vnu.uet.group8.common.exception.ValidationException
-   *     nếu input không hợp lệ
-   * @throws DuplicateUserException nếu username hoặc email đã tồn tại
-   * @throws SQLException           nếu lỗi DB
+   *                                                                    nếu input
+   *                                                                    không hợp
+   *                                                                    lệ
+   * @throws DuplicateUserException                                     nếu
+   *                                                                    username
+   *                                                                    hoặc email
+   *                                                                    đã tồn tại
+   * @throws SQLException                                               nếu lỗi DB
    */
   public UserSummaryDTO register(
       String username, String email, String password, String fullname,
@@ -66,11 +72,10 @@ public class RegisterService {
 
     // -- Tạo entity và lưu DB
     String hashedPassword = PasswordUtil.hash(password);
-    UserMember newUser =
-        UserMember.builder(normalUsername, normalEmail, hashedPassword)
-            .fullName(fullname != null ? fullname.trim() : "")
-            .phone(normalPhone)
-            .build();
+    UserMember newUser = UserMember.builder(normalUsername, normalEmail, hashedPassword)
+        .fullname(fullname != null ? fullname.trim() : "")
+        .phone(normalPhone)
+        .build();
 
     userDAO.insert(newUser);
     // newUser.getId() > 0 sau khi insert — DAO đã gán AUTO_INCREMENT
