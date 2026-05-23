@@ -1,18 +1,19 @@
 package vn.edu.vnu.uet.group8.server.service.item;
 
+import static org.junit.jupiter.api.Assertions.*;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 import vn.edu.vnu.uet.group8.common.enums.ItemCategory;
 import vn.edu.vnu.uet.group8.common.exception.ValidationException;
 
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 /**
- * Updated test cho ItemSpecValidator theo signature mới:
+ * Test cho {@link ItemSpecValidator}.
+ *
+ * <p>Code hiện tại:
  * validate(ItemCategory category)
  */
 class ItemSpecValidatorTest {
@@ -24,87 +25,90 @@ class ItemSpecValidatorTest {
         validator = new ItemSpecValidator();
     }
 
-    // ════════════════════════════════════════════════════
-    // NULL CATEGORY
-    // ════════════════════════════════════════════════════
+    // ──────────────────────────────────────────────────────────────────
+    @Nested
+    @DisplayName("Trường hợp lỗi")
+    class InvalidInputTest {
 
-    @Test
-    @DisplayName("Category null phải ném ValidationException")
-    void categoryNullPhaiNemException() {
-        ValidationException ex = assertThrows(
-                ValidationException.class,
-                () -> validator.validate(null)
-        );
+        @Test
+        @DisplayName("Category null → ValidationException")
+        void categoryNull() {
 
-        assertTrue(ex.getMessage().contains("Category"));
+            ValidationException ex = assertThrows(
+                    ValidationException.class,
+                    () -> validator.validate(null)
+            );
+
+            assertTrue(
+                    ex.getMessage().toLowerCase().contains("category")
+            );
+        }
     }
 
-    // ════════════════════════════════════════════════════
-    // VALID CATEGORY
-    // ════════════════════════════════════════════════════
+    // ──────────────────────────────────────────────────────────────────
+    @Nested
+    @DisplayName("Category hợp lệ")
+    class ValidCategoryTest {
 
-    @Test
-    @DisplayName("Validate ELECTRONICS không được ném exception")
-    void validateElectronics() {
-        assertDoesNotThrow(() ->
-                validator.validate(ItemCategory.ELECTRONICS)
-        );
+        @Test
+        @DisplayName("ELECTRONICS hợp lệ")
+        void electronics() {
+            assertDoesNotThrow(() ->
+                    validator.validate(ItemCategory.ELECTRONICS));
+        }
+
+        @Test
+        @DisplayName("VEHICLES hợp lệ")
+        void vehicles() {
+            assertDoesNotThrow(() ->
+                    validator.validate(ItemCategory.VEHICLES));
+        }
+
+        @Test
+        @DisplayName("REAL_ESTATE hợp lệ")
+        void realEstate() {
+            assertDoesNotThrow(() ->
+                    validator.validate(ItemCategory.REAL_ESTATE));
+        }
+
+        @Test
+        @DisplayName("ANTIQUES hợp lệ")
+        void antiques() {
+            assertDoesNotThrow(() ->
+                    validator.validate(ItemCategory.ANTIQUES));
+        }
+
+        @Test
+        @DisplayName("FASHION hợp lệ")
+        void fashion() {
+            assertDoesNotThrow(() ->
+                    validator.validate(ItemCategory.FASHION));
+        }
+
+        @Test
+        @DisplayName("OTHER hợp lệ")
+        void other() {
+            assertDoesNotThrow(() ->
+                    validator.validate(ItemCategory.OTHER));
+        }
     }
 
-    @Test
-    @DisplayName("Validate VEHICLES không được ném exception")
-    void validateVehicles() {
-        assertDoesNotThrow(() ->
-                validator.validate(ItemCategory.VEHICLES)
-        );
-    }
+    // ──────────────────────────────────────────────────────────────────
+    @Nested
+    @DisplayName("Tất cả category")
+    class AllCategoriesTest {
 
-    @Test
-    @DisplayName("Validate REAL_ESTATE không được ném exception")
-    void validateRealEstate() {
-        assertDoesNotThrow(() ->
-                validator.validate(ItemCategory.REAL_ESTATE)
-        );
-    }
+        @Test
+        @DisplayName("Mọi ItemCategory đều validate được")
+        void allCategories() {
 
-    @Test
-    @DisplayName("Validate ANTIQUES không được ném exception")
-    void validateAntiques() {
-        assertDoesNotThrow(() ->
-                validator.validate(ItemCategory.ANTIQUES)
-        );
-    }
+            for (ItemCategory cat : ItemCategory.values()) {
 
-    @Test
-    @DisplayName("Validate FASHION không được ném exception")
-    void validateFashion() {
-        assertDoesNotThrow(() ->
-                validator.validate(ItemCategory.FASHION)
-        );
-    }
-
-    @Test
-    @DisplayName("Validate OTHER không được ném exception")
-    void validateOther() {
-        assertDoesNotThrow(() ->
-                validator.validate(ItemCategory.OTHER)
-        );
-    }
-
-    // ════════════════════════════════════════════════════
-    // MESSAGE FORMAT
-    // ════════════════════════════════════════════════════
-
-    @Test
-    @DisplayName("Exception message phải chứa chữ Category")
-    void messagePhaiChuaCategory() {
-        ValidationException ex = assertThrows(
-                ValidationException.class,
-                () -> validator.validate(null)
-        );
-
-        assertTrue(
-                ex.getMessage().toLowerCase().contains("category")
-        );
+                assertDoesNotThrow(
+                        () -> validator.validate(cat),
+                        "Category " + cat + " không nên throw"
+                );
+            }
+        }
     }
 }
