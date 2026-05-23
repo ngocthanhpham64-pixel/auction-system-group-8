@@ -3,6 +3,7 @@
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
          http://maven.apache.org/xsd/maven-4.0.0.xsd">
+
   <modelVersion>4.0.0</modelVersion>
 
   <parent>
@@ -22,6 +23,7 @@
   </properties>
 
   <dependencies>
+
     <!-- Module chung của dự án -->
     <dependency>
       <groupId>vn.edu.vnu.uet.group8</groupId>
@@ -35,30 +37,33 @@
       <artifactId>javafx-controls</artifactId>
       <version>${javafx.version}</version>
     </dependency>
+
     <dependency>
       <groupId>org.openjfx</groupId>
       <artifactId>javafx-fxml</artifactId>
       <version>${javafx.version}</version>
     </dependency>
 
-    <!-- Gson: serialize/deserialize JSON -->
+    <!-- Gson -->
     <dependency>
       <groupId>com.google.code.gson</groupId>
       <artifactId>gson</artifactId>
       <version>${gson.version}</version>
     </dependency>
 
-    <!-- JUnit 5 (theo đúng tài liệu) -->
+    <!-- JUnit 5 -->
     <dependency>
       <groupId>org.junit.jupiter</groupId>
       <artifactId>junit-jupiter</artifactId>
       <version>${junit.jupiter.version}</version>
       <scope>test</scope>
     </dependency>
+
   </dependencies>
 
   <build>
-    <!-- Đảm bảo các file FXML, CSS, hình ảnh được copy vào classpath -->
+
+    <!-- Copy resources -->
     <resources>
       <resource>
         <directory>src/main/resources</directory>
@@ -69,26 +74,62 @@
     </resources>
 
     <plugins>
-      <!-- Trình biên dịch Java 17 -->
+
+      <!-- Java compiler -->
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-compiler-plugin</artifactId>
         <version>3.11.0</version>
+
         <configuration>
           <release>17</release>
         </configuration>
       </plugin>
 
-      <!-- Plugin chạy JavaFX -->
+      <!-- JavaFX -->
       <plugin>
         <groupId>org.openjfx</groupId>
         <artifactId>javafx-maven-plugin</artifactId>
         <version>0.0.8</version>
+
         <configuration>
-          <!-- ⚠️ BẮT BUỘC đúng tên class có phương thức main() -->
-          <mainClass>vn.edu.vnu.uet.group8.client.AuctionClientApp</mainClass>
+          <mainClass>
+            vn.edu.vnu.uet.group8.client.AuctionClientApp
+          </mainClass>
         </configuration>
       </plugin>
+
+      <!-- JaCoCo Coverage -->
+      <plugin>
+        <groupId>org.jacoco</groupId>
+        <artifactId>jacoco-maven-plugin</artifactId>
+        <version>0.8.11</version>
+
+        <executions>
+
+          <!-- attach java agent -->
+          <execution>
+            <goals>
+              <goal>prepare-agent</goal>
+            </goals>
+          </execution>
+
+          <!-- generate report -->
+          <execution>
+            <id>report</id>
+            <phase>test</phase>
+
+            <goals>
+              <goal>report</goal>
+            </goals>
+          </execution>
+
+        </executions>
+      </plugin>
+
     </plugins>
+
   </build>
+
 </project>
+
