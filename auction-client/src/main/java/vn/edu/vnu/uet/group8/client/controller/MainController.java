@@ -73,7 +73,7 @@ public class MainController implements Initializable {
         ClientModel.getInstance().currentUserProperty().addListener((obs, oldUser, newUser) -> 
             Platform.runLater(() -> {
                 if (newUser != null && lblAvatar != null) {
-                    String name = newUser.getDisplayName() != null ? newUser.getDisplayName() : newUser.getUsername();
+                    String name = newUser.getFullName() != null ? newUser.getFullName() : newUser.getUsername();
                     if (name != null && !name.isEmpty()) {
                         lblAvatar.setText(name.substring(0, 1).toUpperCase());
                     }
