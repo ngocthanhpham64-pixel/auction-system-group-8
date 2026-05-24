@@ -48,7 +48,7 @@ public class AuctionItemDTO {
     private List<String> imageUrls;
 
     // Constructor private — chỉ tạo qua from() hoặc Reconstructor
-    private AuctionItemDTO() {}
+    public AuctionItemDTO() {}
 
     // ════════════════════════════════════════════════════
     // STATIC FACTORY METHODS
