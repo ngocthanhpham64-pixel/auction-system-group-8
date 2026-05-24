@@ -5,8 +5,8 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import vn.edu.vnu.uet.group8.client.util.SessionManager;
-import vn.edu.vnu.uet.group8.common.dto.BidRecord;
-import vn.edu.vnu.uet.group8.common.dto.BidResponse;
+import vn.edu.vnu.uet.group8.common.dto.model.BidRecord;
+import vn.edu.vnu.uet.group8.common.dto.response.ServerResponse;
 
 import java.math.BigDecimal;
 import java.util.List;

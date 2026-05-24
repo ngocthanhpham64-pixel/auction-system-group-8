@@ -3,7 +3,7 @@ package vn.edu.vnu.uet.group8.client.networking;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-import vn.edu.vnu.uet.group8.common.dto.ServerResponse;
+import vn.edu.vnu.uet.group8.common.dto.response.ServerResponse;
 import vn.edu.vnu.uet.group8.common.enums.EventType;
 import vn.edu.vnu.uet.group8.client.TestFXSetup;
 import java.util.concurrent.atomic.AtomicInteger;

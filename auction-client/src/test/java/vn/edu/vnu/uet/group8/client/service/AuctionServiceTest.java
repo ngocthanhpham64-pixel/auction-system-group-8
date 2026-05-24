@@ -2,7 +2,7 @@ package vn.edu.vnu.uet.group8.client.service;
 
 import org.junit.jupiter.api.*;
 import vn.edu.vnu.uet.group8.client.util.SessionManager;
-import vn.edu.vnu.uet.group8.common.dto.ServerResponse;
+import vn.edu.vnu.uet.group8.common.dto.response.ServerResponse;
 import vn.edu.vnu.uet.group8.client.TestFXSetup;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
