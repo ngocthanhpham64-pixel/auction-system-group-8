@@ -28,17 +28,17 @@ import vn.edu.vnu.uet.group8.common.enums.SessionStatus;
  */
 public class SellerDashboardController implements Initializable {
 
-    @FXML private Label lblListedCount;
-    @FXML private Label lblSoldCount;
-    @FXML private Label lblTotalRevenue;
-    @FXML private Label lblRating;
-    @FXML private VBox itemListContainer;
-    @FXML private Label lblEmpty;
+    @FXML Label lblListedCount;
+    @FXML Label lblSoldCount;
+    @FXML Label lblTotalRevenue;
+    @FXML Label lblRating;
+    @FXML VBox itemListContainer;
+    @FXML Label lblEmpty;
 
-    @FXML private Button btnTabAll;
-    @FXML private Button btnTabDraft;
-    @FXML private Button btnTabListed;
-    @FXML private Button btnTabSold;
+    @FXML Button btnTabAll;
+    @FXML Button btnTabDraft;
+    @FXML Button btnTabListed;
+    @FXML Button btnTabSold;
 
     private Button activeTab;
     private String currentFilter = "all";
@@ -50,7 +50,7 @@ public class SellerDashboardController implements Initializable {
         loadMyListings();
     }
 
-    private void loadMyListings() {
+    void loadMyListings() {
         SellerService.getMyListings(
                 items -> {
                     myItems = items;
@@ -64,7 +64,7 @@ public class SellerDashboardController implements Initializable {
         );
     }
 
-    private void renderItems() {
+    void renderItems() {
         itemListContainer.getChildren().clear();
 
         if (myItems == null || myItems.isEmpty()) {
@@ -132,13 +132,13 @@ public class SellerDashboardController implements Initializable {
         return row;
     }
 
-    private void showEmptyState() {
+    void showEmptyState() {
         itemListContainer.getChildren().clear();
         lblEmpty.setVisible(true);
         lblEmpty.setManaged(true);
     }
 
-    private void updateStats() {
+    void updateStats() {
         int listed = (int) myItems.stream().filter(it -> it.getStatus() == SessionStatus.ACTIVE).count();
         int sold = (int) myItems.stream().filter(it -> it.getStatus() == SessionStatus.SOLD).count();
         BigDecimal revenue = myItems.stream()
@@ -154,19 +154,19 @@ public class SellerDashboardController implements Initializable {
     }
 
     @FXML
-    private void onCreateNew() {
+    void onCreateNew() {
         // TODO: ClientModel cần thêm setEditingItemId để truyền itemId khi edit
         // Hiện tại tạo mới — không cần truyền itemId
         SceneManager.switchTo("CreateItemView.fxml");
     }
 
-    private void onEditItem(AuctionItemDTO item) {
+    void onEditItem(AuctionItemDTO item) {
         // Tạm dùng setCurrentAuctionItem để truyền item sang CreateItemView
         ClientModel.getInstance().setCurrentAuctionItem(item);
         SceneManager.switchTo("CreateItemView.fxml");
     }
 
-    private void onDeleteItem(AuctionItemDTO item) {
+    void onDeleteItem(AuctionItemDTO item) {
         boolean ok = AlertUtil.showConfirm("Xác nhận xóa",
                 "Xóa sản phẩm \"" + item.getTitle() + "\"?\n"
                         + "Hành động này không thể hoàn tác.");
@@ -182,12 +182,12 @@ public class SellerDashboardController implements Initializable {
         });
     }
 
-    @FXML private void onTabAll()    { setTab("all", btnTabAll); }
-    @FXML private void onTabDraft()  { setTab("draft", btnTabDraft); }
-    @FXML private void onTabListed() { setTab("listed", btnTabListed); }
-    @FXML private void onTabSold()   { setTab("sold", btnTabSold); }
+    @FXML void onTabAll()    { setTab("all", btnTabAll); }
+    @FXML void onTabDraft()  { setTab("draft", btnTabDraft); }
+    @FXML void onTabListed() { setTab("listed", btnTabListed); }
+    @FXML void onTabSold()   { setTab("sold", btnTabSold); }
 
-    private void setTab(String filter, Button button) {
+    void setTab(String filter, Button button) {
         currentFilter = filter;
         if (activeTab != null) {
             activeTab.getStyleClass().remove("tag-active");

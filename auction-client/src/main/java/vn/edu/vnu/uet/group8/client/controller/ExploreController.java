@@ -36,15 +36,15 @@ public class ExploreController implements Initializable {
 
     private static final Logger LOGGER = Logger.getLogger(ExploreController.class.getName());
 
-    @FXML private ComboBox<String> cbCategory;
-    @FXML private ComboBox<String> cbPrice;
-    @FXML private ComboBox<String> cbSort;
+    @FXML ComboBox<String> cbCategory;
+    @FXML ComboBox<String> cbPrice;
+    @FXML ComboBox<String> cbSort;
     
     // FIX BUG: Kiểu dữ liệu phải khớp với FXML (TilePane)
-    @FXML private TilePane productContainer; 
+    @FXML TilePane productContainer; 
     
-    @FXML private Label lblResultCount;
-    @FXML private Button btnTagOpen;
+    @FXML Label lblResultCount;
+    @FXML Button btnTagOpen;
 
     private Button activeTag;
     private String currentTagFilter = "ALL";
@@ -66,7 +66,7 @@ public class ExploreController implements Initializable {
         });
     }
 
-    private void initComboBoxes() {
+    void initComboBoxes() {
         if (cbCategory != null) {
             cbCategory.getItems().setAll("Tất cả danh mục",
                     ItemCategory.WATCHES.getLabel(), ItemCategory.ELECTRONICS.getLabel(), 
@@ -91,7 +91,7 @@ public class ExploreController implements Initializable {
         }
     }
 
-    private void bindAuctionItems() {
+    void bindAuctionItems() {
         ClientModel.getInstance().auctionItemsProperty().addListener((obs, oldList, newList) ->
                 Platform.runLater(() -> {
                     allItems.clear();
@@ -101,14 +101,14 @@ public class ExploreController implements Initializable {
         );
     }
 
-    private void loadProducts() {
+    void loadProducts() {
         if (lblResultCount != null) lblResultCount.setText("Đang tải dữ liệu...");
         AuctionService.loadAll(null, () -> {
             LOGGER.info("Data loaded from server.");
         });
     }
 
-    private void renderProducts() {
+    void renderProducts() {
         if (productContainer == null) return;
         productContainer.getChildren().clear();
 
@@ -130,7 +130,7 @@ public class ExploreController implements Initializable {
         }
     }
 
-    private void renderEmptyState(String message) {
+    void renderEmptyState(String message) {
         Label empty = new Label(message);
         empty.setStyle("-fx-text-fill: #9ca3af; -fx-font-size: 14px; -fx-padding: 50 0;");
         productContainer.getChildren().add(empty);
@@ -206,7 +206,7 @@ public class ExploreController implements Initializable {
     }
 
     @FXML
-    private void onTagClick(javafx.event.ActionEvent event) {
+    void onTagClick(javafx.event.ActionEvent event) {
         if (!(event.getSource() instanceof Button btn)) return;
         
         String tag = (String) btn.getUserData();
@@ -216,7 +216,7 @@ public class ExploreController implements Initializable {
         renderProducts();
     }
 
-    private void setActiveTag(Button target) {
+    void setActiveTag(Button target) {
         if (activeTag != null) {
             activeTag.setStyle("-fx-background-color: white; -fx-text-fill: #4b5563; -fx-border-color: #e5e7eb;");
         }

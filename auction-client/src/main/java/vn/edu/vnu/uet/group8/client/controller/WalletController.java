@@ -41,14 +41,14 @@ public class WalletController implements Initializable {
     private static final BigDecimal MIN_DEPOSIT = new BigDecimal("10000");        // 10k VND
     private static final BigDecimal MAX_DEPOSIT = new BigDecimal("100000000");    // 100tr VND
 
-    @FXML private Label lblBalance;
-    @FXML private Label lblHolding;
-    @FXML private Label lblTotalSpent;
-    @FXML private VBox transactionList;
-    @FXML private Button btnTabAll;
-    @FXML private Button btnTabDeposit;
-    @FXML private Button btnTabHold;
-    @FXML private Button btnTabPayment;
+    @FXML Label lblBalance;
+    @FXML Label lblHolding;
+    @FXML Label lblTotalSpent;
+    @FXML VBox transactionList;
+    @FXML Button btnTabAll;
+    @FXML Button btnTabDeposit;
+    @FXML Button btnTabHold;
+    @FXML Button btnTabPayment;
 
     private Button activeTab;
     private String currentFilter = "all";
@@ -63,7 +63,7 @@ public class WalletController implements Initializable {
     }
 
     /** Binding balance label voi ClientModel.balanceProperty. */
-    private void bindBalance() {
+    void bindBalance() {
         ClientModel model = ClientModel.getInstance();
         BigDecimal current = model.getBalance();
         updateBalanceLabel(current);
@@ -73,7 +73,7 @@ public class WalletController implements Initializable {
         );
     }
 
-    private void updateBalanceLabel(BigDecimal balance) {
+    void updateBalanceLabel(BigDecimal balance) {
         if (lblBalance == null) return;
         BigDecimal value = balance != null ? balance : BigDecimal.ZERO;
         lblBalance.setText(String.format("%,.0f d", value));
@@ -85,7 +85,7 @@ public class WalletController implements Initializable {
      * Nap tien: dialog input -> validate -> confirm -> goi service.
      */
     @FXML
-    private void onDeposit() {
+    void onDeposit() {
         TextInputDialog dialog = new TextInputDialog();
         dialog.setTitle("Nap tien");
         dialog.setHeaderText("Nap tien vao tai khoan");
@@ -129,7 +129,7 @@ public class WalletController implements Initializable {
      * Rut tien: chua co API -> hien dialog placeholder.
      */
     @FXML
-    private void onWithdraw() {
+    void onWithdraw() {
         TextInputDialog dialog = new TextInputDialog();
         dialog.setTitle("Rut tien");
         dialog.setHeaderText("Rut tien ve tai khoan ngan hang");
@@ -162,7 +162,7 @@ public class WalletController implements Initializable {
      * Xem lich su giao dich -> reload tab Tat ca.
      */
     @FXML
-    private void onHistory() {
+    void onHistory() {
         setTab("all", btnTabAll);
     }
 
@@ -170,7 +170,7 @@ public class WalletController implements Initializable {
      * Xem tat ca giao dich (icon "..." trong header).
      */
     @FXML
-    private void onViewAll() {
+    void onViewAll() {
         setTab("all", btnTabAll);
         // Mo dialog xem chi tiet day du
         AlertUtil.showInfo("Hien thi " + transactionList.getChildren().size() + " giao dich gan day");
@@ -178,12 +178,12 @@ public class WalletController implements Initializable {
 
     // ===== TABS =====
 
-    @FXML private void onTabAll()     { setTab("all", btnTabAll); }
-    @FXML private void onTabDeposit() { setTab("deposit", btnTabDeposit); }
-    @FXML private void onTabHold()    { setTab("hold", btnTabHold); }
-    @FXML private void onTabPayment() { setTab("payment", btnTabPayment); }
+    @FXML void onTabAll()     { setTab("all", btnTabAll); }
+    @FXML void onTabDeposit() { setTab("deposit", btnTabDeposit); }
+    @FXML void onTabHold()    { setTab("hold", btnTabHold); }
+    @FXML void onTabPayment() { setTab("payment", btnTabPayment); }
 
-    private void setTab(String filter, Button button) {
+    void setTab(String filter, Button button) {
         currentFilter = filter;
 
         // Update visual state cua tab
@@ -202,7 +202,7 @@ public class WalletController implements Initializable {
         renderTransactions();
     }
 
-    private void loadTransactions() {
+    void loadTransactions() {
         UserService.loadTransactions(list -> Platform.runLater(() -> {
             allTransactions = list != null ? list : new ArrayList<>();
             updateTotalSpent();
@@ -210,7 +210,7 @@ public class WalletController implements Initializable {
         }));
     }
 
-    private void updateTotalSpent() {
+    void updateTotalSpent() {
         if (lblTotalSpent == null) return;
         BigDecimal spent = allTransactions.stream()
                 .filter(t -> t.type() == TransactionType.BID_WIN)
@@ -219,7 +219,7 @@ public class WalletController implements Initializable {
         lblTotalSpent.setText(formatVnd(spent.abs()));
     }
 
-    private void renderTransactions() {
+    void renderTransactions() {
         if (transactionList == null) return;
 
         transactionList.getChildren().clear();

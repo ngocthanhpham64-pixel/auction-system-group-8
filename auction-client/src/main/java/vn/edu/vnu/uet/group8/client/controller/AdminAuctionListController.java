@@ -45,17 +45,17 @@ public class AdminAuctionListController implements Initializable {
 
     private static final Logger LOGGER = Logger.getLogger(AdminAuctionListController.class.getName());
 
-    @FXML private TableView<AuctionItemDTO> auctionTable;
-    @FXML private TableColumn<AuctionItemDTO, Integer> colId;
-    @FXML private TableColumn<AuctionItemDTO, String> colTitle;
-    @FXML private TableColumn<AuctionItemDTO, String> colPrice;
-    @FXML private TableColumn<AuctionItemDTO, String> colStatus;
-    @FXML private TableColumn<AuctionItemDTO, String> colEndTime;
-    @FXML private TableColumn<AuctionItemDTO, Void> colAction;
+    @FXML TableView<AuctionItemDTO> auctionTable;
+    @FXML TableColumn<AuctionItemDTO, Integer> colId;
+    @FXML TableColumn<AuctionItemDTO, String> colTitle;
+    @FXML TableColumn<AuctionItemDTO, String> colPrice;
+    @FXML TableColumn<AuctionItemDTO, String> colStatus;
+    @FXML TableColumn<AuctionItemDTO, String> colEndTime;
+    @FXML TableColumn<AuctionItemDTO, Void> colAction;
 
     // Optional fields
-    @FXML private TextField tfSearch;
-    @FXML private ComboBox<String> cbFilterStatus;
+    @FXML TextField tfSearch;
+    @FXML ComboBox<String> cbFilterStatus;
 
     private final ObservableList<AuctionItemDTO> allAuctions = FXCollections.observableArrayList();
     private FilteredList<AuctionItemDTO> filteredAuctions;
@@ -69,7 +69,7 @@ public class AdminAuctionListController implements Initializable {
         loadAuctions();
     }
 
-    private void setupTable() {
+    void setupTable() {
         colId.setCellValueFactory(new PropertyValueFactory<>("itemId"));
         colTitle.setCellValueFactory(new PropertyValueFactory<>("title"));
         colPrice.setCellValueFactory(cell ->
@@ -83,7 +83,7 @@ public class AdminAuctionListController implements Initializable {
         auctionTable.setItems(filteredAuctions);
     }
 
-    private void setupStatusColorCoding() {
+    void setupStatusColorCoding() {
         colStatus.setCellFactory(col -> new TableCell<>() {
             @Override
             protected void updateItem(String status, boolean empty) {
@@ -105,7 +105,7 @@ public class AdminAuctionListController implements Initializable {
         });
     }
 
-    private void setupActionColumn() {
+    void setupActionColumn() {
         if (colAction == null) return;
 
         colAction.setCellFactory(col -> new TableCell<>() {
@@ -135,7 +135,7 @@ public class AdminAuctionListController implements Initializable {
         });
     }
 
-    private void setupFilters() {
+    void setupFilters() {
         if (cbFilterStatus != null) {
             cbFilterStatus.getItems().setAll("Tất cả trạng thái",
                     "ACTIVE", "SOLD", "ENDED_NO_BID", "CANCELLED");
@@ -147,7 +147,7 @@ public class AdminAuctionListController implements Initializable {
         }
     }
 
-    private void applyFilters() {
+    void applyFilters() {
         if (filteredAuctions == null) return;
         String search = tfSearch != null && tfSearch.getText() != null
                 ? tfSearch.getText().toLowerCase().trim() : "";
@@ -169,7 +169,7 @@ public class AdminAuctionListController implements Initializable {
 
     // ===== LOAD =====
 
-    private void loadAuctions() {
+    void loadAuctions() {
         AdminService.getAuctions(auctions -> Platform.runLater(() -> {
             allAuctions.setAll(auctions != null ? auctions : java.util.List.of());
             LOGGER.info(() -> "Loaded " + allAuctions.size() + " auctions");
@@ -195,7 +195,7 @@ public class AdminAuctionListController implements Initializable {
     }
 
     /** Logic chung — dialog nhập lý do + confirm + gọi service. */
-    private void cancelAuction(AuctionItemDTO auction) {
+    void cancelAuction(AuctionItemDTO auction) {
         // Dialog nhập lý do
         TextInputDialog dialog = new TextInputDialog();
         dialog.setTitle("Hủy phiên đấu giá");

@@ -52,28 +52,28 @@ public class CreateItemController implements Initializable {
     private static final int MIN_DURATION = 1;
     private static final int MAX_DURATION = 168;
 
-    @FXML private TextField tfName;
-    @FXML private ComboBox<String> cbCategory;
-    @FXML private ComboBox<String> cbCondition;
-    @FXML private TextArea taDescription;
+    @FXML TextField tfName;
+    @FXML ComboBox<String> cbCategory;
+    @FXML ComboBox<String> cbCondition;
+    @FXML TextArea taDescription;
 
-    @FXML private TextField tfBrand;
-    @FXML private TextField tfModel;
-    @FXML private TextField tfYear;
-    @FXML private TextField tfMaterial;
-    @FXML private TextField tfOrigin;
+    @FXML TextField tfBrand;
+    @FXML TextField tfModel;
+    @FXML TextField tfYear;
+    @FXML TextField tfMaterial;
+    @FXML TextField tfOrigin;
 
-    @FXML private TextField tfStartPrice;
-    @FXML private TextField tfBidStep;
-    @FXML private TextField tfDurationHours;
+    @FXML TextField tfStartPrice;
+    @FXML TextField tfBidStep;
+    @FXML TextField tfDurationHours;
 
-    @FXML private CheckBox cbHasCert;
-    @FXML private VBox paneCertFields;
-    @FXML private TextField tfCertBody;
-    @FXML private TextField tfCertId;
+    @FXML CheckBox cbHasCert;
+    @FXML VBox paneCertFields;
+    @FXML TextField tfCertBody;
+    @FXML TextField tfCertId;
 
-    @FXML private Label lblError;
-    @FXML private Button btnSubmit;
+    @FXML Label lblError;
+    @FXML Button btnSubmit;
 
     // Lưu trữ các chuỗi Base64 của ảnh được tải lên
     private final List<String> base64Images = new ArrayList<>();
@@ -86,7 +86,7 @@ public class CreateItemController implements Initializable {
         setupPriceFormatting();
     }
 
-    private void initComboBoxes() {
+    void initComboBoxes() {
         if (cbCategory != null) {
             cbCategory.getItems().setAll(
                     ItemCategory.WATCHES.getLabel(), ItemCategory.ELECTRONICS.getLabel(), ItemCategory.JEWELRY.getLabel(), ItemCategory.ART.getLabel(),
@@ -102,7 +102,7 @@ public class CreateItemController implements Initializable {
     }
 
     /** Format gia VND khi user nhap (1000000 -> 1,000,000). */
-    private void setupPriceFormatting() {
+    void setupPriceFormatting() {
         if (tfStartPrice != null) {
             tfStartPrice.focusedProperty().addListener((obs, oldVal, newVal) -> {
                 if (!newVal) formatPriceField(tfStartPrice);
@@ -115,7 +115,7 @@ public class CreateItemController implements Initializable {
         }
     }
 
-    private void formatPriceField(TextField field) {
+    void formatPriceField(TextField field) {
         String input = field.getText().replaceAll("[^\\d]", "");
         if (input.isEmpty()) return;
         try {
@@ -125,7 +125,7 @@ public class CreateItemController implements Initializable {
     }
 
     @FXML
-    private void onToggleCert() {
+    void onToggleCert() {
         if (cbHasCert != null && paneCertFields != null) {
             boolean show = cbHasCert.isSelected();
             paneCertFields.setVisible(show);
@@ -133,7 +133,7 @@ public class CreateItemController implements Initializable {
         }
     }
 
-    private void hideCertPane() {
+    void hideCertPane() {
         if (paneCertFields != null) {
             paneCertFields.setVisible(false);
             paneCertFields.setManaged(false);
@@ -142,7 +142,7 @@ public class CreateItemController implements Initializable {
 
     // Gắn hàm này vào một nút "Thêm ảnh" (vd: btnAddImage) trên giao diện FXML
     @FXML
-    private void onChooseImage() {
+    void onChooseImage() {
         FileChooser fileChooser = new FileChooser();
         fileChooser.setTitle("Chọn hình ảnh sản phẩm");
         fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("Image Files", "*.png", "*.jpg", "*.jpeg"));
@@ -163,7 +163,7 @@ public class CreateItemController implements Initializable {
     // ===== SUBMIT =====
 
     @FXML
-    private void onSubmit() {
+    void onSubmit() {
         // Lay input
         String name = safeText(tfName);
         String categoryLabel = cbCategory != null ? cbCategory.getValue() : null;
@@ -291,7 +291,7 @@ public class CreateItemController implements Initializable {
         return specs;
     }
 
-    private void addSpec(Map<String, String> specs, String key, TextField field) {
+    void addSpec(Map<String, String> specs, String key, TextField field) {
         if (field == null) return;
         String value = field.getText();
         if (value != null && !value.isBlank()) {
@@ -300,17 +300,17 @@ public class CreateItemController implements Initializable {
     }
 
     @FXML
-    private void onSaveDraft() {
+    void onSaveDraft() {
         // TODO: BE bo sung endpoint luu draft (status=DRAFT)
         AlertUtil.showInfo("Tinh nang luu nhap dang phat trien");
     }
 
     @FXML
-    private void onBack() {
+    void onBack() {
         navigateToDashboard();
     }
 
-    private void navigateToDashboard() {
+    void navigateToDashboard() {
         MainController main = MainController.getInstance();
         if (main != null) {
             main.loadView("SellerDashboardView.fxml");
@@ -319,7 +319,7 @@ public class CreateItemController implements Initializable {
         }
     }
 
-    private void setLoadingState(boolean loading) {
+    void setLoadingState(boolean loading) {
         if (btnSubmit != null) {
             btnSubmit.setDisable(loading);
             btnSubmit.setText(loading ? "Dang gui..." : "Dang ban ngay");
@@ -360,14 +360,14 @@ public class CreateItemController implements Initializable {
         return amount == null ? "0 d" : String.format("%,.0f d", amount);
     }
 
-    private void showError(String msg) {
+    void showError(String msg) {
         if (lblError == null) return;
         lblError.setText(msg);
         lblError.setVisible(true);
         lblError.setManaged(true);
     }
 
-    private void hideError() {
+    void hideError() {
         if (lblError == null) return;
         lblError.setVisible(false);
         lblError.setManaged(false);

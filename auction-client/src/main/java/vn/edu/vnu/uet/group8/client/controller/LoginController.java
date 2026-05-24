@@ -33,20 +33,20 @@ public class LoginController implements Initializable {
     private static final String MOCK_USER_EMAIL  = "user@auctiva.com";
     private static final String MOCK_USER_PASS   = "123456";
 
-    @FXML private Label lblTitle, lblSubtitle;
-    @FXML private Button btnTabLogin, btnTabRegister;
-    @FXML private VBox formLogin, formRegister;
+    @FXML Label lblTitle, lblSubtitle;
+    @FXML Button btnTabLogin, btnTabRegister;
+    @FXML VBox formLogin, formRegister;
 
-    @FXML private TextField tfEmail;
-    @FXML private PasswordField pfPassword;
-    @FXML private Button btnLoginSubmit;
-    @FXML private Label lblLoginError;
+    @FXML TextField tfEmail;
+    @FXML PasswordField pfPassword;
+    @FXML Button btnLoginSubmit;
+    @FXML Label lblLoginError;
 
-    @FXML private TextField tfRegUsername, tfRegFullName, tfRegEmail, tfRegPhone;
-    @FXML private PasswordField pfRegPassword, pfRegConfirm;
-    @FXML private CheckBox cbRegTerms;
-    @FXML private Button btnRegSubmit;
-    @FXML private Label lblRegError;
+    @FXML TextField tfRegUsername, tfRegFullName, tfRegEmail, tfRegPhone;
+    @FXML PasswordField pfRegPassword, pfRegConfirm;
+    @FXML CheckBox cbRegTerms;
+    @FXML Button btnRegSubmit;
+    @FXML Label lblRegError;
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
@@ -54,12 +54,12 @@ public class LoginController implements Initializable {
         setupEnterKey();
     }
 
-    private void setupEnterKey() {
+    void setupEnterKey() {
         if (pfPassword != null) pfPassword.setOnAction(e -> onLogin());
         if (pfRegConfirm != null) pfRegConfirm.setOnAction(e -> onRegister());
     }
 
-    private void switchFormWithAnimation(VBox showForm, VBox hideForm, Runnable onFinished) {
+    void switchFormWithAnimation(VBox showForm, VBox hideForm, Runnable onFinished) {
         Timeline fadeOut = new Timeline(
                 new KeyFrame(Duration.ZERO, new KeyValue(hideForm.opacityProperty(), 1.0)),
                 new KeyFrame(Duration.millis(150), new KeyValue(hideForm.opacityProperty(), 0.0))
@@ -81,7 +81,7 @@ public class LoginController implements Initializable {
     }
 
     @FXML
-    private void onTabLogin() {
+    void onTabLogin() {
         if (formLogin.isVisible()) return;
         switchFormWithAnimation(formLogin, formRegister, () -> {
             btnTabLogin.setStyle("-fx-background-color: white; -fx-text-fill: #1a1a1a; -fx-font-weight: bold; -fx-background-radius: 10; -fx-cursor: hand; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.08), 4, 0, 0, 1);");
@@ -92,7 +92,7 @@ public class LoginController implements Initializable {
     }
 
     @FXML
-    private void onTabRegister() {
+    void onTabRegister() {
         if (formRegister.isVisible()) return;
         switchFormWithAnimation(formRegister, formLogin, () -> {
             btnTabRegister.setStyle("-fx-background-color: white; -fx-text-fill: #1a1a1a; -fx-font-weight: bold; -fx-background-radius: 10; -fx-cursor: hand; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.08), 4, 0, 0, 1);");
@@ -103,7 +103,7 @@ public class LoginController implements Initializable {
     }
 
     @FXML
-    private void onLogin() {
+    void onLogin() {
         String email = safeText(tfEmail);
         String password = pfPassword != null ? pfPassword.getText() : "";
 
@@ -133,7 +133,7 @@ public class LoginController implements Initializable {
     }
 
     @FXML
-    private void onRegister() {
+    void onRegister() {
         String username = safeText(tfRegUsername);
         String fullName = safeText(tfRegFullName);
         String email    = safeText(tfRegEmail);
@@ -181,7 +181,7 @@ public class LoginController implements Initializable {
                 || (MOCK_USER_EMAIL.equals(email) && MOCK_USER_PASS.equals(password));
     }
 
-    private void mockSessionFor(String email) {
+    void mockSessionFor(String email) {
         String token = "mock-token-" + System.currentTimeMillis();
         int userId = email.equals(MOCK_ADMIN_EMAIL) ? 1 : 2;
         String username = email.split("@")[0];
@@ -190,7 +190,7 @@ public class LoginController implements Initializable {
         SessionManager.setSession(token, userId, username, fullName, role);
     }
 
-    private void navigateAfterLogin() {
+    void navigateAfterLogin() {
         if (SessionManager.isAdmin()) {
             SceneManager.switchTo("AdminLayout.fxml");
         } else {
@@ -199,50 +199,50 @@ public class LoginController implements Initializable {
     }
 
     @FXML
-    private void onForgotPassword() {
+    void onForgotPassword() {
         showLoginError("Liên hệ admin@auctiva.com để đặt lại mật khẩu");
     }
 
     @FXML
-    private void onShowTerms() {
+    void onShowTerms() {
         AlertUtil.showInfo("ĐIỀU KHOẢN SỬ DỤNG AUCTIVA\n\n1. Cung cấp thông tin chính xác.\n2. Giao dịch có hiệu lực pháp lý.\n3. Nghiêm cấm gian lận.\n4. Tuân thủ pháp luật Việt Nam.\n5. Auctiva có quyền khóa tài khoản vi phạm.");
     }
 
-    private void setLoginLoading(boolean loading) {
+    void setLoginLoading(boolean loading) {
         if (btnLoginSubmit != null) {
             btnLoginSubmit.setDisable(loading);
             btnLoginSubmit.setText(loading ? "Đang đăng nhập..." : "Đăng nhập");
         }
     }
 
-    private void setRegLoading(boolean loading) {
+    void setRegLoading(boolean loading) {
         if (btnRegSubmit != null) {
             btnRegSubmit.setDisable(loading);
             btnRegSubmit.setText(loading ? "Đang đăng ký..." : "Đăng ký");
         }
     }
 
-    private void showLoginError(String msg) {
+    void showLoginError(String msg) {
         if (lblLoginError == null) return;
         lblLoginError.setText(msg);
         lblLoginError.setVisible(true);
         lblLoginError.setManaged(true);
     }
 
-    private void hideLoginError() {
+    void hideLoginError() {
         if (lblLoginError == null) return;
         lblLoginError.setVisible(false);
         lblLoginError.setManaged(false);
     }
 
-    private void showRegError(String msg) {
+    void showRegError(String msg) {
         if (lblRegError == null) return;
         lblRegError.setText(msg);
         lblRegError.setVisible(true);
         lblRegError.setManaged(true);
     }
 
-    private void hideRegError() {
+    void hideRegError() {
         if (lblRegError == null) return;
         lblRegError.setVisible(false);
         lblRegError.setManaged(false);
@@ -252,7 +252,7 @@ public class LoginController implements Initializable {
         return field != null ? field.getText().trim() : "";
     }
 
-    private void showLoginForm() {
+    void showLoginForm() {
         formLogin.setVisible(true);    formLogin.setManaged(true);
         formRegister.setVisible(false); formRegister.setManaged(false);
         // Set tab style trực tiếp

@@ -34,10 +34,10 @@ public class AdminDashboardController implements Initializable {
 
     private static final Logger LOGGER = Logger.getLogger(AdminDashboardController.class.getName());
 
-    @FXML private Label lblActiveAuctions;
-    @FXML private Label lblTotalUsers;
-    @FXML private Label lblRevenue;
-    @FXML private Label lblTotalBids;
+    @FXML Label lblActiveAuctions;
+    @FXML Label lblTotalUsers;
+    @FXML Label lblRevenue;
+    @FXML Label lblTotalBids;
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
@@ -46,7 +46,7 @@ public class AdminDashboardController implements Initializable {
     }
 
     /** Hiển thị placeholder khi đang load. */
-    private void showLoading() {
+    void showLoading() {
         setText(lblActiveAuctions, "--");
         setText(lblTotalUsers, "--");
         setText(lblRevenue, "--");
@@ -54,7 +54,7 @@ public class AdminDashboardController implements Initializable {
     }
 
     /** Load stats async qua AdminService. */
-    private void loadStats() {
+    void loadStats() {
         AdminService.getStats(stats -> Platform.runLater(() -> {
             if (stats == null) {
                 LOGGER.warning("Admin stats null - giu placeholder");
@@ -67,7 +67,7 @@ public class AdminDashboardController implements Initializable {
     }
 
     /** Render stats lên UI. */
-    private void displayStats(AdminStatsDTO stats) {
+    void displayStats(AdminStatsDTO stats) {
         setText(lblActiveAuctions, String.valueOf(stats.getActiveAuctions()));
         setText(lblTotalUsers, String.valueOf(stats.getTotalUsers()));
         setText(lblTotalBids, String.valueOf(stats.getTotalBids()));
@@ -78,7 +78,7 @@ public class AdminDashboardController implements Initializable {
         }
     }
 
-    private void setText(Label label, String value) {
+    void setText(Label label, String value) {
         if (label != null) label.setText(value);
     }
 }

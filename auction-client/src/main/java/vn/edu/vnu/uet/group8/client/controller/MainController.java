@@ -27,20 +27,20 @@ public class MainController implements Initializable {
 
     private static final Logger LOGGER = Logger.getLogger(MainController.class.getName());
 
-    @FXML private Button btnToggle;
-    @FXML private TextField tfSearch;
-    @FXML private Button btnExplore;
-    @FXML private Button btnLive;
-    @FXML private Label lblFavCount;
-    @FXML private Label lblNotiCount;
-    @FXML private Label lblAvatar;
-    @FXML private VBox sidebar;
-    @FXML private Button btnHome;
-    @FXML private Button btnMyAuctions;
-    @FXML private Button btnWallet;
-    @FXML private Button btnSeller;
-    @FXML private Button btnSettings;
-    @FXML private StackPane contentPane;
+    @FXML Button btnToggle;
+    @FXML TextField tfSearch;
+    @FXML Button btnExplore;
+    @FXML Button btnLive;
+    @FXML Label lblFavCount;
+    @FXML Label lblNotiCount;
+    @FXML Label lblAvatar;
+    @FXML VBox sidebar;
+    @FXML Button btnHome;
+    @FXML Button btnMyAuctions;
+    @FXML Button btnWallet;
+    @FXML Button btnSeller;
+    @FXML Button btnSettings;
+    @FXML StackPane contentPane;
 
     private Button activeNav;
     private static MainController instance;
@@ -69,7 +69,7 @@ public class MainController implements Initializable {
         this.timerScheduler = scheduler;
     }
 
-    private void bindUserInfo() {
+    void bindUserInfo() {
         ClientModel.getInstance().currentUserProperty().addListener((obs, oldUser, newUser) -> 
             Platform.runLater(() -> {
                 if (newUser != null && lblAvatar != null) {
@@ -89,7 +89,7 @@ public class MainController implements Initializable {
         }
     }
 
-    private void bindBadges() {
+    void bindBadges() {
         ClientModel model = ClientModel.getInstance();
         if (lblFavCount != null) {
             updateFavBadge(model.getFavCount());
@@ -105,21 +105,21 @@ public class MainController implements Initializable {
         }
     }
 
-    private void updateFavBadge(int count) {
+    void updateFavBadge(int count) {
         if (lblFavCount == null) return;
         lblFavCount.setText(String.valueOf(count));
         lblFavCount.setVisible(count > 0);
         lblFavCount.setManaged(count > 0);
     }
 
-    private void updateNotiBadge(int count) {
+    void updateNotiBadge(int count) {
         if (lblNotiCount == null) return;
         lblNotiCount.setText(String.valueOf(count));
         lblNotiCount.setVisible(count > 0);
         lblNotiCount.setManaged(count > 0);
     }
 
-    private void setupSearch() {
+    void setupSearch() {
         if (tfSearch == null) return;
         tfSearch.setOnAction(e -> {
             String query = tfSearch.getText().trim();
@@ -142,7 +142,7 @@ public class MainController implements Initializable {
         }
     }
 
-    private void setActiveNav(Button target) {
+    void setActiveNav(Button target) {
         if (target == null) return;
         if (activeNav != null) {
             activeNav.getStyleClass().remove("nav-item-active");
@@ -158,7 +158,7 @@ public class MainController implements Initializable {
     }
 
     @FXML
-    private void onLogout() {
+    void onLogout() {
         boolean ok = AlertUtil.showConfirm("Xác nhận", "Bạn có chắc chắn muốn đăng xuất?");
         if (!ok) return;
 
@@ -169,7 +169,7 @@ public class MainController implements Initializable {
     /** 
      * Don dep tai nguyen truoc khi thoat de tránh Memory Leak.
      */
-    private void cleanupResources() {
+    void cleanupResources() {
         if (timerScheduler != null) {
             try {
                 timerScheduler.shutdownNow();
@@ -182,7 +182,7 @@ public class MainController implements Initializable {
     }
 
     @FXML
-    private void onNavClick(javafx.event.ActionEvent event) {
+    void onNavClick(javafx.event.ActionEvent event) {
         Object source = event.getSource();
         if (!(source instanceof Button btn)) return;
 
@@ -202,9 +202,9 @@ public class MainController implements Initializable {
         }
     }
 
-    @FXML private void onLogoClick()         { setActiveNav(btnHome); loadView(SceneManager.VIEW_EXPLORE); }
-    @FXML private void onFavoriteClick()     { loadView(SceneManager.VIEW_FAVORITES); }
-    @FXML private void onNotificationClick() { loadView(SceneManager.VIEW_NOTIFICATIONS); }
-    @FXML private void onProfileClick()      { loadView(SceneManager.VIEW_PROFILE); }
-    @FXML private void onToggleSidebar()     { sidebar.setVisible(!sidebar.isVisible()); sidebar.setManaged(sidebar.isVisible()); }
+    @FXML void onLogoClick()         { setActiveNav(btnHome); loadView(SceneManager.VIEW_EXPLORE); }
+    @FXML void onFavoriteClick()     { loadView(SceneManager.VIEW_FAVORITES); }
+    @FXML void onNotificationClick() { loadView(SceneManager.VIEW_NOTIFICATIONS); }
+    @FXML void onProfileClick()      { loadView(SceneManager.VIEW_PROFILE); }
+    @FXML void onToggleSidebar()     { sidebar.setVisible(!sidebar.isVisible()); sidebar.setManaged(sidebar.isVisible()); }
 }

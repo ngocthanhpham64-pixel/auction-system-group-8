@@ -37,7 +37,7 @@ public class AdminController implements Initializable {
     private static AdminController instance;
     public static AdminController getInstance() { return instance; }
 
-    @FXML private StackPane contentPane;
+    @FXML StackPane contentPane;
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
@@ -50,7 +50,7 @@ public class AdminController implements Initializable {
     /**
      * Bảo vệ — nếu không phải admin thì kick về Login.
      */
-    private void verifyAdminAccess() {
+    void verifyAdminAccess() {
         if (!SessionManager.isAdmin()) {
             LOGGER.warning("Khong phai admin nhung vao duoc AdminLayout - kick ve Login");
             AlertUtil.showError("Ban khong co quyen truy cap Admin Console");

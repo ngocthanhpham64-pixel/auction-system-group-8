@@ -46,21 +46,21 @@ public class SettingsController implements Initializable {
     private static final Pattern EMAIL_PATTERN = Pattern.compile("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+$");
     private static final Pattern PHONE_PATTERN = Pattern.compile("^0\\d{9}$");
 
-    @FXML private Label lblFullName;
-    @FXML private Label lblEmail;
-    @FXML private Label lblPhone;
-    @FXML private Label lblAddress;
-    @FXML private Label lblBirthday;
-    @FXML private Label lblDepositLimit;
-    @FXML private Label lblPaymentMethod;
-    @FXML private Label lbl2FA;
+    @FXML Label lblFullName;
+    @FXML Label lblEmail;
+    @FXML Label lblPhone;
+    @FXML Label lblAddress;
+    @FXML Label lblBirthday;
+    @FXML Label lblDepositLimit;
+    @FXML Label lblPaymentMethod;
+    @FXML Label lbl2FA;
 
-    @FXML private CheckBox cbEmailEnding;
-    @FXML private CheckBox cbEmailOutbid;
-    @FXML private CheckBox cbEmailPromo;
-    @FXML private CheckBox cbPushNoti;
-    @FXML private CheckBox cbDarkMode;
-    @FXML private ComboBox<String> cbLanguage;
+    @FXML CheckBox cbEmailEnding;
+    @FXML CheckBox cbEmailOutbid;
+    @FXML CheckBox cbEmailPromo;
+    @FXML CheckBox cbPushNoti;
+    @FXML CheckBox cbDarkMode;
+    @FXML ComboBox<String> cbLanguage;
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
@@ -70,7 +70,7 @@ public class SettingsController implements Initializable {
     }
 
     /** Load user info tu SessionManager. */
-    private void loadUserInfo() {
+    void loadUserInfo() {
         if (lblFullName != null && SessionManager.getFullName() != null) {
             lblFullName.setText(SessionManager.getFullName());
         }
@@ -78,7 +78,7 @@ public class SettingsController implements Initializable {
     }
 
     /** Load preferences da save -> set checkbox + combobox state. */
-    private void loadPreferences() {
+    void loadPreferences() {
         if (cbDarkMode != null) {
             cbDarkMode.setSelected(PREFS.getBoolean(PREF_DARK_MODE, false));
         }
@@ -96,7 +96,7 @@ public class SettingsController implements Initializable {
         }
     }
 
-    private void setupLanguageOptions() {
+    void setupLanguageOptions() {
         if (cbLanguage == null) return;
         cbLanguage.getItems().setAll("Tieng Viet", "English");
         String saved = PREFS.get(PREF_LANGUAGE, "Tieng Viet");
@@ -106,47 +106,47 @@ public class SettingsController implements Initializable {
     // ===== EDIT THONG TIN CA NHAN =====
 
     @FXML
-    private void onEditFullName() {
+    void onEditFullName() {
         editField("Ho ten", lblFullName, value -> value.length() >= 2,
                 "Ho ten phai co it nhat 2 ky tu");
     }
 
     @FXML
-    private void onChangeEmail() {
+    void onChangeEmail() {
         editField("Email", lblEmail,
                 value -> EMAIL_PATTERN.matcher(value).matches(),
                 "Email khong hop le");
     }
 
     @FXML
-    private void onChangePhone() {
+    void onChangePhone() {
         editField("So dien thoai", lblPhone,
                 value -> PHONE_PATTERN.matcher(value).matches(),
                 "SDT phai co 10 so, bat dau bang 0");
     }
 
     @FXML
-    private void onEditAddress() {
+    void onEditAddress() {
         editField("Dia chi", lblAddress,
                 value -> value.length() >= 5,
                 "Dia chi qua ngan");
     }
 
     @FXML
-    private void onEditBirthday() {
+    void onEditBirthday() {
         editField("Ngay sinh", lblBirthday,
                 value -> value.matches("\\d{2}/\\d{2}/\\d{4}"),
                 "Dinh dang: dd/MM/yyyy");
     }
 
     @FXML
-    private void onEditDepositLimit() {
+    void onEditDepositLimit() {
         editField("Han muc nap (VND)", lblDepositLimit,
                 value -> value.replaceAll("[^\\d]", "").matches("\\d+"),
                 "Phai la so");
     }
 
-    private void syncProfileToServer() {
+    void syncProfileToServer() {
         String fullname = lblFullName != null ? lblFullName.getText() : "";
         String phone = lblPhone != null ? lblPhone.getText() : "";
         String address = lblAddress != null ? lblAddress.getText() : "";
@@ -172,7 +172,7 @@ public class SettingsController implements Initializable {
      * @param validator function check value hop le
      * @param errorMsg loi neu validate fail
      */
-    private void editField(String fieldLabel, Label targetLabel,
+    void editField(String fieldLabel, Label targetLabel,
                            java.util.function.Predicate<String> validator, String errorMsg) {
         TextInputDialog dialog = new TextInputDialog(
                 targetLabel != null ? targetLabel.getText() : "");
@@ -205,7 +205,7 @@ public class SettingsController implements Initializable {
     // ===== BAO MAT =====
 
     @FXML
-    private void onChangePassword() {
+    void onChangePassword() {
         // Dialog 3 buoc: old / new / confirm
         TextInputDialog oldDialog = new TextInputDialog();
         oldDialog.setTitle("Doi mat khau");
@@ -248,7 +248,7 @@ public class SettingsController implements Initializable {
     }
 
     @FXML
-    private void onManage2FA() {
+    void onManage2FA() {
         boolean isOn = lbl2FA != null && "Da bat".equalsIgnoreCase(lbl2FA.getText());
         boolean confirm = AlertUtil.showConfirm("2FA",
                 isOn ? "Tat xac thuc 2 yeu to?" : "Bat xac thuc 2 yeu to?");
@@ -261,33 +261,33 @@ public class SettingsController implements Initializable {
     }
 
     @FXML
-    private void onManagePayment() {
+    void onManagePayment() {
         AlertUtil.showInfo("Quan ly phuong thuc thanh toan dang phat trien");
     }
 
     // ===== TOGGLE NOTIFICATION =====
 
     @FXML
-    private void onToggleEmailEnding() {
+    void onToggleEmailEnding() {
         savePreference(PREF_EMAIL_ENDING, cbEmailEnding.isSelected(), "Email ket thuc dau gia");
     }
 
     @FXML
-    private void onToggleEmailOutbid() {
+    void onToggleEmailOutbid() {
         savePreference(PREF_EMAIL_OUTBID, cbEmailOutbid.isSelected(), "Email bi outbid");
     }
 
     @FXML
-    private void onToggleEmailPromo() {
+    void onToggleEmailPromo() {
         savePreference(PREF_EMAIL_PROMO, cbEmailPromo.isSelected(), "Email khuyen mai");
     }
 
     @FXML
-    private void onTogglePush() {
+    void onTogglePush() {
         savePreference(PREF_PUSH_NOTI, cbPushNoti.isSelected(), "Push notification");
     }
 
-    private void savePreference(String key, boolean value, String label) {
+    void savePreference(String key, boolean value, String label) {
         PREFS.putBoolean(key, value);
         LOGGER.info(() -> label + " = " + value);
     }
@@ -298,7 +298,7 @@ public class SettingsController implements Initializable {
      * Dark mode THUC SU: thay doi stylesheet cua Scene + persist.
      */
     @FXML
-    private void onToggleDarkMode() {
+    void onToggleDarkMode() {
         boolean dark = cbDarkMode.isSelected();
         Scene scene = cbDarkMode.getScene();
         if (scene == null) return;
@@ -328,7 +328,7 @@ public class SettingsController implements Initializable {
     }
 
     @FXML
-    private void onChangeLanguage() {
+    void onChangeLanguage() {
         if (cbLanguage == null) return;
         String selected = cbLanguage.getValue();
         if (selected == null) return;
@@ -341,7 +341,7 @@ public class SettingsController implements Initializable {
     // ===== VUNG NGUY HIEM =====
 
     @FXML
-    private void onDeleteAccount() {
+    void onDeleteAccount() {
         // 2 buoc xac nhan
         boolean firstConfirm = AlertUtil.showConfirm("Xoa tai khoan",
                 "Ban co chac muon xoa tai khoan?\nHanh dong nay KHONG the hoan tac.");

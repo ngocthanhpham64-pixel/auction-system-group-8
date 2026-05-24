@@ -19,12 +19,13 @@
     <gson.version>2.10.1</gson.version>
     <javafx.version>17.0.6</javafx.version>
     <junit.jupiter.version>5.10.0</junit.jupiter.version>
+    <mockito.version>5.11.0</mockito.version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
   </properties>
 
   <dependencies>
 
-    <!-- Module chung của dự án -->
+    <!-- Common module -->
     <dependency>
       <groupId>vn.edu.vnu.uet.group8</groupId>
       <artifactId>auction-common</artifactId>
@@ -44,6 +45,14 @@
       <version>${javafx.version}</version>
     </dependency>
 
+    <!-- Needed for JFXPanel in tests -->
+    <dependency>
+      <groupId>org.openjfx</groupId>
+      <artifactId>javafx-swing</artifactId>
+      <version>${javafx.version}</version>
+      <scope>test</scope>
+    </dependency>
+
     <!-- Gson -->
     <dependency>
       <groupId>com.google.code.gson</groupId>
@@ -59,11 +68,25 @@
       <scope>test</scope>
     </dependency>
 
+    <!-- Mockito -->
+    <dependency>
+      <groupId>org.mockito</groupId>
+      <artifactId>mockito-core</artifactId>
+      <version>${mockito.version}</version>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.mockito</groupId>
+      <artifactId>mockito-junit-jupiter</artifactId>
+      <version>${mockito.version}</version>
+      <scope>test</scope>
+    </dependency>
+
   </dependencies>
 
   <build>
 
-    <!-- Copy resources -->
     <resources>
       <resource>
         <directory>src/main/resources</directory>
@@ -75,7 +98,7 @@
 
     <plugins>
 
-      <!-- Java compiler -->
+      <!-- Compiler -->
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-compiler-plugin</artifactId>
@@ -83,6 +106,17 @@
 
         <configuration>
           <release>17</release>
+        </configuration>
+      </plugin>
+
+      <!-- Surefire -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <version>3.2.5</version>
+
+        <configuration>
+          <useModulePath>false</useModulePath>
         </configuration>
       </plugin>
 
@@ -99,7 +133,7 @@
         </configuration>
       </plugin>
 
-      <!-- JaCoCo Coverage -->
+      <!-- JaCoCo -->
       <plugin>
         <groupId>org.jacoco</groupId>
         <artifactId>jacoco-maven-plugin</artifactId>
@@ -107,14 +141,12 @@
 
         <executions>
 
-          <!-- attach java agent -->
           <execution>
             <goals>
               <goal>prepare-agent</goal>
             </goals>
           </execution>
 
-          <!-- generate report -->
           <execution>
             <id>report</id>
             <phase>test</phase>

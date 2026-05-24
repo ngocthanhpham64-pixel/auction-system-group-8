@@ -32,12 +32,12 @@ public class NotificationController implements Initializable {
 
     private static final Logger LOGGER = Logger.getLogger(NotificationController.class.getName());
 
-    @FXML private VBox notificationList;
-    @FXML private Label lblNewCount;
-    @FXML private Button btnTabAll;
-    @FXML private Button btnTabUnread;
-    @FXML private Button btnTabAuction;
-    @FXML private Button btnTabSystem;
+    @FXML VBox notificationList;
+    @FXML Label lblNewCount;
+    @FXML Button btnTabAll;
+    @FXML Button btnTabUnread;
+    @FXML Button btnTabAuction;
+    @FXML Button btnTabSystem;
 
     private Button activeTab;
     private String currentFilter = "all";
@@ -50,7 +50,7 @@ public class NotificationController implements Initializable {
     }
 
     /** Binding voi ClientModel -> tu re-render khi co notif moi. */
-    private void bindNotifications() {
+    void bindNotifications() {
         ClientModel.getInstance().notificationsProperty().addListener((obs, oldList, newList) ->
                 Platform.runLater(this::renderFromModel)
         );
@@ -60,7 +60,7 @@ public class NotificationController implements Initializable {
         );
     }
 
-    private void loadNotifications() {
+    void loadNotifications() {
         NotificationService.loadAll(
                 list -> {
                     LOGGER.info(() -> "Tai " + list.size() + " thong bao");
@@ -73,12 +73,12 @@ public class NotificationController implements Initializable {
         );
     }
 
-    private void renderFromModel() {
+    void renderFromModel() {
         List<NotificationDTO> all = ClientModel.getInstance().getNotifications();
         render(all);
     }
 
-    private void render(List<NotificationDTO> all) {
+    void render(List<NotificationDTO> all) {
         if (notificationList == null) return;
         notificationList.getChildren().clear();
 
@@ -108,7 +108,7 @@ public class NotificationController implements Initializable {
         updateNewCount((int) unread);
     }
 
-    private void renderEmpty() {
+    void renderEmpty() {
         notificationList.getChildren().clear();
         Label empty = new Label("Chua co thong bao nao");
         empty.getStyleClass().add("label-info");
@@ -116,7 +116,7 @@ public class NotificationController implements Initializable {
         updateNewCount(0);
     }
 
-    private void updateNewCount(int count) {
+    void updateNewCount(int count) {
         if (lblNewCount == null) return;
         lblNewCount.setText(count + " moi");
         lblNewCount.setVisible(count > 0);
@@ -164,7 +164,7 @@ public class NotificationController implements Initializable {
     // ===== ACTIONS =====
 
     /** Danh dau 1 notif la da doc. */
-    private void markAsRead(int notifId) {
+    void markAsRead(int notifId) {
         NotificationService.markRead(notifId,
                 () -> {
                     LOGGER.fine(() -> "Marked read: " + notifId);
@@ -175,7 +175,7 @@ public class NotificationController implements Initializable {
 
     /** Danh dau TAT CA la da doc. */
     @FXML
-    private void onMarkAllRead() {
+    void onMarkAllRead() {
         List<NotificationDTO> unread = ClientModel.getInstance().getNotifications()
                 .stream().filter(n -> !n.isRead()).toList();
 
@@ -195,7 +195,7 @@ public class NotificationController implements Initializable {
     }
 
     @FXML
-    private void onClearRead() {
+    void onClearRead() {
         boolean ok = AlertUtil.showConfirm("Xac nhan",
                 "Xoa tat ca thong bao da doc?");
         if (!ok) return;
@@ -203,19 +203,19 @@ public class NotificationController implements Initializable {
     }
 
     @FXML
-    private void onDeleteNotification() {
+    void onDeleteNotification() {
         // Được gọi nếu có nút xóa tất cả (tùy chọn UI FXML)
         AlertUtil.showInfo("Tính năng xóa hàng loạt đang phát triển");
     }
 
     @FXML
-    private void onViewDetail() {
+    void onViewDetail() {
         LOGGER.fine("onViewDetail triggered");
         AlertUtil.showInfo("Chi tiet thong bao se hien o day");
     }
 
     @FXML
-    private void onBidNow() {
+    void onBidNow() {
         // Tu thong bao -> nhay sang trang dau gia
         // Can context notif co itemId
         LOGGER.info("Dau gia ngay tu thong bao");
@@ -224,12 +224,12 @@ public class NotificationController implements Initializable {
 
     // ===== TABS =====
 
-    @FXML private void onTabAll()     { setTab("all", btnTabAll); }
-    @FXML private void onTabUnread()  { setTab("unread", btnTabUnread); }
-    @FXML private void onTabAuction() { setTab("auction", btnTabAuction); }
-    @FXML private void onTabSystem()  { setTab("system", btnTabSystem); }
+    @FXML void onTabAll()     { setTab("all", btnTabAll); }
+    @FXML void onTabUnread()  { setTab("unread", btnTabUnread); }
+    @FXML void onTabAuction() { setTab("auction", btnTabAuction); }
+    @FXML void onTabSystem()  { setTab("system", btnTabSystem); }
 
-    private void setTab(String filter, Button button) {
+    void setTab(String filter, Button button) {
         currentFilter = filter;
         if (activeTab != null) {
             activeTab.getStyleClass().remove("tag-active");

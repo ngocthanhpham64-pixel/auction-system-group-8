@@ -39,37 +39,37 @@ public class AuctionDetailController implements Initializable {
     private static final Logger LOGGER = Logger.getLogger(AuctionDetailController.class.getName());
 
     // ===== FXML — info =====
-    @FXML private ImageView imgMain;
-    @FXML private Label lblCategory;
-    @FXML private Label lblCurrentPrice;
-    @FXML private Label lblBidStats;
-    @FXML private Label lblMinBid;
-    @FXML private Label lblDescription;
-    @FXML private Label lblCondition;
-    @FXML private Label lblBrand;
-    @FXML private Label lblMaterial;
-    @FXML private Label lblCertificate;
+    @FXML ImageView imgMain;
+    @FXML Label lblCategory;
+    @FXML Label lblCurrentPrice;
+    @FXML Label lblBidStats;
+    @FXML Label lblMinBid;
+    @FXML Label lblDescription;
+    @FXML Label lblCondition;
+    @FXML Label lblBrand;
+    @FXML Label lblMaterial;
+    @FXML Label lblCertificate;
 
     // ===== FXML — countdown =====
-    @FXML private Label lblHours;
-    @FXML private Label lblMinutes;
-    @FXML private Label lblSeconds;
+    @FXML Label lblHours;
+    @FXML Label lblMinutes;
+    @FXML Label lblSeconds;
 
     // ===== FXML — bid =====
-    @FXML private TextField tfBidAmount;
-    @FXML private TextField tfMaxPrice;
-    @FXML private VBox bidHistory;
-    @FXML private VBox paneAuto;
-    @FXML private Button btnAutoToggle;
-    @FXML private Label lblAutoStep;
+    @FXML TextField tfBidAmount;
+    @FXML TextField tfMaxPrice;
+    @FXML VBox bidHistory;
+    @FXML VBox paneAuto;
+    @FXML Button btnAutoToggle;
+    @FXML Label lblAutoStep;
 
     // ===== FXML — tabs =====
-    @FXML private Button btnTabDesc;
-    @FXML private Button btnTabSpec;
-    @FXML private Button btnTabOrigin;
-    @FXML private Button btnThumb1;
-    @FXML private Button btnThumb2;
-    @FXML private Button btnThumb3;
+    @FXML Button btnTabDesc;
+    @FXML Button btnTabSpec;
+    @FXML Button btnTabOrigin;
+    @FXML Button btnThumb1;
+    @FXML Button btnThumb2;
+    @FXML Button btnThumb3;
 
     // ===== STATE =====
     private AuctionItemDTO currentItem;
@@ -87,7 +87,7 @@ public class AuctionDetailController implements Initializable {
     }
 
     /** Lay item dang xem tu ClientModel (set khi click ProductCard). */
-    private void loadItemFromModel() {
+    void loadItemFromModel() {
         currentItem = ClientModel.getInstance().getCurrentAuctionItem();
         if (currentItem != null) {
             displayItemInfo();
@@ -97,7 +97,7 @@ public class AuctionDetailController implements Initializable {
         }
     }
 
-    private void displayItemInfo() {
+    void displayItemInfo() {
         if (currentItem == null) return;
 
         if (lblCategory != null && currentItem.getCategory() != null) {
@@ -114,7 +114,7 @@ public class AuctionDetailController implements Initializable {
     }
 
     /** Tinh nang #4 — hien cert info. */
-    private void displayCertInfo() {
+    void displayCertInfo() {
         if (lblCertificate == null || currentItem == null) return;
 
         // AuctionItemDTO hiện chưa chứa thông tin chứng nhận (Certificate)
@@ -134,7 +134,7 @@ public class AuctionDetailController implements Initializable {
 
     // ===== COUNTDOWN =====
 
-    private void startCountdown() {
+    void startCountdown() {
         if (currentItem != null && currentItem.getEndTime() != null) {
             long seconds = currentItem.getEndTime().getEpochSecond() - Instant.now().getEpochSecond();
             remainSeconds = seconds > 0 ? (int) seconds : 0;
@@ -147,7 +147,7 @@ public class AuctionDetailController implements Initializable {
         countdown.play();
     }
 
-    private void tick() {
+    void tick() {
         if (remainSeconds <= 0) {
             countdown.stop();
             setTimeDisplay(0, 0, 0);
@@ -161,13 +161,13 @@ public class AuctionDetailController implements Initializable {
         setTimeDisplay(h, m, s);
     }
 
-    private void setTimeDisplay(int h, int m, int s) {
+    void setTimeDisplay(int h, int m, int s) {
         if (lblHours != null)   lblHours.setText(String.format("%02d", h));
         if (lblMinutes != null) lblMinutes.setText(String.format("%02d", m));
         if (lblSeconds != null) lblSeconds.setText(String.format("%02d", s));
     }
 
-    private void onAuctionEnded() {
+    void onAuctionEnded() {
         LOGGER.info("Phien dau gia ket thuc");
         if (tfBidAmount != null) tfBidAmount.setDisable(true);
     }
@@ -175,7 +175,7 @@ public class AuctionDetailController implements Initializable {
     // ===== ĐẶT GIÁ =====
 
     @FXML
-    private void onBidNow() {
+    void onBidNow() {
         if (currentItem == null) {
             // Khong co item that -> demo mode
             BigDecimal demoAmount = parseBidInput();
@@ -216,11 +216,11 @@ public class AuctionDetailController implements Initializable {
         });
     }
 
-    @FXML private void onQuickBid1() { setBidInput(currentPrice.add(new BigDecimal("10000000"))); }
-    @FXML private void onQuickBid2() { setBidInput(currentPrice.add(new BigDecimal("20000000"))); }
-    @FXML private void onQuickBid3() { setBidInput(currentPrice.add(new BigDecimal("50000000"))); }
+    @FXML void onQuickBid1() { setBidInput(currentPrice.add(new BigDecimal("10000000"))); }
+    @FXML void onQuickBid2() { setBidInput(currentPrice.add(new BigDecimal("20000000"))); }
+    @FXML void onQuickBid3() { setBidInput(currentPrice.add(new BigDecimal("50000000"))); }
 
-    private void setBidInput(BigDecimal amount) {
+    void setBidInput(BigDecimal amount) {
         if (tfBidAmount != null) {
             tfBidAmount.setText(formatPrice(amount));
         }
@@ -241,7 +241,7 @@ public class AuctionDetailController implements Initializable {
         }
     }
 
-    private void updatePriceDisplay() {
+    void updatePriceDisplay() {
         if (lblCurrentPrice != null) {
             lblCurrentPrice.setText(formatPrice(currentPrice));
         }
@@ -253,7 +253,7 @@ public class AuctionDetailController implements Initializable {
     // ===== AUTO-BID =====
 
     @FXML
-    private void onToggleAuto() {
+    void onToggleAuto() {
         if (paneAuto == null || btnAutoToggle == null) return;
         boolean show = !paneAuto.isVisible();
         paneAuto.setVisible(show);
@@ -262,7 +262,7 @@ public class AuctionDetailController implements Initializable {
     }
 
     @FXML
-    private void onActivateAuto() {
+    void onActivateAuto() {
         if (currentItem == null) {
             AlertUtil.showWarning("Khong co san pham de dat auto-bid");
             return;
@@ -297,7 +297,7 @@ public class AuctionDetailController implements Initializable {
     // ===== FAVORITE / SHARE / BACK =====
 
     @FXML
-    private void onFavorite() {
+    void onFavorite() {
         if (currentItem == null) return;
         boolean isFav = ClientModel.getInstance().isFavorite(currentItem.getItemId());
         if (isFav) {
@@ -312,23 +312,23 @@ public class AuctionDetailController implements Initializable {
     }
 
     @FXML
-    private void onShare() {
+    void onShare() {
         AlertUtil.showInfo("Link da copy vao clipboard\n(Tinh nang dang phat trien)");
     }
 
     @FXML
-    private void onBack() {
+    void onBack() {
         LOGGER.fine("Quay lai trang Explore");
         // Don't directly switch — let parent MainController handle
     }
 
     // ===== TABS — chuyen noi dung that =====
 
-    @FXML private void onTabDesc()   { switchTab("desc", btnTabDesc); }
-    @FXML private void onTabSpec()   { switchTab("spec", btnTabSpec); }
-    @FXML private void onTabOrigin() { switchTab("origin", btnTabOrigin); }
+    @FXML void onTabDesc()   { switchTab("desc", btnTabDesc); }
+    @FXML void onTabSpec()   { switchTab("spec", btnTabSpec); }
+    @FXML void onTabOrigin() { switchTab("origin", btnTabOrigin); }
 
-    private void switchTab(String tab, Button button) {
+    void switchTab(String tab, Button button) {
         // Update visual state
         if (activeTabBtn != null) {
             activeTabBtn.getStyleClass().remove("tab-active");
@@ -349,11 +349,11 @@ public class AuctionDetailController implements Initializable {
 
     // ===== THUMBNAILS — switch main image =====
 
-    @FXML private void onThumb1() { switchThumb(1); }
-    @FXML private void onThumb2() { switchThumb(2); }
-    @FXML private void onThumb3() { switchThumb(3); }
+    @FXML void onThumb1() { switchThumb(1); }
+    @FXML void onThumb2() { switchThumb(2); }
+    @FXML void onThumb3() { switchThumb(3); }
 
-    private void switchThumb(int index) {
+    void switchThumb(int index) {
         LOGGER.fine(() -> "Switch thumb: " + index);
         // imgMain.setImage(...) khi co URL anh thumbnail
         // Hien tai FXML co data demo

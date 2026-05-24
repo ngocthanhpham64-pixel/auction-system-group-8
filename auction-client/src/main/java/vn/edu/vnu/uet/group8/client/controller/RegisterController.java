@@ -42,18 +42,18 @@ public class RegisterController implements Initializable {
     private static final Pattern USERNAME_PATTERN = Pattern.compile("^[A-Za-z0-9_]{3,20}$");
     private static final Pattern PASSWORD_PATTERN = Pattern.compile("^(?=.*[A-Za-z])(?=.*\\d).{8,}$");
 
-    @FXML private TextField tfUsername;
-    @FXML private TextField tfFullName;
-    @FXML private TextField tfEmail;
-    @FXML private TextField tfPhone;
-    @FXML private PasswordField pfPassword;
-    @FXML private PasswordField pfConfirmPassword;
-    @FXML private CheckBox cbTerms;
-    @FXML private Hyperlink linkTerms;
-    @FXML private Label lblError;
-    @FXML private Button btnSubmit;
-    @FXML private Button btnTabLogin;
-    @FXML private Button btnTabRegister;
+    @FXML TextField tfUsername;
+    @FXML TextField tfFullName;
+    @FXML TextField tfEmail;
+    @FXML TextField tfPhone;
+    @FXML PasswordField pfPassword;
+    @FXML PasswordField pfConfirmPassword;
+    @FXML CheckBox cbTerms;
+    @FXML Hyperlink linkTerms;
+    @FXML Label lblError;
+    @FXML Button btnSubmit;
+    @FXML Button btnTabLogin;
+    @FXML Button btnTabRegister;
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
@@ -61,14 +61,14 @@ public class RegisterController implements Initializable {
         setupEnterKeySubmit();
     }
 
-    private void setupEnterKeySubmit() {
+    void setupEnterKeySubmit() {
         if (pfConfirmPassword != null) {
             pfConfirmPassword.setOnAction(e -> onRegister());
         }
     }
 
     @FXML
-    private void onRegister() {
+    void onRegister() {
         // Lay tat ca input
         String username = safeText(tfUsername);
         String fullName = safeText(tfFullName);
@@ -146,17 +146,17 @@ public class RegisterController implements Initializable {
     }
 
     @FXML
-    private void onTabLogin() {
+    void onTabLogin() {
         SceneManager.switchTo(SceneManager.VIEW_LOGIN);
     }
 
     @FXML
-    private void onTabRegister() {
+    void onTabRegister() {
         // Da o RegisterView
     }
 
     @FXML
-    private void onShowTerms() {
+    void onShowTerms() {
         AlertUtil.showInfo(
                 "DIEU KHOAN SU DUNG AUCTIVA\n\n"
                         + "1. Nguoi dung cam ket cung cap thong tin chinh xac.\n\n"
@@ -167,7 +167,7 @@ public class RegisterController implements Initializable {
         );
     }
 
-    private void setLoadingState(boolean loading) {
+    void setLoadingState(boolean loading) {
         if (btnSubmit == null) return;
         btnSubmit.setDisable(loading);
         btnSubmit.setText(loading ? "Dang dang ky..." : "Dang ky");
@@ -181,14 +181,14 @@ public class RegisterController implements Initializable {
         return text != null ? text.trim() : "";
     }
 
-    private void showError(String message) {
+    void showError(String message) {
         if (lblError == null) return;
         lblError.setText(message);
         lblError.setVisible(true);
         lblError.setManaged(true);
     }
 
-    private void hideError() {
+    void hideError() {
         if (lblError == null) return;
         lblError.setVisible(false);
         lblError.setManaged(false);

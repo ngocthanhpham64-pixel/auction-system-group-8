@@ -43,18 +43,18 @@ public class AdminUserListController implements Initializable {
 
     private static final Logger LOGGER = Logger.getLogger(AdminUserListController.class.getName());
 
-    @FXML private TableView<UserAdminDTO> userTable;
-    @FXML private TableColumn<UserAdminDTO, Integer> colId;
-    @FXML private TableColumn<UserAdminDTO, String> colUsername;
-    @FXML private TableColumn<UserAdminDTO, String> colEmail;
-    @FXML private TableColumn<UserAdminDTO, String> colRole;
-    @FXML private TableColumn<UserAdminDTO, String> colStatus;
-    @FXML private TableColumn<UserAdminDTO, Void> colAction;
+    @FXML TableView<UserAdminDTO> userTable;
+    @FXML TableColumn<UserAdminDTO, Integer> colId;
+    @FXML TableColumn<UserAdminDTO, String> colUsername;
+    @FXML TableColumn<UserAdminDTO, String> colEmail;
+    @FXML TableColumn<UserAdminDTO, String> colRole;
+    @FXML TableColumn<UserAdminDTO, String> colStatus;
+    @FXML TableColumn<UserAdminDTO, Void> colAction;
 
     // Optional FXML fields - chỉ render nếu FXML có
-    @FXML private TextField tfSearch;
-    @FXML private ComboBox<String> cbFilterRole;
-    @FXML private ComboBox<String> cbFilterStatus;
+    @FXML TextField tfSearch;
+    @FXML ComboBox<String> cbFilterRole;
+    @FXML ComboBox<String> cbFilterStatus;
 
     private final ObservableList<UserAdminDTO> allUsers = FXCollections.observableArrayList();
     private FilteredList<UserAdminDTO> filteredUsers;
@@ -69,7 +69,7 @@ public class AdminUserListController implements Initializable {
     }
 
     /** Setup các cột data cơ bản. */
-    private void setupTable() {
+    void setupTable() {
         colId.setCellValueFactory(new PropertyValueFactory<>("id"));
         colUsername.setCellValueFactory(new PropertyValueFactory<>("username"));
         colEmail.setCellValueFactory(new PropertyValueFactory<>("email"));
@@ -81,7 +81,7 @@ public class AdminUserListController implements Initializable {
     }
 
     /** Status color-coded: green/orange/red. */
-    private void setupStatusColorCoding() {
+    void setupStatusColorCoding() {
         colStatus.setCellFactory(col -> new TableCell<>() {
             @Override
             protected void updateItem(String status, boolean empty) {
@@ -103,7 +103,7 @@ public class AdminUserListController implements Initializable {
     }
 
     /** colAction render 3 button per row. */
-    private void setupActionColumn() {
+    void setupActionColumn() {
         if (colAction == null) return;  // FXML cũ có thể không có colAction
 
         colAction.setCellFactory(col -> new TableCell<>() {
@@ -149,7 +149,7 @@ public class AdminUserListController implements Initializable {
     }
 
     /** Setup filter UI nếu FXML có. */
-    private void setupFilters() {
+    void setupFilters() {
         if (cbFilterRole != null) {
             cbFilterRole.getItems().setAll("Tất cả vai trò", "MEMBER", "SELLER", "ADMIN");
             cbFilterRole.getSelectionModel().selectFirst();
@@ -165,7 +165,7 @@ public class AdminUserListController implements Initializable {
         }
     }
 
-    private void applyFilters() {
+    void applyFilters() {
         if (filteredUsers == null) return;
         String search = tfSearch != null && tfSearch.getText() != null
                 ? tfSearch.getText().toLowerCase().trim() : "";
@@ -197,7 +197,7 @@ public class AdminUserListController implements Initializable {
 
     // ===== LOAD =====
 
-    private void loadUsers() {
+    void loadUsers() {
         AdminService.getUsers(users -> Platform.runLater(() -> {
             allUsers.setAll(users != null ? users : java.util.List.of());
             LOGGER.info(() -> "Loaded " + allUsers.size() + " users");
@@ -241,7 +241,7 @@ public class AdminUserListController implements Initializable {
     }
 
     /** Generic change status với confirm + reload. */
-    private void changeStatus(UserAdminDTO user, String newStatus, String action) {
+    void changeStatus(UserAdminDTO user, String newStatus, String action) {
         boolean ok = AlertUtil.showConfirm("Xác nhận",
                 "Bạn có chắc muốn " + action + " tài khoản '" + user.getUsername() + "'?");
         if (!ok) return;

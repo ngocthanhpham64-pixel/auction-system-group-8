@@ -28,16 +28,16 @@ public class ProductCardController implements Initializable {
 
     private static final Logger LOGGER = Logger.getLogger(ProductCardController.class.getName());
 
-    @FXML private VBox root;
-    @FXML private StackPane imageContainer;
-    @FXML private ImageView productImage;
-    @FXML private Label productName;
-    @FXML private Label currentPrice;
-    @FXML private Label lblTimer;
-    @FXML private Label lblBidCount;
+    @FXML VBox root;
+    @FXML StackPane imageContainer;
+    @FXML ImageView productImage;
+    @FXML Label productName;
+    @FXML Label currentPrice;
+    @FXML Label lblTimer;
+    @FXML Label lblBidCount;
 
-    @FXML private Label lblCertBadge;
-    @FXML private Label lblPartnerBadge;
+    @FXML Label lblCertBadge;
+    @FXML Label lblPartnerBadge;
 
     private int itemId;
     private Timeline timerTimeline;
@@ -50,7 +50,7 @@ public class ProductCardController implements Initializable {
         setupClickHandler();
     }
 
-    private void setupClickHandler() {
+    void setupClickHandler() {
         if (root != null) {
             root.setOnMouseClicked(e -> onCardClick());
         }
@@ -78,7 +78,7 @@ public class ProductCardController implements Initializable {
         loadImage(imageUrl);
     }
 
-    private void startCountdown() {
+    void startCountdown() {
         if (timerTimeline != null) timerTimeline.stop();
         if (endTime == null) return;
 
@@ -88,7 +88,7 @@ public class ProductCardController implements Initializable {
         updateTimerLabel();
     }
 
-    private void updateTimerLabel() {
+    void updateTimerLabel() {
         if (lblTimer == null || endTime == null) return;
 
         long seconds = ChronoUnit.SECONDS.between(LocalDateTime.now(), endTime);
@@ -105,7 +105,7 @@ public class ProductCardController implements Initializable {
         lblTimer.setText(String.format("%02d:%02d:%02d", h, m, s));
     }
 
-    private void loadImage(String imageUrl) {
+    void loadImage(String imageUrl) {
         if (productImage == null) return;
         if (imageUrl == null || imageUrl.isBlank()) {
              // Optional: Set default image
@@ -134,7 +134,7 @@ public class ProductCardController implements Initializable {
     }
 
     @FXML
-    private void onCardClick() {
+    void onCardClick() {
         if (itemId <= 0) return;
         AuctionService.loadDetail(itemId, item -> {
             if (item == null) return;
@@ -143,14 +143,14 @@ public class ProductCardController implements Initializable {
         });
     }
 
-    private void navigateToDetail() {
+    void navigateToDetail() {
         MainController main = MainController.getInstance();
         if (main != null) {
             main.loadView(SceneManager.VIEW_AUCTION_DETAIL);
         }
     }
 
-    private void hideBadge(Label badge) {
+    void hideBadge(Label badge) {
         if (badge != null) {
             badge.setVisible(false);
             badge.setManaged(false);

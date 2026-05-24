@@ -36,20 +36,20 @@ public class ProfileController implements Initializable {
 
     private static final Logger LOGGER = Logger.getLogger(ProfileController.class.getName());
 
-    @FXML private Label lblName;
-    @FXML private Label lblEmail;
-    @FXML private Label lblAvatar;
-    @FXML private Label lblJoinDate;
-    @FXML private Label lblBalance;
-    @FXML private Label lblRating;
-    @FXML private Label lblTotalBids;
-    @FXML private Label lblActiveBids;
-    @FXML private Label lblWonBids;
+    @FXML Label lblName;
+    @FXML Label lblEmail;
+    @FXML Label lblAvatar;
+    @FXML Label lblJoinDate;
+    @FXML Label lblBalance;
+    @FXML Label lblRating;
+    @FXML Label lblTotalBids;
+    @FXML Label lblActiveBids;
+    @FXML Label lblWonBids;
 
-    @FXML private VBox bidHistoryList;
-    @FXML private Button btnTabActive;
-    @FXML private Button btnTabWon;
-    @FXML private Button btnTabLost;
+    @FXML VBox bidHistoryList;
+    @FXML Button btnTabActive;
+    @FXML Button btnTabWon;
+    @FXML Button btnTabLost;
 
     private Button activeTab;
     private String currentFilter = "active";
@@ -64,7 +64,7 @@ public class ProfileController implements Initializable {
     }
 
     /** Load thong tin user. */
-    private void loadProfile() {
+    void loadProfile() {
         UserService.loadProfile(user -> {
             if (user != null) {
                 displayUser(user);
@@ -80,7 +80,7 @@ public class ProfileController implements Initializable {
         }
     }
 
-    private void displayUser(UserProfileDTO user) {
+    void displayUser(UserProfileDTO user) {
         if (user == null) return;
         if (lblName != null && user.getFullName() != null) {
             lblName.setText(user.getFullName());
@@ -94,7 +94,7 @@ public class ProfileController implements Initializable {
     }
 
     /** Binding balance. */
-    private void bindBalance() {
+    void bindBalance() {
         if (lblBalance == null) return;
         BigDecimal current = ClientModel.getInstance().getBalance();
         updateBalance(current);
@@ -103,13 +103,13 @@ public class ProfileController implements Initializable {
         );
     }
 
-    private void updateBalance(BigDecimal value) {
+    void updateBalance(BigDecimal value) {
         BigDecimal v = value != null ? value : BigDecimal.ZERO;
         lblBalance.setText(String.format("%,.0f d", v));
     }
 
     /** Load bid history. */
-    private void loadBidHistory() {
+    void loadBidHistory() {
         UserService.loadMyBids(bids -> {
             allBids = bids != null ? bids : List.of();
             LOGGER.info(() -> "Tai " + allBids.size() + " bid records");
@@ -118,7 +118,7 @@ public class ProfileController implements Initializable {
         });
     }
 
-    private void renderBids() {
+    void renderBids() {
         if (bidHistoryList == null) return;
         bidHistoryList.getChildren().clear();
 
@@ -170,7 +170,7 @@ public class ProfileController implements Initializable {
         return row;
     }
 
-    private void updateStats() {
+    void updateStats() {
         if (lblTotalBids != null) {
             lblTotalBids.setText(String.valueOf(allBids.size()));
         }
@@ -193,7 +193,7 @@ public class ProfileController implements Initializable {
     // ===== ACTIONS =====
 
     @FXML
-    private void onDeposit() {
+    void onDeposit() {
         MainController main = MainController.getInstance();
         if (main != null) {
             main.loadView(SceneManager.VIEW_WALLET);
@@ -203,7 +203,7 @@ public class ProfileController implements Initializable {
     }
 
     @FXML
-    private void onSettings() {
+    void onSettings() {
         MainController main = MainController.getInstance();
         if (main != null) {
             main.loadView(SceneManager.VIEW_SETTINGS);
@@ -212,7 +212,7 @@ public class ProfileController implements Initializable {
         }
     }
     @FXML
-    private void onLogout() {
+    void onLogout() {
         boolean ok = AlertUtil.showConfirm("Dang xuat", "Ban co chac muon dang xuat?");
         if (!ok) return;
         LOGGER.info("Nguoi dung dang xuat tu Profile");
@@ -221,11 +221,11 @@ public class ProfileController implements Initializable {
 
     // ===== TABS =====
 
-    @FXML private void onTabActive() { setTab("active", btnTabActive); }
-    @FXML private void onTabWon()    { setTab("won", btnTabWon); }
-    @FXML private void onTabLost()   { setTab("lost", btnTabLost); }
+    @FXML void onTabActive() { setTab("active", btnTabActive); }
+    @FXML void onTabWon()    { setTab("won", btnTabWon); }
+    @FXML void onTabLost()   { setTab("lost", btnTabLost); }
 
-    private void setTab(String filter, Button button) {
+    void setTab(String filter, Button button) {
         currentFilter = filter;
         if (activeTab != null) {
             activeTab.getStyleClass().remove("tag-active");

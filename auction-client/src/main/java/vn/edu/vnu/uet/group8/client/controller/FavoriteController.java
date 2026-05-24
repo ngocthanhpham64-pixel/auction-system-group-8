@@ -40,11 +40,11 @@ public class FavoriteController implements Initializable {
 
     private static final Logger LOGGER = Logger.getLogger(FavoriteController.class.getName());
 
-    @FXML private FlowPane favoriteContainer;
-    @FXML private Label lblActiveCount;
-    @FXML private Button btnTabAll;
-    @FXML private Button btnTabActive;
-    @FXML private Button btnTabEnded;
+    @FXML FlowPane favoriteContainer;
+    @FXML Label lblActiveCount;
+    @FXML Button btnTabAll;
+    @FXML Button btnTabActive;
+    @FXML Button btnTabEnded;
 
     private Button activeTab;
     /** "all" | "active" | "ended" */
@@ -62,7 +62,7 @@ public class FavoriteController implements Initializable {
 
     // ===================== RENDER =====================
 
-    private void renderFromModel() {
+    void renderFromModel() {
         if (favoriteContainer == null) return;
         favoriteContainer.getChildren().clear();
 
@@ -136,27 +136,27 @@ public class FavoriteController implements Initializable {
     // ===================== TABS =====================
 
     @FXML
-    private void onTabAll() {
+    void onTabAll() {
         currentFilter = "all";
         setActiveTab(btnTabAll);
         renderFromModel();
     }
 
     @FXML
-    private void onTabActive() {
+    void onTabActive() {
         currentFilter = "active";
         setActiveTab(btnTabActive);
         renderFromModel();
     }
 
     @FXML
-    private void onTabEnded() {
+    void onTabEnded() {
         currentFilter = "ended";
         setActiveTab(btnTabEnded);
         renderFromModel();
     }
 
-    private void setActiveTab(Button target) {
+    void setActiveTab(Button target) {
         if (target == null) return;
         if (activeTab != null) {
             activeTab.getStyleClass().remove("tag-active");
@@ -174,7 +174,7 @@ public class FavoriteController implements Initializable {
     // ===================== ACTIONS =====================
 
     @FXML
-    private void onClearEnded() {
+    void onClearEnded() {
         List<AuctionItemDTO> all = new ArrayList<>(ClientModel.getInstance().getFavoriteItems());
         List<AuctionItemDTO> ended = all.stream().filter(this::isEnded).toList();
         if (ended.isEmpty()) {

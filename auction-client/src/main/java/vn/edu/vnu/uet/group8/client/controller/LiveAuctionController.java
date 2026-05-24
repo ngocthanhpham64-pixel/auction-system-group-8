@@ -51,22 +51,22 @@ public class LiveAuctionController implements Initializable {
 
     private static final DateTimeFormatter TIME_FORMAT = DateTimeFormatter.ofPattern("HH:mm:ss");
 
-    @FXML private Label lblProductName;
-    @FXML private Label lblCategory;
-    @FXML private Label lblDescription;
-    @FXML private Label lblCurrentPrice;
-    @FXML private Label lblPriceChange;
-    @FXML private Label lblViewers;
-    @FXML private Label lblChatCount;
+    @FXML Label lblProductName;
+    @FXML Label lblCategory;
+    @FXML Label lblDescription;
+    @FXML Label lblCurrentPrice;
+    @FXML Label lblPriceChange;
+    @FXML Label lblViewers;
+    @FXML Label lblChatCount;
 
-    @FXML private Label lblMinutes;
-    @FXML private Label lblSeconds;
+    @FXML Label lblMinutes;
+    @FXML Label lblSeconds;
 
-    @FXML private ImageView imgLive;
-    @FXML private VBox bidHistory;
-    @FXML private VBox chatMessages;
-    @FXML private TextField tfBidAmount;
-    @FXML private TextField tfChatInput;
+    @FXML ImageView imgLive;
+    @FXML VBox bidHistory;
+    @FXML VBox chatMessages;
+    @FXML TextField tfBidAmount;
+    @FXML TextField tfChatInput;
 
     // ===== STATE =====
     private AuctionItemDTO currentItem;
@@ -86,7 +86,7 @@ public class LiveAuctionController implements Initializable {
         initViewerCount();
     }
 
-    private void loadItem() {
+    void loadItem() {
         currentItem = ClientModel.getInstance().getCurrentAuctionItem();
         if (currentItem == null) {
             LOGGER.info("Khong co currentAuctionItem - dung data demo tu FXML");
@@ -109,7 +109,7 @@ public class LiveAuctionController implements Initializable {
         updatePriceDisplay(null);
     }
 
-    private void initViewerCount() {
+    void initViewerCount() {
         if (lblViewers != null) {
             lblViewers.setText(viewerCount + " nguoi xem");
         }
@@ -123,7 +123,7 @@ public class LiveAuctionController implements Initializable {
     /**
      * Subscribe AuctionStatus broadcast. An toan: try-catch tranh crash neu BE chua co.
      */
-    private void subscribeRealtime() {
+    void subscribeRealtime() {
         try {
             subscription = AuctionService.subscribeAuctionStatus(this::handleStatusUpdate);
             LOGGER.info("Da subscribe realtime auction status");
@@ -136,7 +136,7 @@ public class LiveAuctionController implements Initializable {
      * Handler khi server push status update.
      * Chay tren FX Thread (AuctionService da dam bao).
      */
-    private void handleStatusUpdate(AuctionStatusDTO status) {
+    void handleStatusUpdate(AuctionStatusDTO status) {
         if (status == null) return;
 
         // Chi update neu la item dang xem
@@ -148,7 +148,7 @@ public class LiveAuctionController implements Initializable {
         addBidHistoryEntry(status);
     }
 
-    private void addBidHistoryEntry(AuctionStatusDTO status) {
+    void addBidHistoryEntry(AuctionStatusDTO status) {
         if (bidHistory == null) return;
 
         HBox row = new HBox(8);
@@ -173,7 +173,7 @@ public class LiveAuctionController implements Initializable {
     // ===== ĐẶT GIÁ =====
 
     @FXML
-    private void onBidNow() {
+    void onBidNow() {
         BigDecimal input = parseBidInput();
 
         // Neu khong nhap gi -> default = current + step
@@ -213,12 +213,12 @@ public class LiveAuctionController implements Initializable {
         });
     }
 
-    @FXML private void onQuickBid1() { setBidInput(currentPrice.add(new BigDecimal("10000000"))); }
-    @FXML private void onQuickBid2() { setBidInput(currentPrice.add(new BigDecimal("20000000"))); }
-    @FXML private void onQuickBid3() { setBidInput(currentPrice.add(new BigDecimal("50000000"))); }
-    @FXML private void onQuickBid4() { setBidInput(currentPrice.add(new BigDecimal("100000000"))); }
+    @FXML void onQuickBid1() { setBidInput(currentPrice.add(new BigDecimal("10000000"))); }
+    @FXML void onQuickBid2() { setBidInput(currentPrice.add(new BigDecimal("20000000"))); }
+    @FXML void onQuickBid3() { setBidInput(currentPrice.add(new BigDecimal("50000000"))); }
+    @FXML void onQuickBid4() { setBidInput(currentPrice.add(new BigDecimal("100000000"))); }
 
-    private void setBidInput(BigDecimal amount) {
+    void setBidInput(BigDecimal amount) {
         if (tfBidAmount != null) tfBidAmount.setText(formatPrice(amount));
     }
 
@@ -236,7 +236,7 @@ public class LiveAuctionController implements Initializable {
         }
     }
 
-    private void updatePriceDisplay(BigDecimal oldPrice) {
+    void updatePriceDisplay(BigDecimal oldPrice) {
         if (lblCurrentPrice != null) {
             lblCurrentPrice.setText(formatPrice(currentPrice));
         }
@@ -254,7 +254,7 @@ public class LiveAuctionController implements Initializable {
     // ===== CHAT =====
 
     @FXML
-    private void onSendMessage() {
+    void onSendMessage() {
         if (tfChatInput == null) return;
         String msg = tfChatInput.getText().trim();
         if (msg.isEmpty()) return;
@@ -270,7 +270,7 @@ public class LiveAuctionController implements Initializable {
         LOGGER.info(() -> "Chat: " + msg);
     }
 
-    private void addChatMessage(String username, String message, boolean isMe) {
+    void addChatMessage(String username, String message, boolean isMe) {
         if (chatMessages == null) return;
         HBox row = new HBox(8);
         row.setStyle("-fx-padding: 6;");
@@ -294,7 +294,7 @@ public class LiveAuctionController implements Initializable {
 
     // ===== COUNTDOWN =====
 
-    private void startCountdown() {
+    void startCountdown() {
         if (currentItem != null && currentItem.getEndTime() != null) {
             long seconds = currentItem.getEndTime().getEpochSecond() - Instant.now().getEpochSecond();
             remainSeconds = seconds > 0 ? (int) seconds : 0;
@@ -307,7 +307,7 @@ public class LiveAuctionController implements Initializable {
         countdown.play();
     }
 
-    private void tick() {
+    void tick() {
         if (remainSeconds <= 0) {
             countdown.stop();
             setTimeDisplay(0, 0);
@@ -327,12 +327,12 @@ public class LiveAuctionController implements Initializable {
         }
     }
 
-    private void setTimeDisplay(int m, int s) {
+    void setTimeDisplay(int m, int s) {
         if (lblMinutes != null) lblMinutes.setText(String.format("%02d", m));
         if (lblSeconds != null) lblSeconds.setText(String.format("%02d", s));
     }
 
-    private void onAuctionEnded() {
+    void onAuctionEnded() {
         LOGGER.info("Live auction ket thuc");
         if (tfBidAmount != null) tfBidAmount.setDisable(true);
         if (tfChatInput != null) tfChatInput.setDisable(true);
