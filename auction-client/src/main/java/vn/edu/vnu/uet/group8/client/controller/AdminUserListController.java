@@ -178,10 +178,23 @@ public class AdminUserListController implements Initializable {
     }
 
     protected boolean matchSearch(UserAdminDTO u, String search) {
-        if (search.isEmpty()) return true;
-        String username = u.getUsername() != null ? u.getUsername().toLowerCase() : "";
-        String email = u.getEmail() != null ? u.getEmail().toLowerCase() : "";
-        return username.contains(search) || email.contains(search);
+
+        if (search == null || search.isBlank()) {
+            return true;
+        }
+
+        String keyword = search.toLowerCase();
+
+        String username = u.getUsername() != null
+                ? u.getUsername().toLowerCase()
+                : "";
+
+        String email = u.getEmail() != null
+                ? u.getEmail().toLowerCase()
+                : "";
+
+        return username.contains(keyword)
+                || email.contains(keyword);
     }
 
     protected boolean matchRole(UserAdminDTO u, String filter) {

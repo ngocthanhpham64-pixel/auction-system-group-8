@@ -377,7 +377,7 @@ public class CreateItemController implements Initializable {
      * Chuyển đổi nhãn danh mục tiếng Việt sang tên Enum tiếng Anh.
      */
     protected String getCategoryNameFromLabel(String label) {
-        if (label == null) return null;
+        if (label == null) return ItemCategory.OTHER.name();
         for (ItemCategory category : ItemCategory.values()) {
             if (category.getLabel().equalsIgnoreCase(label)) {
                 return category.name();
@@ -392,7 +392,7 @@ public class CreateItemController implements Initializable {
      * Chuyển đổi nhãn tình trạng tiếng Việt sang tên Enum tiếng Anh.
      */
     protected String getConditionNameFromLabel(String label) {
-        if (label == null) return null;
+        if (label == null) return ItemCondition.USED.name();
         for (ItemCondition condition : ItemCondition.values()) {
             if (condition.getLabel().equalsIgnoreCase(label)) {
                 return condition.name();

@@ -157,9 +157,17 @@ public class AdminAuctionListController implements Initializable {
     }
 
     protected boolean matchSearch(AuctionItemDTO a, String search) {
-        if (search.isEmpty()) return true;
-        String title = a.getTitle() != null ? a.getTitle().toLowerCase() : "";
-        return title.contains(search);
+        if (search == null || search.isBlank()) {
+            return true;
+        }
+
+        String keyword = search.toLowerCase();
+
+        String title = a.getTitle() != null
+                ? a.getTitle().toLowerCase()
+                : "";
+
+        return title.contains(keyword);
     }
 
     protected boolean matchStatus(AuctionItemDTO a, String filter) {
