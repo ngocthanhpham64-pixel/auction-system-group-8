@@ -65,6 +65,8 @@ public class SellerDashboardController implements Initializable {
     }
 
     void renderItems() {
+        if (itemListContainer == null) return;
+
         itemListContainer.getChildren().clear();
 
         if (myItems == null || myItems.isEmpty()) {
@@ -72,8 +74,10 @@ public class SellerDashboardController implements Initializable {
             return;
         }
 
-        lblEmpty.setVisible(false);
-        lblEmpty.setManaged(false);
+        if (lblEmpty != null) {
+            lblEmpty.setVisible(false);
+            lblEmpty.setManaged(false);
+        }
 
         List<AuctionItemDTO> filtered = myItems.stream()
                 .filter(this::matchTab)
@@ -133,24 +137,46 @@ public class SellerDashboardController implements Initializable {
     }
 
     void showEmptyState() {
-        itemListContainer.getChildren().clear();
-        lblEmpty.setVisible(true);
-        lblEmpty.setManaged(true);
+        if (itemListContainer != null) {
+            itemListContainer.getChildren().clear();
+        }
+
+        if (lblEmpty != null) {
+            lblEmpty.setVisible(true);
+            lblEmpty.setManaged(true);
+        }
     }
 
     void updateStats() {
-        int listed = (int) myItems.stream().filter(it -> it.getStatus() == SessionStatus.ACTIVE).count();
-        int sold = (int) myItems.stream().filter(it -> it.getStatus() == SessionStatus.SOLD).count();
+        int listed = (int) myItems.stream()
+                .filter(it -> it.getStatus() == SessionStatus.ACTIVE)
+                .count();
+
+        int sold = (int) myItems.stream()
+                .filter(it -> it.getStatus() == SessionStatus.SOLD)
+                .count();
+
         BigDecimal revenue = myItems.stream()
                 .filter(it -> it.getStatus() == SessionStatus.SOLD)
                 .map(AuctionItemDTO::getCurrentPrice)
                 .filter(p -> p != null)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
-        lblListedCount.setText(String.valueOf(listed));
-        lblSoldCount.setText(String.valueOf(sold));
-        lblTotalRevenue.setText(String.format("%,.0f đ", revenue));
-        lblRating.setText("--");
+        if (lblListedCount != null) {
+            lblListedCount.setText(String.valueOf(listed));
+        }
+
+        if (lblSoldCount != null) {
+            lblSoldCount.setText(String.valueOf(sold));
+        }
+
+        if (lblTotalRevenue != null) {
+            lblTotalRevenue.setText(String.format("%,.0f đ", revenue));
+        }
+
+        if (lblRating != null) {
+            lblRating.setText("--");
+        }
     }
 
     @FXML

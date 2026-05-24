@@ -139,7 +139,10 @@ public class ExploreController implements Initializable {
 
     protected List<AuctionItemDTO> applyFilters(List<AuctionItemDTO> items) {
         String cat = (cbCategory != null) ? cbCategory.getValue() : "Tất cả danh mục";
-        String keyword = ClientModel.getInstance().getSearchQuery().toLowerCase();
+        String rawKeyword = ClientModel.getInstance().getSearchQuery();
+        final String keyword = rawKeyword != null
+                ? rawKeyword.toLowerCase()
+                : "";
 
         return items.stream()
                 .filter(it -> matchCategory(it, cat))
@@ -150,7 +153,11 @@ public class ExploreController implements Initializable {
 
     protected boolean matchKeyword(AuctionItemDTO item, String keyword) {
         if (keyword == null || keyword.isEmpty()) return true;
-        return item.getTitle() != null && item.getTitle().toLowerCase().contains(keyword);
+
+        keyword = keyword.toLowerCase();
+
+        return item.getTitle() != null
+                && item.getTitle().toLowerCase().contains(keyword);
     }
 
     protected boolean matchCategory(AuctionItemDTO item, String filterLabel) {
