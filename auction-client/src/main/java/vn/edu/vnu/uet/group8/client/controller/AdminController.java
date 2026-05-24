@@ -32,9 +32,9 @@ import vn.edu.vnu.uet.group8.client.util.SessionManager;
  */
 public class AdminController implements Initializable {
 
-    private static final Logger LOGGER = Logger.getLogger(AdminController.class.getName());
+    protected static final Logger LOGGER = Logger.getLogger(AdminController.class.getName());
 
-    private static AdminController instance;
+    protected static AdminController instance;
     public static AdminController getInstance() { return instance; }
 
     @FXML StackPane contentPane;

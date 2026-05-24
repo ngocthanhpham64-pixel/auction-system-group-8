@@ -34,7 +34,7 @@ import vn.edu.vnu.uet.group8.common.enums.ItemCategory;
  */
 public class ExploreController implements Initializable {
 
-    private static final Logger LOGGER = Logger.getLogger(ExploreController.class.getName());
+    protected static final Logger LOGGER = Logger.getLogger(ExploreController.class.getName());
 
     @FXML ComboBox<String> cbCategory;
     @FXML ComboBox<String> cbPrice;
@@ -46,9 +46,9 @@ public class ExploreController implements Initializable {
     @FXML Label lblResultCount;
     @FXML Button btnTagOpen;
 
-    private Button activeTag;
-    private String currentTagFilter = "ALL";
-    private final List<AuctionItemDTO> allItems = new ArrayList<>();
+    protected Button activeTag;
+    protected String currentTagFilter = "ALL";
+    protected final List<AuctionItemDTO> allItems = new ArrayList<>();
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
@@ -137,7 +137,7 @@ public class ExploreController implements Initializable {
         if (lblResultCount != null) lblResultCount.setText("0 kết quả");
     }
 
-    private List<AuctionItemDTO> applyFilters(List<AuctionItemDTO> items) {
+    protected List<AuctionItemDTO> applyFilters(List<AuctionItemDTO> items) {
         String cat = (cbCategory != null) ? cbCategory.getValue() : "Tất cả danh mục";
         String keyword = ClientModel.getInstance().getSearchQuery().toLowerCase();
 
@@ -148,24 +148,24 @@ public class ExploreController implements Initializable {
                 .toList();
     }
 
-    private boolean matchKeyword(AuctionItemDTO item, String keyword) {
+    protected boolean matchKeyword(AuctionItemDTO item, String keyword) {
         if (keyword == null || keyword.isEmpty()) return true;
         return item.getTitle() != null && item.getTitle().toLowerCase().contains(keyword);
     }
 
-    private boolean matchCategory(AuctionItemDTO item, String filterLabel) {
+    protected boolean matchCategory(AuctionItemDTO item, String filterLabel) {
         if (filterLabel == null || filterLabel.startsWith("Tất cả")) return true;
         if (item.getCategory() == null) return false;
         return item.getCategory().getLabel().equalsIgnoreCase(filterLabel);
     }
 
-    private boolean matchTagFilter(AuctionItemDTO item) {
+    protected boolean matchTagFilter(AuctionItemDTO item) {
         if (currentTagFilter == null || currentTagFilter.equals("ALL")) return true;
         if (item.getCategory() == null) return false;
         return item.getCategory().name().equalsIgnoreCase(currentTagFilter);
     }
 
-    private List<AuctionItemDTO> applySorting(List<AuctionItemDTO> items) {
+    protected List<AuctionItemDTO> applySorting(List<AuctionItemDTO> items) {
         String sortMode = (cbSort != null) ? cbSort.getValue() : "Mới nhất";
         Comparator<AuctionItemDTO> comparator = switch (sortMode) {
             case "Giá thấp -> cao" -> Comparator.comparing(AuctionItemDTO::getCurrentPrice, Comparator.nullsLast(Comparator.naturalOrder()));
@@ -175,7 +175,7 @@ public class ExploreController implements Initializable {
         return items.stream().sorted(comparator).toList();
     }
 
-    private Node buildProductCard(AuctionItemDTO item) {
+    protected Node buildProductCard(AuctionItemDTO item) {
         try {
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/ProductCard.fxml"));
             Node card = loader.load();

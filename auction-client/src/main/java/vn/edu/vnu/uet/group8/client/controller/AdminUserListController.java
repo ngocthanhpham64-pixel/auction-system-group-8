@@ -41,7 +41,7 @@ import vn.edu.vnu.uet.group8.common.dto.model.UserAdminDTO;
  */
 public class AdminUserListController implements Initializable {
 
-    private static final Logger LOGGER = Logger.getLogger(AdminUserListController.class.getName());
+    protected static final Logger LOGGER = Logger.getLogger(AdminUserListController.class.getName());
 
     @FXML TableView<UserAdminDTO> userTable;
     @FXML TableColumn<UserAdminDTO, Integer> colId;
@@ -56,8 +56,8 @@ public class AdminUserListController implements Initializable {
     @FXML ComboBox<String> cbFilterRole;
     @FXML ComboBox<String> cbFilterStatus;
 
-    private final ObservableList<UserAdminDTO> allUsers = FXCollections.observableArrayList();
-    private FilteredList<UserAdminDTO> filteredUsers;
+    protected final ObservableList<UserAdminDTO> allUsers = FXCollections.observableArrayList();
+    protected FilteredList<UserAdminDTO> filteredUsers;
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
@@ -107,10 +107,10 @@ public class AdminUserListController implements Initializable {
         if (colAction == null) return;  // FXML cũ có thể không có colAction
 
         colAction.setCellFactory(col -> new TableCell<>() {
-            private final Button btnSuspend = new Button("Khóa tạm");
-            private final Button btnBan = new Button("Cấm");
-            private final Button btnUnban = new Button("Mở khóa");
-            private final HBox box = new HBox(6, btnSuspend, btnBan, btnUnban);
+            protected final Button btnSuspend = new Button("Khóa tạm");
+            protected final Button btnBan = new Button("Cấm");
+            protected final Button btnUnban = new Button("Mở khóa");
+            protected final HBox box = new HBox(6, btnSuspend, btnBan, btnUnban);
 
             {
                 btnSuspend.setStyle("-fx-background-color: #F59E0B; -fx-text-fill: white; -fx-font-size: 11px;");
@@ -177,20 +177,20 @@ public class AdminUserListController implements Initializable {
                 && matchStatus(u, status));
     }
 
-    private boolean matchSearch(UserAdminDTO u, String search) {
+    protected boolean matchSearch(UserAdminDTO u, String search) {
         if (search.isEmpty()) return true;
         String username = u.getUsername() != null ? u.getUsername().toLowerCase() : "";
         String email = u.getEmail() != null ? u.getEmail().toLowerCase() : "";
         return username.contains(search) || email.contains(search);
     }
 
-    private boolean matchRole(UserAdminDTO u, String filter) {
+    protected boolean matchRole(UserAdminDTO u, String filter) {
         if (filter == null || filter.startsWith("Tất cả")) return true;
         if ("ADMIN".equals(filter)) return u.isAdmin();
         return filter.equals(u.getRole());
     }
 
-    private boolean matchStatus(UserAdminDTO u, String filter) {
+    protected boolean matchStatus(UserAdminDTO u, String filter) {
         if (filter == null || filter.startsWith("Tất cả")) return true;
         return filter.equals(u.getStatus());
     }

@@ -45,12 +45,12 @@ import vn.edu.vnu.uet.group8.common.enums.ItemCondition;
  */
 public class CreateItemController implements Initializable {
 
-    private static final Logger LOGGER = Logger.getLogger(CreateItemController.class.getName());
+    protected static final Logger LOGGER = Logger.getLogger(CreateItemController.class.getName());
 
-    private static final BigDecimal MIN_START_PRICE = new BigDecimal("100000");
-    private static final BigDecimal MAX_START_PRICE = new BigDecimal("100000000000");  // 100 ty
-    private static final int MIN_DURATION = 1;
-    private static final int MAX_DURATION = 168;
+    protected static final BigDecimal MIN_START_PRICE = new BigDecimal("100000");
+    protected static final BigDecimal MAX_START_PRICE = new BigDecimal("100000000000");  // 100 ty
+    protected static final int MIN_DURATION = 1;
+    protected static final int MAX_DURATION = 168;
 
     @FXML TextField tfName;
     @FXML ComboBox<String> cbCategory;
@@ -76,7 +76,7 @@ public class CreateItemController implements Initializable {
     @FXML Button btnSubmit;
 
     // Lưu trữ các chuỗi Base64 của ảnh được tải lên
-    private final List<String> base64Images = new ArrayList<>();
+    protected final List<String> base64Images = new ArrayList<>();
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
@@ -251,7 +251,7 @@ public class CreateItemController implements Initializable {
         );
     }
 
-    private String validateRequired(String name, String category, String condition, String description) {
+    protected String validateRequired(String name, String category, String condition, String description) {
         if (name.isEmpty()) return "Vui long nhap ten san pham"; // 'category' and 'condition' are now labels
         if (name.length() < 5 || name.length() > 100) return "Ten 5-100 ky tu";
         if (category == null) return "Vui long chon danh muc";
@@ -262,7 +262,7 @@ public class CreateItemController implements Initializable {
         return null;
     }
 
-    private String validateNumbers(BigDecimal startPrice, BigDecimal bidStep, int duration) {
+    protected String validateNumbers(BigDecimal startPrice, BigDecimal bidStep, int duration) {
         if (startPrice.compareTo(MIN_START_PRICE) < 0) {
             return "Gia khoi diem toi thieu " + formatVnd(MIN_START_PRICE);
         }
@@ -281,7 +281,7 @@ public class CreateItemController implements Initializable {
         return null;
     }
 
-    private Map<String, String> collectSpecs() {
+    protected Map<String, String> collectSpecs() {
         Map<String, String> specs = new HashMap<>();
         addSpec(specs, "brand", tfBrand);
         addSpec(specs, "model", tfModel);
@@ -328,13 +328,13 @@ public class CreateItemController implements Initializable {
 
     // ===== HELPERS =====
 
-    private String safeText(TextField field) {
+    protected String safeText(TextField field) {
         if (field == null) return "";
         String text = field.getText();
         return text != null ? text.trim() : "";
     }
 
-    private BigDecimal parseAmount(TextField field) {
+    protected BigDecimal parseAmount(TextField field) {
         if (field == null) return null;
         String input = field.getText().replaceAll("[^\\d]", "");
         if (input.isEmpty()) return null;
@@ -345,7 +345,7 @@ public class CreateItemController implements Initializable {
         }
     }
 
-    private Integer parseInt(TextField field) {
+    protected Integer parseInt(TextField field) {
         if (field == null) return null;
         String input = field.getText().trim();
         if (input.isEmpty()) return null;
@@ -356,7 +356,7 @@ public class CreateItemController implements Initializable {
         }
     }
 
-    private String formatVnd(BigDecimal amount) {
+    protected String formatVnd(BigDecimal amount) {
         return amount == null ? "0 d" : String.format("%,.0f d", amount);
     }
 
@@ -376,7 +376,7 @@ public class CreateItemController implements Initializable {
     /**
      * Chuyển đổi nhãn danh mục tiếng Việt sang tên Enum tiếng Anh.
      */
-    private String getCategoryNameFromLabel(String label) {
+    protected String getCategoryNameFromLabel(String label) {
         if (label == null) return null;
         for (ItemCategory category : ItemCategory.values()) {
             if (category.getLabel().equalsIgnoreCase(label)) {
@@ -391,7 +391,7 @@ public class CreateItemController implements Initializable {
     /**
      * Chuyển đổi nhãn tình trạng tiếng Việt sang tên Enum tiếng Anh.
      */
-    private String getConditionNameFromLabel(String label) {
+    protected String getConditionNameFromLabel(String label) {
         if (label == null) return null;
         for (ItemCondition condition : ItemCondition.values()) {
             if (condition.getLabel().equalsIgnoreCase(label)) {

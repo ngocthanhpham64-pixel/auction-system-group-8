@@ -34,7 +34,7 @@ import vn.edu.vnu.uet.group8.common.dto.model.UserProfileDTO;
  */
 public class ProfileController implements Initializable {
 
-    private static final Logger LOGGER = Logger.getLogger(ProfileController.class.getName());
+    protected static final Logger LOGGER = Logger.getLogger(ProfileController.class.getName());
 
     @FXML Label lblName;
     @FXML Label lblEmail;
@@ -51,9 +51,9 @@ public class ProfileController implements Initializable {
     @FXML Button btnTabWon;
     @FXML Button btnTabLost;
 
-    private Button activeTab;
-    private String currentFilter = "active";
-    private List<UserBidHistoryDTO> allBids = List.of();
+    protected Button activeTab;
+    protected String currentFilter = "active";
+    protected List<UserBidHistoryDTO> allBids = List.of();
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
@@ -138,7 +138,7 @@ public class ProfileController implements Initializable {
         }
     }
 
-    private boolean matchTab(UserBidHistoryDTO b) {
+    protected boolean matchTab(UserBidHistoryDTO b) {
         boolean isEnded = b.getSessionEndTime() != null && b.getSessionEndTime().isBefore(java.time.Instant.now());
         boolean isWinner = b.getBidAmount() != null && b.getCurrentSessionPrice() != null 
                            && b.getBidAmount().compareTo(b.getCurrentSessionPrice()) >= 0;
@@ -151,7 +151,7 @@ public class ProfileController implements Initializable {
         };
     }
 
-    private HBox buildBidRow(UserBidHistoryDTO b) {
+    protected HBox buildBidRow(UserBidHistoryDTO b) {
         HBox row = new HBox(12);
         row.getStyleClass().add("card-soft");
         row.setStyle("-fx-padding: 12; -fx-background-radius: 8;");

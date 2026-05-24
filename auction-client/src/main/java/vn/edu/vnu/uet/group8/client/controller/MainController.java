@@ -25,7 +25,7 @@ import vn.edu.vnu.uet.group8.client.util.SessionManager;
 
 public class MainController implements Initializable {
 
-    private static final Logger LOGGER = Logger.getLogger(MainController.class.getName());
+    protected static final Logger LOGGER = Logger.getLogger(MainController.class.getName());
 
     @FXML Button btnToggle;
     @FXML TextField tfSearch;
@@ -42,9 +42,9 @@ public class MainController implements Initializable {
     @FXML Button btnSettings;
     @FXML StackPane contentPane;
 
-    private Button activeNav;
-    private static MainController instance;
-    private ScheduledExecutorService timerScheduler; // Khai bao de quan ly tap trung
+    protected Button activeNav;
+    protected static MainController instance;
+    protected ScheduledExecutorService timerScheduler; // Khai bao de quan ly tap trung
 
     public static MainController getInstance() {
         return instance;

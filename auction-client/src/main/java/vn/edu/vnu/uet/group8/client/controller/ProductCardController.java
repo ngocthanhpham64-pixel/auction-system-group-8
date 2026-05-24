@@ -26,7 +26,7 @@ import java.util.logging.Logger;
 
 public class ProductCardController implements Initializable {
 
-    private static final Logger LOGGER = Logger.getLogger(ProductCardController.class.getName());
+    protected static final Logger LOGGER = Logger.getLogger(ProductCardController.class.getName());
 
     @FXML VBox root;
     @FXML StackPane imageContainer;
@@ -39,9 +39,9 @@ public class ProductCardController implements Initializable {
     @FXML Label lblCertBadge;
     @FXML Label lblPartnerBadge;
 
-    private int itemId;
-    private Timeline timerTimeline;
-    private LocalDateTime endTime;
+    protected int itemId;
+    protected Timeline timerTimeline;
+    protected LocalDateTime endTime;
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
@@ -157,7 +157,7 @@ public class ProductCardController implements Initializable {
         }
     }
 
-    private String formatPrice(BigDecimal price) {
+    protected String formatPrice(BigDecimal price) {
         if (price == null) return "0đ";
         return String.format("%,.0fđ", price);
     }

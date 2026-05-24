@@ -25,13 +25,13 @@ import vn.edu.vnu.uet.group8.client.util.SessionManager;
 
 public class LoginController implements Initializable {
 
-    private static final Logger LOGGER = Logger.getLogger(LoginController.class.getName());
-    private static final Pattern EMAIL_PATTERN = Pattern.compile("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+$");
+    protected static final Logger LOGGER = Logger.getLogger(LoginController.class.getName());
+    protected static final Pattern EMAIL_PATTERN = Pattern.compile("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+$");
 
-    private static final String MOCK_ADMIN_EMAIL = "admin@auctiva.com";
-    private static final String MOCK_ADMIN_PASS  = "123456";
-    private static final String MOCK_USER_EMAIL  = "user@auctiva.com";
-    private static final String MOCK_USER_PASS   = "123456";
+    protected static final String MOCK_ADMIN_EMAIL = "admin@auctiva.com";
+    protected static final String MOCK_ADMIN_PASS  = "123456";
+    protected static final String MOCK_USER_EMAIL  = "user@auctiva.com";
+    protected static final String MOCK_USER_PASS   = "123456";
 
     @FXML Label lblTitle, lblSubtitle;
     @FXML Button btnTabLogin, btnTabRegister;
@@ -159,7 +159,7 @@ public class LoginController implements Initializable {
         );
     }
 
-    private String validateRegister(String username, String fullName, String email,
+    protected String validateRegister(String username, String fullName, String email,
                                     String phone, String password, String confirm) {
         if (username.isEmpty() || fullName.isEmpty() || email.isEmpty()
                 || phone.isEmpty() || password.isEmpty()) {
@@ -176,7 +176,7 @@ public class LoginController implements Initializable {
         return null;
     }
 
-    private boolean isMockAccount(String email, String password) {
+    protected boolean isMockAccount(String email, String password) {
         return (MOCK_ADMIN_EMAIL.equals(email) && MOCK_ADMIN_PASS.equals(password))
                 || (MOCK_USER_EMAIL.equals(email) && MOCK_USER_PASS.equals(password));
     }
@@ -248,7 +248,7 @@ public class LoginController implements Initializable {
         lblRegError.setManaged(false);
     }
 
-    private String safeText(TextField field) {
+    protected String safeText(TextField field) {
         return field != null ? field.getText().trim() : "";
     }
 

@@ -32,7 +32,7 @@ import java.util.logging.Logger;
  */
 public class AdminDashboardController implements Initializable {
 
-    private static final Logger LOGGER = Logger.getLogger(AdminDashboardController.class.getName());
+    protected static final Logger LOGGER = Logger.getLogger(AdminDashboardController.class.getName());
 
     @FXML Label lblActiveAuctions;
     @FXML Label lblTotalUsers;

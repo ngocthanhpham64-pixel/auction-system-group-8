@@ -43,7 +43,7 @@ import vn.edu.vnu.uet.group8.common.enums.SessionStatus;
  */
 public class AdminAuctionListController implements Initializable {
 
-    private static final Logger LOGGER = Logger.getLogger(AdminAuctionListController.class.getName());
+    protected static final Logger LOGGER = Logger.getLogger(AdminAuctionListController.class.getName());
 
     @FXML TableView<AuctionItemDTO> auctionTable;
     @FXML TableColumn<AuctionItemDTO, Integer> colId;
@@ -57,8 +57,8 @@ public class AdminAuctionListController implements Initializable {
     @FXML TextField tfSearch;
     @FXML ComboBox<String> cbFilterStatus;
 
-    private final ObservableList<AuctionItemDTO> allAuctions = FXCollections.observableArrayList();
-    private FilteredList<AuctionItemDTO> filteredAuctions;
+    protected final ObservableList<AuctionItemDTO> allAuctions = FXCollections.observableArrayList();
+    protected FilteredList<AuctionItemDTO> filteredAuctions;
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
@@ -109,7 +109,7 @@ public class AdminAuctionListController implements Initializable {
         if (colAction == null) return;
 
         colAction.setCellFactory(col -> new TableCell<>() {
-            private final Button btnCancel = new Button("Hủy phiên");
+            protected final Button btnCancel = new Button("Hủy phiên");
 
             {
                 btnCancel.setStyle("-fx-background-color: #EF4444; -fx-text-fill: white; -fx-font-size: 11px;");
@@ -156,13 +156,13 @@ public class AdminAuctionListController implements Initializable {
         filteredAuctions.setPredicate(a -> matchSearch(a, search) && matchStatus(a, status));
     }
 
-    private boolean matchSearch(AuctionItemDTO a, String search) {
+    protected boolean matchSearch(AuctionItemDTO a, String search) {
         if (search.isEmpty()) return true;
         String title = a.getTitle() != null ? a.getTitle().toLowerCase() : "";
         return title.contains(search);
     }
 
-    private boolean matchStatus(AuctionItemDTO a, String filter) {
+    protected boolean matchStatus(AuctionItemDTO a, String filter) {
         if (filter == null || filter.startsWith("Tất cả")) return true;
         return a.getStatus() != null && filter.equals(a.getStatus().name());
     }

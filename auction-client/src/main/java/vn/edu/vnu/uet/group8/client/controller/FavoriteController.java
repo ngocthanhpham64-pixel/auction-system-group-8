@@ -38,7 +38,7 @@ import vn.edu.vnu.uet.group8.common.dto.model.AuctionItemDTO;
  */
 public class FavoriteController implements Initializable {
 
-    private static final Logger LOGGER = Logger.getLogger(FavoriteController.class.getName());
+    protected static final Logger LOGGER = Logger.getLogger(FavoriteController.class.getName());
 
     @FXML FlowPane favoriteContainer;
     @FXML Label lblActiveCount;
@@ -46,9 +46,9 @@ public class FavoriteController implements Initializable {
     @FXML Button btnTabActive;
     @FXML Button btnTabEnded;
 
-    private Button activeTab;
+    protected Button activeTab;
     /** "all" | "active" | "ended" */
-    private String currentFilter = "all";
+    protected String currentFilter = "all";
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
@@ -88,7 +88,7 @@ public class FavoriteController implements Initializable {
         }
     }
 
-    private String emptyMessage() {
+    protected String emptyMessage() {
         return switch (currentFilter) {
             case "active" -> "Không có món yêu thích nào đang còn hoạt động";
             case "ended"  -> "Chưa có món yêu thích nào đã kết thúc";
@@ -96,7 +96,7 @@ public class FavoriteController implements Initializable {
         };
     }
 
-    private List<AuctionItemDTO> filter(List<AuctionItemDTO> src) {
+    protected List<AuctionItemDTO> filter(List<AuctionItemDTO> src) {
         return switch (currentFilter) {
             case "active" -> src.stream().filter(this::isActive).toList();
             case "ended"  -> src.stream().filter(this::isEnded).toList();
@@ -104,15 +104,15 @@ public class FavoriteController implements Initializable {
         };
     }
 
-    private boolean isActive(AuctionItemDTO item) {
+    protected boolean isActive(AuctionItemDTO item) {
         return item.getEndTime() == null || item.getEndTime().isAfter(Instant.now());
     }
 
-    private boolean isEnded(AuctionItemDTO item) {
+    protected boolean isEnded(AuctionItemDTO item) {
         return item.getEndTime() != null && !item.getEndTime().isAfter(Instant.now());
     }
 
-    private Node buildCard(AuctionItemDTO item) {
+    protected Node buildCard(AuctionItemDTO item) {
         try {
             URL resource = getClass().getResource("/fxml/ProductCard.fxml");
             if (resource == null) {

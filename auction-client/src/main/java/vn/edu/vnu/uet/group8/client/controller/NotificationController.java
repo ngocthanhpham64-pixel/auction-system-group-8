@@ -30,7 +30,7 @@ import vn.edu.vnu.uet.group8.common.dto.model.NotificationDTO;
  */
 public class NotificationController implements Initializable {
 
-    private static final Logger LOGGER = Logger.getLogger(NotificationController.class.getName());
+    protected static final Logger LOGGER = Logger.getLogger(NotificationController.class.getName());
 
     @FXML VBox notificationList;
     @FXML Label lblNewCount;
@@ -39,8 +39,8 @@ public class NotificationController implements Initializable {
     @FXML Button btnTabAuction;
     @FXML Button btnTabSystem;
 
-    private Button activeTab;
-    private String currentFilter = "all";
+    protected Button activeTab;
+    protected String currentFilter = "all";
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
@@ -123,7 +123,7 @@ public class NotificationController implements Initializable {
         lblNewCount.setManaged(count > 0);
     }
 
-    private boolean matchFilter(NotificationDTO n) {
+    protected boolean matchFilter(NotificationDTO n) {
         return switch (currentFilter) {
             case "unread"  -> !n.isRead();
             case "auction" -> "AUCTION".equalsIgnoreCase(n.getType());
@@ -133,7 +133,7 @@ public class NotificationController implements Initializable {
     }
 
     /** Build 1 row notification voi title + actions. */
-    private HBox buildItem(NotificationDTO n) {
+    protected HBox buildItem(NotificationDTO n) {
         HBox row = new HBox(10);
         row.getStyleClass().add(n.isRead() ? "card-soft" : "card-unread");
         row.setStyle("-fx-padding: 12; -fx-background-radius: 8;");

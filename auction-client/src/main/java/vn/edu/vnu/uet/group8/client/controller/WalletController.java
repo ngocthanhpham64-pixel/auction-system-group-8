@@ -36,10 +36,10 @@ import vn.edu.vnu.uet.group8.common.enums.TransactionType;
  */
 public class WalletController implements Initializable {
 
-    private static final Logger LOGGER = Logger.getLogger(WalletController.class.getName());
+    protected static final Logger LOGGER = Logger.getLogger(WalletController.class.getName());
 
-    private static final BigDecimal MIN_DEPOSIT = new BigDecimal("10000");        // 10k VND
-    private static final BigDecimal MAX_DEPOSIT = new BigDecimal("100000000");    // 100tr VND
+    protected static final BigDecimal MIN_DEPOSIT = new BigDecimal("10000");        // 10k VND
+    protected static final BigDecimal MAX_DEPOSIT = new BigDecimal("100000000");    // 100tr VND
 
     @FXML Label lblBalance;
     @FXML Label lblHolding;
@@ -50,10 +50,10 @@ public class WalletController implements Initializable {
     @FXML Button btnTabHold;
     @FXML Button btnTabPayment;
 
-    private Button activeTab;
-    private String currentFilter = "all";
-    private List<TransactionHistoryEntry> allTransactions = new ArrayList<>();
-    private static final DateTimeFormatter DATE_FORMAT = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm").withZone(ZoneId.systemDefault());
+    protected Button activeTab;
+    protected String currentFilter = "all";
+    protected List<TransactionHistoryEntry> allTransactions = new ArrayList<>();
+    protected static final DateTimeFormatter DATE_FORMAT = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm").withZone(ZoneId.systemDefault());
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
@@ -237,7 +237,7 @@ public class WalletController implements Initializable {
         }
     }
 
-    private boolean matchFilter(TransactionHistoryEntry tx) {
+    protected boolean matchFilter(TransactionHistoryEntry tx) {
         return switch (currentFilter) {
             case "deposit" -> tx.type() == TransactionType.DEPOSIT || tx.type() == TransactionType.WITHDRAW;
             case "hold"    -> tx.type() == TransactionType.BID_HOLD || tx.type() == TransactionType.BID_REFUND;
@@ -246,7 +246,7 @@ public class WalletController implements Initializable {
         };
     }
 
-    private HBox buildTransactionRow(TransactionHistoryEntry tx) {
+    protected HBox buildTransactionRow(TransactionHistoryEntry tx) {
         HBox row = new HBox(10);
         row.setStyle("-fx-padding: 10; -fx-background-color: #f8fafc; -fx-background-radius: 6;");
         
@@ -270,7 +270,7 @@ public class WalletController implements Initializable {
     /**
      * Parse string -> BigDecimal, return null neu invalid.
      */
-    private BigDecimal parseAmount(String input) {
+    protected BigDecimal parseAmount(String input) {
         if (input == null || input.isBlank()) return null;
         try {
             String cleaned = input.replaceAll("[^\\d]", "");
@@ -281,7 +281,7 @@ public class WalletController implements Initializable {
         }
     }
 
-    private String formatVnd(BigDecimal amount) {
+    protected String formatVnd(BigDecimal amount) {
         return String.format("%,.0f d", amount);
     }
 }

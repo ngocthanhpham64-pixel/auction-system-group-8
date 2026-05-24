@@ -36,7 +36,7 @@ import vn.edu.vnu.uet.group8.common.dto.model.AuctionItemDTO;
  */
 public class AuctionDetailController implements Initializable {
 
-    private static final Logger LOGGER = Logger.getLogger(AuctionDetailController.class.getName());
+    protected static final Logger LOGGER = Logger.getLogger(AuctionDetailController.class.getName());
 
     // ===== FXML — info =====
     @FXML ImageView imgMain;
@@ -72,12 +72,12 @@ public class AuctionDetailController implements Initializable {
     @FXML Button btnThumb3;
 
     // ===== STATE =====
-    private AuctionItemDTO currentItem;
-    private BigDecimal currentPrice = BigDecimal.ZERO;
-    private final BigDecimal bidStep = new BigDecimal("10000000");
-    private Timeline countdown;
-    private int remainSeconds = 0;
-    private Button activeTabBtn;
+    protected AuctionItemDTO currentItem;
+    protected BigDecimal currentPrice = BigDecimal.ZERO;
+    protected final BigDecimal bidStep = new BigDecimal("10000000");
+    protected Timeline countdown;
+    protected int remainSeconds = 0;
+    protected Button activeTabBtn;
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
@@ -226,7 +226,7 @@ public class AuctionDetailController implements Initializable {
         }
     }
 
-    private BigDecimal parseBidInput() {
+    protected BigDecimal parseBidInput() {
         if (tfBidAmount == null) return null;
         String input = tfBidAmount.getText().replaceAll("[^\\d]", "");
         if (input.isBlank()) {
@@ -361,7 +361,7 @@ public class AuctionDetailController implements Initializable {
 
     // ===== HELPER =====
 
-    private String formatPrice(BigDecimal price) {
+    protected String formatPrice(BigDecimal price) {
         return price == null ? "--" : String.format("%,.0f d", price);
     }
 

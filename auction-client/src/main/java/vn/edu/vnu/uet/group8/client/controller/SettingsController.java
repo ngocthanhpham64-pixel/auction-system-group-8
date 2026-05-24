@@ -31,20 +31,20 @@ import vn.edu.vnu.uet.group8.client.util.SessionManager;
  */
 public class SettingsController implements Initializable {
 
-    private static final Logger LOGGER = Logger.getLogger(SettingsController.class.getName());
-    private static final Preferences PREFS = Preferences.userNodeForPackage(SettingsController.class);
+    protected static final Logger LOGGER = Logger.getLogger(SettingsController.class.getName());
+    protected static final Preferences PREFS = Preferences.userNodeForPackage(SettingsController.class);
 
     // Pref keys
-    private static final String PREF_DARK_MODE       = "darkMode";
-    private static final String PREF_EMAIL_ENDING    = "emailEnding";
-    private static final String PREF_EMAIL_OUTBID    = "emailOutbid";
-    private static final String PREF_EMAIL_PROMO     = "emailPromo";
-    private static final String PREF_PUSH_NOTI       = "pushNoti";
-    private static final String PREF_LANGUAGE        = "language";
+    protected static final String PREF_DARK_MODE       = "darkMode";
+    protected static final String PREF_EMAIL_ENDING    = "emailEnding";
+    protected static final String PREF_EMAIL_OUTBID    = "emailOutbid";
+    protected static final String PREF_EMAIL_PROMO     = "emailPromo";
+    protected static final String PREF_PUSH_NOTI       = "pushNoti";
+    protected static final String PREF_LANGUAGE        = "language";
 
     // Validators
-    private static final Pattern EMAIL_PATTERN = Pattern.compile("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+$");
-    private static final Pattern PHONE_PATTERN = Pattern.compile("^0\\d{9}$");
+    protected static final Pattern EMAIL_PATTERN = Pattern.compile("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+$");
+    protected static final Pattern PHONE_PATTERN = Pattern.compile("^0\\d{9}$");
 
     @FXML Label lblFullName;
     @FXML Label lblEmail;

@@ -26,6 +26,7 @@ class SellerServiceTest {
                 new BigDecimal("500000"),
                 24,
                 Map.of("brand", "Apple"),
+                List.of(),
                 false,
                 null,
                 null

@@ -40,9 +40,9 @@ public class SellerDashboardController implements Initializable {
     @FXML Button btnTabListed;
     @FXML Button btnTabSold;
 
-    private Button activeTab;
-    private String currentFilter = "all";
-    private List<AuctionItemDTO> myItems = List.of();
+    protected Button activeTab;
+    protected String currentFilter = "all";
+    protected List<AuctionItemDTO> myItems = List.of();
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
@@ -84,7 +84,7 @@ public class SellerDashboardController implements Initializable {
         }
     }
 
-    private boolean matchTab(AuctionItemDTO item) {
+    protected boolean matchTab(AuctionItemDTO item) {
         return switch (currentFilter) {
             case "draft"  -> item.getStatus() == SessionStatus.UPCOMING;
             case "listed" -> item.getStatus() == SessionStatus.ACTIVE;
@@ -95,12 +95,12 @@ public class SellerDashboardController implements Initializable {
         };
     }
 
-    private boolean isActive(AuctionItemDTO item) {
+    protected boolean isActive(AuctionItemDTO item) {
         if (item.getEndTime() == null) return false;
         return item.getEndTime().isAfter(Instant.now());
     }
 
-    private HBox buildItemRow(AuctionItemDTO item) {
+    protected HBox buildItemRow(AuctionItemDTO item) {
         HBox row = new HBox(16);
         row.getStyleClass().add("card");
         row.setStyle("-fx-padding: 16; -fx-background-radius: 12;");

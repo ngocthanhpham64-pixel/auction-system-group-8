@@ -47,9 +47,9 @@ import java.util.logging.Logger;
  */
 public class LiveAuctionController implements Initializable {
 
-    private static final Logger LOGGER = Logger.getLogger(LiveAuctionController.class.getName());
+    protected static final Logger LOGGER = Logger.getLogger(LiveAuctionController.class.getName());
 
-    private static final DateTimeFormatter TIME_FORMAT = DateTimeFormatter.ofPattern("HH:mm:ss");
+    protected static final DateTimeFormatter TIME_FORMAT = DateTimeFormatter.ofPattern("HH:mm:ss");
 
     @FXML Label lblProductName;
     @FXML Label lblCategory;
@@ -69,14 +69,14 @@ public class LiveAuctionController implements Initializable {
     @FXML TextField tfChatInput;
 
     // ===== STATE =====
-    private AuctionItemDTO currentItem;
-    private BigDecimal currentPrice = BigDecimal.ZERO;
-    private final BigDecimal bidStep = new BigDecimal("10000000");
-    private Timeline countdown;
-    private int remainSeconds = 0;
-    private Consumer<ServerResponse> subscription;
-    private int viewerCount = 100;  // demo
-    private int chatCount = 0;
+    protected AuctionItemDTO currentItem;
+    protected BigDecimal currentPrice = BigDecimal.ZERO;
+    protected final BigDecimal bidStep = new BigDecimal("10000000");
+    protected Timeline countdown;
+    protected int remainSeconds = 0;
+    protected Consumer<ServerResponse> subscription;
+    protected int viewerCount = 100;  // demo
+    protected int chatCount = 0;
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
@@ -222,7 +222,7 @@ public class LiveAuctionController implements Initializable {
         if (tfBidAmount != null) tfBidAmount.setText(formatPrice(amount));
     }
 
-    private BigDecimal parseBidInput() {
+    protected BigDecimal parseBidInput() {
         if (tfBidAmount == null) return null;
         String text = tfBidAmount.getText();
         if (text == null || text.isBlank()) return null;
@@ -341,7 +341,7 @@ public class LiveAuctionController implements Initializable {
 
     // ===== HELPER =====
 
-    private String formatPrice(BigDecimal price) {
+    protected String formatPrice(BigDecimal price) {
         return price == null ? "--" : String.format("%,.0f d", price);
     }
 

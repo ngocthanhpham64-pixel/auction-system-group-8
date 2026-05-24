@@ -34,13 +34,13 @@ import java.util.regex.Pattern;
  */
 public class RegisterController implements Initializable {
 
-    private static final Logger LOGGER = Logger.getLogger(RegisterController.class.getName());
+    protected static final Logger LOGGER = Logger.getLogger(RegisterController.class.getName());
 
     // Validators
-    private static final Pattern EMAIL_PATTERN    = Pattern.compile("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$");
-    private static final Pattern PHONE_PATTERN    = Pattern.compile("^0\\d{9}$");
-    private static final Pattern USERNAME_PATTERN = Pattern.compile("^[A-Za-z0-9_]{3,20}$");
-    private static final Pattern PASSWORD_PATTERN = Pattern.compile("^(?=.*[A-Za-z])(?=.*\\d).{8,}$");
+    protected static final Pattern EMAIL_PATTERN    = Pattern.compile("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$");
+    protected static final Pattern PHONE_PATTERN    = Pattern.compile("^0\\d{9}$");
+    protected static final Pattern USERNAME_PATTERN = Pattern.compile("^[A-Za-z0-9_]{3,20}$");
+    protected static final Pattern PASSWORD_PATTERN = Pattern.compile("^(?=.*[A-Za-z])(?=.*\\d).{8,}$");
 
     @FXML TextField tfUsername;
     @FXML TextField tfFullName;
@@ -106,7 +106,7 @@ public class RegisterController implements Initializable {
     /**
      * Validate tat ca field. Return error message hoac null neu OK.
      */
-    private String validate(String username, String fullName, String email,
+    protected String validate(String username, String fullName, String email,
                             String phone, String password, String confirm) {
 
         if (username.isEmpty() || fullName.isEmpty() || email.isEmpty()
@@ -175,7 +175,7 @@ public class RegisterController implements Initializable {
 
     // ===== HELPERS =====
 
-    private String safeText(TextField field) {
+    protected String safeText(TextField field) {
         if (field == null) return "";
         String text = field.getText();
         return text != null ? text.trim() : "";
