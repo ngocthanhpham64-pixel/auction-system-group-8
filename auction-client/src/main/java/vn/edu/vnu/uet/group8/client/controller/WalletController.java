@@ -64,19 +64,27 @@ public class WalletController implements Initializable {
 
     /** Binding balance label voi ClientModel.balanceProperty. */
     void bindBalance() {
-        ClientModel model = ClientModel.getInstance();
-        BigDecimal current = model.getBalance();
-        updateBalanceLabel(current);
 
-        model.balanceProperty().addListener((obs, oldVal, newVal) ->
-                Platform.runLater(() -> updateBalanceLabel(newVal))
-        );
+        ClientModel model = ClientModel.getInstance();
+
+        updateBalanceLabel(model.getBalance());
+
+        model.balanceProperty().addListener((obs, oldVal, newVal) -> {
+            if (Platform.isFxApplicationThread()) {
+                updateBalanceLabel(newVal);
+            } else {
+                Platform.runLater(() -> updateBalanceLabel(newVal));
+            }
+        });
     }
 
     void updateBalanceLabel(BigDecimal balance) {
-        if (lblBalance == null) return;
-        BigDecimal value = balance != null ? balance : BigDecimal.ZERO;
-        lblBalance.setText(String.format("%,.0f d", value));
+
+        if (lblBalance == null) {
+            return;
+        }
+
+        lblBalance.setText(formatVnd(balance));
     }
 
     // ===== ACTIONS =====
@@ -282,6 +290,12 @@ public class WalletController implements Initializable {
     }
 
     protected String formatVnd(BigDecimal amount) {
-        return String.format("%,.0f d", amount);
+
+        BigDecimal value =
+                amount != null
+                        ? amount
+                        : BigDecimal.ZERO;
+
+        return String.format("%,.0f d", value);
     }
 }

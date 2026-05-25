@@ -112,7 +112,7 @@ public class ExploreController implements Initializable {
         if (productContainer == null) return;
         productContainer.getChildren().clear();
 
-        List<AuctionItemDTO> filtered = applyFilters(allItems);
+        List<AuctionItemDTO> filtered = filter(allItems);
         
         if (filtered.isEmpty()) {
             renderEmptyState("Không tìm thấy sản phẩm nào");
@@ -131,24 +131,26 @@ public class ExploreController implements Initializable {
     }
 
     void renderEmptyState(String message) {
-        Label empty = new Label(message);
-        empty.setStyle("-fx-text-fill: #9ca3af; -fx-font-size: 14px; -fx-padding: 50 0;");
+
+        if (productContainer == null) {
+            return;
+        }
+
+        Label empty = new Label(
+                message != null ? message : "Không có dữ liệu"
+        );
+
+        empty.setStyle(
+                "-fx-text-fill: #9ca3af; " +
+                        "-fx-font-size: 14px; " +
+                        "-fx-padding: 50 0;"
+        );
+
         productContainer.getChildren().add(empty);
-        if (lblResultCount != null) lblResultCount.setText("0 kết quả");
-    }
 
-    protected List<AuctionItemDTO> applyFilters(List<AuctionItemDTO> items) {
-        String cat = (cbCategory != null) ? cbCategory.getValue() : "Tất cả danh mục";
-        String rawKeyword = ClientModel.getInstance().getSearchQuery();
-        final String keyword = rawKeyword != null
-                ? rawKeyword.toLowerCase()
-                : "";
-
-        return items.stream()
-                .filter(it -> matchCategory(it, cat))
-                .filter(it -> matchKeyword(it, keyword))
-                .filter(this::matchTagFilter)
-                .toList();
+        if (lblResultCount != null) {
+            lblResultCount.setText("0 kết quả");
+        }
     }
 
     protected boolean matchKeyword(AuctionItemDTO item, String keyword) {
@@ -171,15 +173,60 @@ public class ExploreController implements Initializable {
         if (item.getCategory() == null) return false;
         return item.getCategory().name().equalsIgnoreCase(currentTagFilter);
     }
+    protected List<AuctionItemDTO> filter(List<AuctionItemDTO> src) {
+
+        if (src == null || src.isEmpty()) {
+            return List.of();
+        }
+
+        String keyword = ClientModel.getInstance().getSearchQuery();
+
+        String category =
+                cbCategory != null ? cbCategory.getValue() : null;
+
+        return src.stream()
+                .filter(item -> matchKeyword(item, keyword))
+                .filter(item -> matchCategory(item, category))
+                .filter(this::matchTagFilter)
+                .toList();
+    }
 
     protected List<AuctionItemDTO> applySorting(List<AuctionItemDTO> items) {
-        String sortMode = (cbSort != null) ? cbSort.getValue() : "Mới nhất";
+
+        if (items == null || items.isEmpty()) {
+            return List.of();
+        }
+
+        String sortMode = "Mới nhất";
+
+        if (cbSort != null && cbSort.getValue() != null) {
+            sortMode = cbSort.getValue();
+        }
+
         Comparator<AuctionItemDTO> comparator = switch (sortMode) {
-            case "Giá thấp -> cao" -> Comparator.comparing(AuctionItemDTO::getCurrentPrice, Comparator.nullsLast(Comparator.naturalOrder()));
-            case "Giá cao -> thap" -> Comparator.comparing(AuctionItemDTO::getCurrentPrice, Comparator.nullsLast(Comparator.naturalOrder())).reversed();
-            default -> Comparator.comparing(AuctionItemDTO::getCreatedAt, Comparator.nullsLast(Comparator.naturalOrder())).reversed();
+
+            case "Giá thấp -> cao" ->
+                    Comparator.comparing(
+                            AuctionItemDTO::getCurrentPrice,
+                            Comparator.nullsLast(Comparator.naturalOrder())
+                    );
+
+            case "Giá cao -> thap" ->
+                    Comparator.comparing(
+                            AuctionItemDTO::getCurrentPrice,
+                            Comparator.nullsLast(Comparator.naturalOrder())
+                    ).reversed();
+
+            default ->
+                    Comparator.comparing(
+                            AuctionItemDTO::getCreatedAt,
+                            Comparator.nullsLast(Comparator.naturalOrder())
+                    ).reversed();
         };
-        return items.stream().sorted(comparator).toList();
+
+        return items.stream()
+                .sorted(comparator)
+                .toList();
     }
 
     protected Node buildProductCard(AuctionItemDTO item) {

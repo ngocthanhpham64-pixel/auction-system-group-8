@@ -109,10 +109,18 @@ public class NotificationController implements Initializable {
     }
 
     void renderEmpty() {
+
+        if (notificationList == null) {
+            return;
+        }
+
         notificationList.getChildren().clear();
+
         Label empty = new Label("Chua co thong bao nao");
         empty.getStyleClass().add("label-info");
+
         notificationList.getChildren().add(empty);
+
         updateNewCount(0);
     }
 

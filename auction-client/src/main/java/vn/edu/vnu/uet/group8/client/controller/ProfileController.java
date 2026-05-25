@@ -104,6 +104,9 @@ public class ProfileController implements Initializable {
     }
 
     void updateBalance(BigDecimal value) {
+        if (lblBalance == null) {
+            return;
+        }
         BigDecimal v = value != null ? value : BigDecimal.ZERO;
         lblBalance.setText(String.format("%,.0f d", v));
     }

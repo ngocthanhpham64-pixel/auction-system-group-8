@@ -100,7 +100,19 @@ public class SellerDashboardController implements Initializable {
     }
 
     protected boolean isActive(AuctionItemDTO item) {
-        if (item.getEndTime() == null) return false;
+
+        if (item == null) {
+            return false;
+        }
+
+        if (item.getStatus() != SessionStatus.ACTIVE) {
+            return false;
+        }
+
+        if (item.getEndTime() == null) {
+            return false;
+        }
+
         return item.getEndTime().isAfter(Instant.now());
     }
 

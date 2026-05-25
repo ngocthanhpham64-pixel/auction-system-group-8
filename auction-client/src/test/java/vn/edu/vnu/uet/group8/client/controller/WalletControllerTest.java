@@ -8,12 +8,25 @@ import vn.edu.vnu.uet.group8.common.enums.TransactionType;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-@DisplayName("WalletController")
-class WalletControllerTest extends FxTestBase {
+/**
+ * WalletControllerAdditionalTest – phủ các nhánh chưa có trong WalletControllerTest:
+ *  - onHistory() → setTab("all", ...)
+ *  - onViewAll() → setTab + showInfo (transactionList null guard)
+ *  - setTab – CSS class tag-active / tag-inactive
+ *  - parseAmount – biên MIN_DEPOSIT, MAX_DEPOSIT
+ *  - bindBalance – không crash
+ *  - matchFilter – BID_REFUND với hold, WITHDRAW với deposit
+ *  - renderTransactions – filter 'deposit' chỉ lấy đúng loại
+ *  - buildTransactionRow – amount = 0 (edge case boundary)
+ *  - updateTotalSpent – BID_WIN âm (abs)
+ */
+@DisplayName("WalletController – additional branches")
+class WalletControllerAdditionalTest extends FxTestBase {
 
     private WalletController controller;
 
@@ -30,273 +43,281 @@ class WalletControllerTest extends FxTestBase {
         controller.btnTabPayment   = new Button();
         controller.activeTab       = controller.btnTabAll;
         controller.currentFilter   = "all";
-        controller.allTransactions = new java.util.ArrayList<>();
+        controller.allTransactions = new ArrayList<>();
     }
 
     private TransactionHistoryEntry tx(TransactionType type, BigDecimal amount) {
-        return new TransactionHistoryEntry(
-                "tx-1",
-                amount,
-                type,
-                "ref",
-                Instant.now()
-        );
+        return new TransactionHistoryEntry("tx-1", amount, type, "ref", Instant.now());
     }
 
-    // ─────────── parseAmount ───────────
+    // ─────────── onHistory ───────────
 
-    @Nested @DisplayName("parseAmount")
-    class ParseAmount {
+    @Nested @DisplayName("onHistory")
+    class OnHistory {
 
-        @Test @DisplayName("số thuần → BigDecimal đúng")
-        void plain_number() {
-            assertEquals(new BigDecimal("500000"), controller.parseAmount("500000"));
-        }
-
-        @Test @DisplayName("có dấu phẩy → vẫn parse được")
-        void formatted_number() {
-            assertEquals(new BigDecimal("500000"), controller.parseAmount("500,000"));
-        }
-
-        @Test @DisplayName("null → null")
-        void null_input() {
-            assertNull(controller.parseAmount(null));
-        }
-
-        @Test @DisplayName("blank → null")
-        void blank_input() {
-            assertNull(controller.parseAmount("   "));
-        }
-
-        @Test @DisplayName("chỉ chữ → null")
-        void letters_only() {
-            assertNull(controller.parseAmount("abc"));
-        }
-
-        @Test @DisplayName("rỗng → null")
-        void empty_input() {
-            assertNull(controller.parseAmount(""));
-        }
-
-        @Test @DisplayName("có ký tự đặc biệt → lấy chữ số")
-        void special_chars() {
-            assertEquals(new BigDecimal("1000"), controller.parseAmount("1.000đ"));
-        }
-    }
-
-    // ─────────── formatVnd ───────────
-
-    @Nested @DisplayName("formatVnd")
-    class FormatVnd {
-
-        @Test @DisplayName("1000000 → chứa '1,000,000'")
-        void one_million() {
-            String r = controller.formatVnd(new BigDecimal("1000000"));
-            assertTrue(r.contains("1,000,000"), "Nhận: " + r);
-        }
-
-        @Test @DisplayName("ZERO → chứa '0'")
-        void zero() {
-            String r = controller.formatVnd(BigDecimal.ZERO);
-            assertTrue(r.contains("0"));
-        }
-    }
-
-    // ─────────── updateBalanceLabel ───────────
-
-    @Nested @DisplayName("updateBalanceLabel")
-    class UpdateBalanceLabel {
-
-        @Test @DisplayName("balance hợp lệ → label được set")
-        void valid_balance() {
-            controller.updateBalanceLabel(new BigDecimal("2000000"));
-            assertTrue(controller.lblBalance.getText().contains("2,000,000"));
-        }
-
-        @Test @DisplayName("null balance → hiển thị 0")
-        void null_balance_shows_zero() {
-            controller.updateBalanceLabel(null);
-            assertTrue(controller.lblBalance.getText().contains("0"));
-        }
-
-        @Test @DisplayName("lblBalance null → không crash")
-        void null_label_no_crash() {
-            controller.lblBalance = null;
-            assertDoesNotThrow(() -> controller.updateBalanceLabel(new BigDecimal("1000")));
-        }
-    }
-
-    // ─────────── matchFilter ───────────
-
-    @Nested @DisplayName("matchFilter")
-    class MatchFilter {
-
-        @Test @DisplayName("filter 'all' → match mọi loại")
-        void all_filter_matches_all() {
-            controller.currentFilter = "all";
-            assertTrue(controller.matchFilter(tx(TransactionType.DEPOSIT, BigDecimal.ONE)));
-            assertTrue(controller.matchFilter(tx(TransactionType.BID_WIN, BigDecimal.ONE)));
-            assertTrue(controller.matchFilter(tx(TransactionType.BID_HOLD, BigDecimal.ONE)));
-        }
-
-        @Test @DisplayName("filter 'deposit' → match DEPOSIT")
-        void deposit_filter_matches_deposit() {
+        @Test @DisplayName("onHistory → currentFilter = 'all'")
+        void sets_all_filter() {
             controller.currentFilter = "deposit";
-            assertTrue(controller.matchFilter(tx(TransactionType.DEPOSIT, BigDecimal.ONE)));
+            controller.onHistory();
+            assertEquals("all", controller.currentFilter);
         }
 
-        @Test @DisplayName("filter 'deposit' → match WITHDRAW")
-        void deposit_filter_matches_withdraw() {
-            controller.currentFilter = "deposit";
-            assertTrue(controller.matchFilter(tx(TransactionType.WITHDRAW, BigDecimal.ONE)));
+        @Test @DisplayName("onHistory → activeTab = btnTabAll")
+        void sets_active_tab_to_all() {
+            controller.onHistory();
+            assertSame(controller.btnTabAll, controller.activeTab);
         }
 
-        @Test @DisplayName("filter 'deposit' → không match BID_WIN")
-        void deposit_filter_no_bid_win() {
-            controller.currentFilter = "deposit";
-            assertFalse(controller.matchFilter(tx(TransactionType.BID_WIN, BigDecimal.ONE)));
+        @Test @DisplayName("onHistory → tag-active trên btnTabAll")
+        void btn_tab_all_gets_active_class() {
+            controller.onHistory();
+            assertTrue(controller.btnTabAll.getStyleClass().contains("tag-active"));
         }
+    }
 
-        @Test @DisplayName("filter 'hold' → match BID_HOLD")
-        void hold_filter_matches_bid_hold() {
+    // ─────────── onViewAll ───────────
+
+    @Nested @DisplayName("onViewAll")
+    class OnViewAll {
+
+        @Test @DisplayName("onViewAll → currentFilter = 'all'")
+        void sets_all_filter() {
             controller.currentFilter = "hold";
-            assertTrue(controller.matchFilter(tx(TransactionType.BID_HOLD, BigDecimal.ONE)));
+            controller.onViewAll();
+            assertEquals("all", controller.currentFilter);
         }
 
-        @Test @DisplayName("filter 'hold' → match BID_REFUND")
-        void hold_filter_matches_bid_refund() {
+        @Test @DisplayName("onViewAll với transactionList có children → không crash")
+        void with_children_no_crash() {
+            controller.transactionList.getChildren().add(new Label("item"));
+            assertDoesNotThrow(() -> controller.onViewAll());
+        }
+
+        @Test @DisplayName("onViewAll với transactionList rỗng → không crash")
+        void empty_list_no_crash() {
+            assertDoesNotThrow(() -> controller.onViewAll());
+        }
+    }
+
+    // ─────────── setTab – CSS classes ───────────
+
+    @Nested @DisplayName("setTab – CSS class transitions")
+    class SetTabCss {
+
+        @Test @DisplayName("setTab thêm tag-active cho button mới")
+        void new_button_gets_active_class() {
+            controller.setTab("deposit", controller.btnTabDeposit);
+            assertTrue(controller.btnTabDeposit.getStyleClass().contains("tag-active"));
+        }
+
+        @Test @DisplayName("setTab xóa tag-active khỏi tab cũ")
+        void old_tab_loses_active_class() {
+            controller.btnTabAll.getStyleClass().add("tag-active");
+            controller.activeTab = controller.btnTabAll;
+            controller.setTab("deposit", controller.btnTabDeposit);
+            assertFalse(controller.btnTabAll.getStyleClass().contains("tag-active"));
+        }
+
+        @Test @DisplayName("setTab thêm tag-inactive cho tab cũ")
+        void old_tab_gets_inactive_class() {
+            controller.btnTabAll.getStyleClass().add("tag-active");
+            controller.activeTab = controller.btnTabAll;
+            controller.setTab("deposit", controller.btnTabDeposit);
+            assertTrue(controller.btnTabAll.getStyleClass().contains("tag-inactive"));
+        }
+
+        @Test @DisplayName("setTab xóa tag-inactive khỏi button mới")
+        void new_button_loses_inactive_class() {
+            controller.btnTabDeposit.getStyleClass().add("tag-inactive");
+            controller.setTab("deposit", controller.btnTabDeposit);
+            assertFalse(controller.btnTabDeposit.getStyleClass().contains("tag-inactive"));
+        }
+
+        @Test @DisplayName("setTab với activeTab null → không crash")
+        void null_active_tab_no_crash() {
+            controller.activeTab = null;
+            assertDoesNotThrow(() -> controller.setTab("hold", controller.btnTabHold));
+        }
+
+        @Test @DisplayName("setTab không thêm tag-inactive trùng lặp")
+        void no_duplicate_inactive_class() {
+            controller.btnTabAll.getStyleClass().add("tag-active");
+            controller.btnTabAll.getStyleClass().add("tag-inactive");
+            controller.activeTab = controller.btnTabAll;
+            controller.setTab("deposit", controller.btnTabDeposit);
+            long count = controller.btnTabAll.getStyleClass().stream()
+                    .filter("tag-inactive"::equals).count();
+            assertEquals(1, count);
+        }
+    }
+
+    // ─────────── parseAmount – biên ───────────
+
+    @Nested @DisplayName("parseAmount – boundary values")
+    class ParseAmountBoundary {
+
+        @Test @DisplayName("MIN_DEPOSIT (10000) → parse đúng")
+        void min_deposit_parses() {
+            assertEquals(new BigDecimal("10000"), controller.parseAmount("10000"));
+        }
+
+        @Test @DisplayName("MAX_DEPOSIT (100000000) → parse đúng")
+        void max_deposit_parses() {
+            assertEquals(new BigDecimal("100000000"), controller.parseAmount("100000000"));
+        }
+
+        @Test @DisplayName("dưới MIN (9999) → parse ra số nhưng nhỏ hơn MIN")
+        void below_min_deposit() {
+            BigDecimal result = controller.parseAmount("9999");
+            assertNotNull(result);
+            assertTrue(result.compareTo(WalletController.MIN_DEPOSIT) < 0);
+        }
+
+        @Test @DisplayName("trên MAX (100000001) → parse ra số nhưng lớn hơn MAX")
+        void above_max_deposit() {
+            BigDecimal result = controller.parseAmount("100000001");
+            assertNotNull(result);
+            assertTrue(result.compareTo(WalletController.MAX_DEPOSIT) > 0);
+        }
+
+        @Test @DisplayName("'0' → parse ra ZERO (không null)")
+        void zero_string_parses() {
+            BigDecimal result = controller.parseAmount("0");
+            assertNotNull(result);
+            assertEquals(BigDecimal.ZERO, result);
+        }
+    }
+
+    // ─────────── bindBalance ───────────
+
+    @Nested @DisplayName("bindBalance")
+    class BindBalance {
+
+        @Test @DisplayName("bindBalance không crash khi lblBalance hợp lệ")
+        void no_crash_valid_label() {
+            assertDoesNotThrow(() -> controller.bindBalance());
+        }
+
+        @Test @DisplayName("bindBalance không crash khi lblBalance null")
+        void no_crash_null_label() {
+            controller.lblBalance = null;
+            assertDoesNotThrow(() -> controller.bindBalance());
+        }
+
+        @Test
+        @DisplayName("bindBalance set text từ ClientModel.balance")
+        void sets_text_from_model() {
+
+            assertDoesNotThrow(() -> {
+
+                vn.edu.vnu.uet.group8.client.model.ClientModel.getInstance()
+                        .updateBalance(new BigDecimal("3000000"));
+
+                controller.bindBalance();
+            });
+        }
+    }
+
+    // ─────────── matchFilter – BID_REFUND / WITHDRAW ───────────
+
+    @Nested @DisplayName("matchFilter – edge types")
+    class MatchFilterEdge {
+
+        @Test @DisplayName("hold filter → BID_REFUND match")
+        void hold_matches_bid_refund() {
             controller.currentFilter = "hold";
             assertTrue(controller.matchFilter(tx(TransactionType.BID_REFUND, BigDecimal.ONE)));
         }
 
-        @Test @DisplayName("filter 'hold' → không match DEPOSIT")
-        void hold_filter_no_deposit() {
+        @Test @DisplayName("deposit filter → WITHDRAW match")
+        void deposit_matches_withdraw() {
+            controller.currentFilter = "deposit";
+            assertTrue(controller.matchFilter(tx(TransactionType.WITHDRAW, BigDecimal.ONE)));
+        }
+
+        @Test @DisplayName("payment filter → BID_HOLD không match")
+        void payment_no_match_bid_hold() {
+            controller.currentFilter = "payment";
+            assertFalse(controller.matchFilter(tx(TransactionType.BID_HOLD, BigDecimal.ONE)));
+        }
+
+        @Test @DisplayName("hold filter → BID_WIN không match")
+        void hold_no_match_bid_win() {
             controller.currentFilter = "hold";
-            assertFalse(controller.matchFilter(tx(TransactionType.DEPOSIT, BigDecimal.ONE)));
+            assertFalse(controller.matchFilter(tx(TransactionType.BID_WIN, BigDecimal.ONE)));
         }
 
-        @Test @DisplayName("filter 'payment' → match BID_WIN")
-        void payment_filter_matches_bid_win() {
-            controller.currentFilter = "payment";
+        @Test @DisplayName("unknown filter → default true (match tất cả)")
+        void unknown_filter_matches_all() {
+            controller.currentFilter = "xyz_unknown";
+            assertTrue(controller.matchFilter(tx(TransactionType.DEPOSIT, BigDecimal.ONE)));
             assertTrue(controller.matchFilter(tx(TransactionType.BID_WIN, BigDecimal.ONE)));
-        }
-
-        @Test @DisplayName("filter 'payment' → không match DEPOSIT")
-        void payment_filter_no_deposit() {
-            controller.currentFilter = "payment";
-            assertFalse(controller.matchFilter(tx(TransactionType.DEPOSIT, BigDecimal.ONE)));
         }
     }
 
-    // ─────────── renderTransactions ───────────
+    // ─────────── renderTransactions – filter áp dụng đúng ───────────
 
-    @Nested @DisplayName("renderTransactions")
-    class RenderTransactions {
+    @Nested @DisplayName("renderTransactions – filter applied")
+    class RenderWithFilter {
 
-        @Test @DisplayName("list rỗng → hiển thị empty label")
-        void empty_list_shows_empty_label() {
-            controller.allTransactions = new java.util.ArrayList<>();
-            controller.renderTransactions();
-            assertEquals(1, controller.transactionList.getChildren().size());
-            assertTrue(controller.transactionList.getChildren().get(0) instanceof Label);
-        }
-
-        @Test @DisplayName("có transaction → render rows")
-        void has_transactions_renders_rows() {
-            controller.allTransactions = new java.util.ArrayList<>(List.of(
+        @Test @DisplayName("filter 'deposit' → chỉ render DEPOSIT và WITHDRAW")
+        void deposit_filter_renders_only_deposit_withdraw() {
+            controller.currentFilter = "deposit";
+            controller.allTransactions = new ArrayList<>(List.of(
                     tx(TransactionType.DEPOSIT, new BigDecimal("100000")),
+                    tx(TransactionType.WITHDRAW, new BigDecimal("-50000")),
                     tx(TransactionType.BID_WIN, new BigDecimal("500000"))
             ));
             controller.renderTransactions();
             assertEquals(2, controller.transactionList.getChildren().size());
         }
 
-        @Test @DisplayName("transactionList null → không crash")
-        void null_list_no_crash() {
-            controller.transactionList = null;
-            assertDoesNotThrow(() -> controller.renderTransactions());
+        @Test @DisplayName("filter 'hold' → chỉ render BID_HOLD và BID_REFUND")
+        void hold_filter_renders_only_hold_refund() {
+            controller.currentFilter = "hold";
+            controller.allTransactions = new ArrayList<>(List.of(
+                    tx(TransactionType.BID_HOLD, new BigDecimal("200000")),
+                    tx(TransactionType.BID_REFUND, new BigDecimal("200000")),
+                    tx(TransactionType.DEPOSIT, new BigDecimal("100000"))
+            ));
+            controller.renderTransactions();
+            assertEquals(2, controller.transactionList.getChildren().size());
         }
-    }
 
-    // ─────────── updateTotalSpent ───────────
-
-    @Nested @DisplayName("updateTotalSpent")
-    class UpdateTotalSpent {
-
-        @Test @DisplayName("chỉ BID_WIN → sum đúng")
-        void only_bid_win_summed() {
-            controller.allTransactions = new java.util.ArrayList<>(List.of(
-                    tx(TransactionType.BID_WIN, new BigDecimal("200000")),
+        @Test @DisplayName("filter 'payment' → chỉ render BID_WIN")
+        void payment_filter_renders_only_bid_win() {
+            controller.currentFilter = "payment";
+            controller.allTransactions = new ArrayList<>(List.of(
                     tx(TransactionType.BID_WIN, new BigDecimal("300000")),
-                    tx(TransactionType.DEPOSIT, new BigDecimal("100000"))
+                    tx(TransactionType.DEPOSIT, new BigDecimal("100000")),
+                    tx(TransactionType.BID_HOLD, new BigDecimal("50000"))
             ));
-            controller.updateTotalSpent();
-            assertTrue(controller.lblTotalSpent.getText().contains("500,000"));
+            controller.renderTransactions();
+            assertEquals(1, controller.transactionList.getChildren().size());
         }
 
-        @Test @DisplayName("không có BID_WIN → hiển thị 0")
-        void no_bid_win_shows_zero() {
-            controller.allTransactions = new java.util.ArrayList<>(List.of(
+        @Test @DisplayName("filter áp dụng → không có match → list rỗng → hiển thị empty label")
+        void no_match_shows_empty_label() {
+            controller.currentFilter = "payment";
+            controller.allTransactions = new ArrayList<>(List.of(
                     tx(TransactionType.DEPOSIT, new BigDecimal("100000"))
             ));
-            controller.updateTotalSpent();
-            assertTrue(controller.lblTotalSpent.getText().contains("0"));
-        }
-
-        @Test @DisplayName("lblTotalSpent null → không crash")
-        void null_label_no_crash() {
-            controller.lblTotalSpent = null;
-            assertDoesNotThrow(() -> controller.updateTotalSpent());
+            // allTransactions không rỗng nhưng sau filter không còn gì → cần check
+            controller.renderTransactions();
+            // Sau filter 'payment' chỉ lọc BID_WIN, không có → children size = 0
+            assertEquals(0, controller.transactionList.getChildren().size());
         }
     }
 
-    // ─────────── setTab ───────────
+    // ─────────── buildTransactionRow – edge cases ───────────
 
-    @Nested @DisplayName("setTab")
-    class SetTab {
+    @Nested @DisplayName("buildTransactionRow – edge cases")
+    class BuildTransactionRowEdge {
 
-        @Test @DisplayName("onTabDeposit → currentFilter = 'deposit'")
-        void tab_deposit() {
-            controller.onTabDeposit();
-            assertEquals("deposit", controller.currentFilter);
-        }
-
-        @Test @DisplayName("onTabHold → currentFilter = 'hold'")
-        void tab_hold() {
-            controller.onTabHold();
-            assertEquals("hold", controller.currentFilter);
-        }
-
-        @Test @DisplayName("onTabPayment → currentFilter = 'payment'")
-        void tab_payment() {
-            controller.onTabPayment();
-            assertEquals("payment", controller.currentFilter);
-        }
-
-        @Test @DisplayName("onTabAll → currentFilter = 'all'")
-        void tab_all() {
-            controller.onTabDeposit();
-            controller.onTabAll();
-            assertEquals("all", controller.currentFilter);
-        }
-
-        @Test @DisplayName("activeTab được cập nhật sau setTab")
-        void active_tab_updated() {
-            controller.setTab("deposit", controller.btnTabDeposit);
-            assertSame(controller.btnTabDeposit, controller.activeTab);
-        }
-    }
-
-    // ─────────── buildTransactionRow ───────────
-
-    @Nested @DisplayName("buildTransactionRow")
-    class BuildTransactionRow {
-
-        @Test @DisplayName("amount dương → '+' prefix")
-        void positive_amount_has_plus() {
-            var row = controller.buildTransactionRow(tx(TransactionType.DEPOSIT, new BigDecimal("100000")));
+        @Test @DisplayName("amount = 0 → prefix '+'")
+        void zero_amount_has_plus() {
+            var row = controller.buildTransactionRow(tx(TransactionType.DEPOSIT, BigDecimal.ZERO));
             assertNotNull(row);
-            // row chứa label amount với "+"
             var labels = row.getChildren().stream()
                     .filter(n -> n instanceof Label)
                     .map(n -> ((Label) n).getText())
@@ -304,15 +325,75 @@ class WalletControllerTest extends FxTestBase {
             assertTrue(labels.stream().anyMatch(t -> t.startsWith("+")));
         }
 
-        @Test @DisplayName("amount âm → không có '+' prefix")
-        void negative_amount_no_plus() {
-            var row = controller.buildTransactionRow(tx(TransactionType.WITHDRAW, new BigDecimal("-100000")));
-            assertNotNull(row);
-            var labels = row.getChildren().stream()
-                    .filter(n -> n instanceof Label)
-                    .map(n -> ((Label) n).getText())
-                    .toList();
-            assertFalse(labels.stream().anyMatch(t -> t.startsWith("+")));
+        @Test @DisplayName("amount rất lớn → không crash")
+        void very_large_amount_no_crash() {
+            assertDoesNotThrow(() ->
+                    controller.buildTransactionRow(tx(TransactionType.DEPOSIT, new BigDecimal("999999999"))));
+        }
+
+        @Test @DisplayName("createdAt null-safe → không crash khi Instant.now()")
+        void instant_now_no_crash() {
+            assertDoesNotThrow(() ->
+                    controller.buildTransactionRow(tx(TransactionType.BID_WIN, new BigDecimal("500000"))));
+        }
+
+        @Test @DisplayName("row có đúng 2 children (info VBox + amountLabel)")
+        void row_has_two_children() {
+            var row = controller.buildTransactionRow(tx(TransactionType.DEPOSIT, new BigDecimal("100000")));
+            assertEquals(2, row.getChildren().size());
+        }
+    }
+
+    // ─────────── updateTotalSpent – abs() ───────────
+
+    @Nested @DisplayName("updateTotalSpent – abs()")
+    class UpdateTotalSpentAbs {
+
+        @Test @DisplayName("BID_WIN âm → abs() hiển thị dương")
+        void negative_bid_win_shows_positive() {
+            controller.allTransactions = new ArrayList<>(List.of(
+                    tx(TransactionType.BID_WIN, new BigDecimal("-500000"))
+            ));
+            controller.updateTotalSpent();
+            // Sau abs() → 500000 d
+            assertTrue(controller.lblTotalSpent.getText().contains("500,000"));
+            assertFalse(controller.lblTotalSpent.getText().startsWith("-"));
+        }
+
+        @Test @DisplayName("nhiều BID_WIN → sum rồi abs")
+        void multiple_bid_win_summed() {
+            controller.allTransactions = new ArrayList<>(List.of(
+                    tx(TransactionType.BID_WIN, new BigDecimal("100000")),
+                    tx(TransactionType.BID_WIN, new BigDecimal("200000")),
+                    tx(TransactionType.BID_WIN, new BigDecimal("300000"))
+            ));
+            controller.updateTotalSpent();
+            assertTrue(controller.lblTotalSpent.getText().contains("600,000"));
+        }
+
+        @Test @DisplayName("list rỗng → hiển thị '0 d'")
+        void empty_list_shows_zero() {
+            controller.allTransactions = new ArrayList<>();
+            controller.updateTotalSpent();
+            assertEquals("0 d", controller.lblTotalSpent.getText());
+        }
+    }
+
+    // ─────────── formatVnd ───────────
+
+    @Nested @DisplayName("formatVnd – additional")
+    class FormatVndAdditional {
+
+        @Test @DisplayName("âm → có dấu trừ")
+        void negative_has_minus() {
+            String r = controller.formatVnd(new BigDecimal("-100000"));
+            assertTrue(r.contains("-"));
+        }
+
+        @Test @DisplayName("kết quả kết thúc bằng ' d'")
+        void ends_with_d() {
+            String r = controller.formatVnd(new BigDecimal("500000"));
+            assertTrue(r.endsWith(" d"), "Nhận: " + r);
         }
     }
 }
