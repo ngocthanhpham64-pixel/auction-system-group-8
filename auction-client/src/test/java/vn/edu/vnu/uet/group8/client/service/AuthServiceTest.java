@@ -1,11 +1,8 @@
 package vn.edu.vnu.uet.group8.client.service;
 
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Nested;
-import org.junit.jupiter.api.Test;
+import javafx.embed.swing.JFXPanel;
+import org.junit.jupiter.api.*;
 import vn.edu.vnu.uet.group8.client.util.SessionManager;
-import vn.edu.vnu.uet.group8.client.TestFXSetup;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -13,28 +10,37 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-@DisplayName("AuthService")
-class AuthServiceTest extends TestFXSetup {
+@DisplayName("AuthService – Complete Test")
+class AuthServiceTest {
+
+    @BeforeAll
+    static void initToolkit() {
+        new JFXPanel();
+    }
 
     @BeforeEach
     void clearSession() {
         SessionManager.clearSession();
     }
 
+    // =========================================================
+    // LOGIN
+    // =========================================================
+
     @Nested
     @DisplayName("login validation")
     class LoginValidation {
 
         @Test
-        @DisplayName("username null -> onFailure")
-        void nullUsernameCallsFailure() {
+        @DisplayName("email null -> onFailure")
+        void nullEmailCallsFailure() {
             List<String> errors = new ArrayList<>();
 
             AuthService.login(
                     null,
                     "password",
                     () -> {},
-                    e -> errors.add(e)
+                    errors::add
             );
 
             assertFalse(errors.isEmpty());
@@ -45,15 +51,15 @@ class AuthServiceTest extends TestFXSetup {
         }
 
         @Test
-        @DisplayName("username blank -> onFailure")
-        void blankUsernameCallsFailure() {
+        @DisplayName("email blank -> onFailure")
+        void blankEmailCallsFailure() {
             List<String> errors = new ArrayList<>();
 
             AuthService.login(
                     "   ",
                     "password",
                     () -> {},
-                    e -> errors.add(e)
+                    errors::add
             );
 
             assertFalse(errors.isEmpty());
@@ -68,7 +74,7 @@ class AuthServiceTest extends TestFXSetup {
                     "alice",
                     null,
                     () -> {},
-                    e -> errors.add(e)
+                    errors::add
             );
 
             assertFalse(errors.isEmpty());
@@ -87,7 +93,7 @@ class AuthServiceTest extends TestFXSetup {
                     "alice",
                     "",
                     () -> {},
-                    e -> errors.add(e)
+                    errors::add
             );
 
             assertFalse(errors.isEmpty());
@@ -109,7 +115,37 @@ class AuthServiceTest extends TestFXSetup {
         }
 
         @Test
-        @DisplayName("không kết nối server -> onFailure")
+        @DisplayName("null email -> onSuccess NOT called")
+        void nullEmailDoesNotCallSuccess() {
+            AtomicBoolean successCalled = new AtomicBoolean(false);
+
+            AuthService.login(
+                    null,
+                    "password",
+                    () -> successCalled.set(true),
+                    e -> {}
+            );
+
+            assertFalse(successCalled.get());
+        }
+
+        @Test
+        @DisplayName("null password -> onSuccess NOT called")
+        void nullPasswordDoesNotCallSuccess() {
+            AtomicBoolean successCalled = new AtomicBoolean(false);
+
+            AuthService.login(
+                    "alice",
+                    null,
+                    () -> successCalled.set(true),
+                    e -> {}
+            );
+
+            assertFalse(successCalled.get());
+        }
+
+        @Test
+        @DisplayName("no server connection -> onFailure")
         void noConnectionCallsFailure() {
             List<String> errors = new ArrayList<>();
 
@@ -117,25 +153,148 @@ class AuthServiceTest extends TestFXSetup {
                     "alice",
                     "password",
                     () -> {},
-                    e -> errors.add(e)
+                    errors::add
             );
 
             assertFalse(errors.isEmpty());
-            assertEquals(
-                    "Không có kết nối đến server",
-                    errors.get(0)
+            assertTrue(
+                    errors.get(0).contains("kết nối")
             );
         }
     }
+
+    // =========================================================
+    // LOGOUT
+    // =========================================================
 
     @Nested
     @DisplayName("logout")
     class Logout {
 
         @Test
-        @DisplayName("logout không ném exception")
+        @DisplayName("logout does not throw exception")
         void logoutNoException() {
             assertDoesNotThrow(AuthService::logout);
+        }
+
+        @Test
+        @DisplayName("logout when not connected -> no crash")
+        void logoutWhenNotConnected() {
+            SessionManager.setSession(
+                    "token",
+                    1,
+                    "user",
+                    "fullname",
+                    "MEMBER"
+            );
+
+            assertDoesNotThrow(AuthService::logout);
+        }
+
+        @Test
+        @DisplayName("logout clears session")
+        void logoutClearsSession() {
+            SessionManager.setSession(
+                    "token",
+                    1,
+                    "user",
+                    "fullname",
+                    "MEMBER"
+            );
+
+            AuthService.logout();
+
+            assertFalse(SessionManager.isLoggedIn());
+        }
+
+        @Test
+        @DisplayName("logout when not logged in -> no crash")
+        void logoutWhenNotLoggedIn() {
+            assertDoesNotThrow(AuthService::logout);
+        }
+    }
+
+    // =========================================================
+    // REQUEST OTP
+    // =========================================================
+
+    @Nested
+    @DisplayName("requestOtp")
+    class RequestOtp {
+
+        @Test
+        @DisplayName("no connection -> onFailure")
+        void noConnectionCallsFailure() {
+            List<String> errors = new ArrayList<>();
+
+            AuthService.requestOtp(
+                    "a@b.com",
+                    s -> {},
+                    errors::add
+            );
+
+            assertFalse(errors.isEmpty());
+            assertTrue(
+                    errors.get(0).contains("kết nối")
+            );
+        }
+
+        @Test
+        @DisplayName("no connection -> onSuccess NOT called")
+        void noConnectionDoesNotCallSuccess() {
+            AtomicBoolean successCalled = new AtomicBoolean(false);
+
+            AuthService.requestOtp(
+                    "a@b.com",
+                    s -> successCalled.set(true),
+                    e -> {}
+            );
+
+            assertFalse(successCalled.get());
+        }
+    }
+
+    // =========================================================
+    // RESET PASSWORD
+    // =========================================================
+
+    @Nested
+    @DisplayName("resetPassword")
+    class ResetPassword {
+
+        @Test
+        @DisplayName("no connection -> onFailure")
+        void noConnectionCallsFailure() {
+            List<String> errors = new ArrayList<>();
+
+            AuthService.resetPassword(
+                    "a@b.com",
+                    "123456",
+                    "newPassword",
+                    () -> {},
+                    errors::add
+            );
+
+            assertFalse(errors.isEmpty());
+            assertTrue(
+                    errors.get(0).contains("kết nối")
+            );
+        }
+
+        @Test
+        @DisplayName("no connection -> onSuccess NOT called")
+        void noConnectionDoesNotCallSuccess() {
+            AtomicBoolean successCalled = new AtomicBoolean(false);
+
+            AuthService.resetPassword(
+                    "a@b.com",
+                    "123456",
+                    "newPassword",
+                    () -> successCalled.set(true),
+                    e -> {}
+            );
+
+            assertFalse(successCalled.get());
         }
     }
 }

@@ -27,65 +27,109 @@ public final class AuthService {
    * @param onSuccess callback khi đăng nhập thành công (không tham số)
    * @param onFailure callback khi thất bại, nhận thông báo lỗi từ server
    */
-  public static void login(String email, String password, Runnable onSuccess, Consumer<String> onFailure){
-    // Validate phía client trước khi gửi - fail fast
-    if(email == null || email.isBlank()){
-        onFailure.accept("Vui lòng nhập tên đăng nhập");
-        return;
-    }
-    if(password == null || password.isEmpty()){
-        onFailure.accept("Vui lòng nhập mật khẩu");
-        return;
-    }
-    if(!AuctionClient.getInstance().isConnected()){
-        if (!AuctionClient.getInstance().reconnect()) {
-            onFailure.accept("Không có kết nối đến server");
-            return;
-        }
-    }
-    LoginRequest payload = LoginRequest.of(email.trim(), password);
-    ServerRequest<LoginRequest> request = ServerRequest
-            .<LoginRequest> builder(ActionType.LOGIN)
-            .payload(payload)
-            .build();
-    AuctionClient.getInstance().sendRequest(request,response -> {
-        //Callback này đã ở FX Thread(do ResponseDispatcher đảm bảo)
-        if(!response.isSuccess()){
-            String msg = response.getMessage() != null
-                    ? response.getMessage()
-                    : "Đăng nhập thất bại"; 
-            onFailure.accept(msg);
-            return;
-        }
-        // Parse dữ liệu bằng getData(Class) - ServerResponse đã có logic convert LinkedTreeMap
-        vn.edu.vnu.uet.group8.common.dto.model.LoginResultDTO loginResult = response.getData(
-          vn.edu.vnu.uet.group8.common.dto.model.LoginResultDTO.class);
-        if(loginResult == null || loginResult.user() == null){
-            onFailure.accept("Phản hồi server không hợp lệ");
-            return;
-        }
-        String role = loginResult.user().isAdmin() ? "ADMIN" : "MEMBER";
-        LoginResponse loginResp = LoginResponse.success(
-                loginResult.user().getUserId(),
-                loginResult.user().getUsername(),
-                loginResult.user().getDisplayName(),
-                null,
-                role,
-                loginResult.token()
-        );
-        //Lưu session
-        SessionManager.setSession(
-                loginResp.getAuthToken(),
-                loginResp.getUserId(),
-                loginResp.getUsername(),
-                loginResp.getFullName(),
-                loginResp.getRole());
-        // Cập nhật ClientModel
-        ClientModel.getInstance().setCurrentUser(loginResp);
-        ClientModel.getInstance().setLoggedIn(true);
-        // Gọi callback thành công (không tham số)
-        onSuccess.run();
-    });
+  public static void login(
+          String email,
+          String password,
+          Runnable onSuccess,
+          Consumer<String> onFailure
+  ) {
+
+      // validate email
+      if (email == null || email.isBlank()) {
+          if (onFailure != null) {
+              onFailure.accept("Vui lòng nhập tên đăng nhập");
+          }
+          return;
+      }
+
+      // validate password
+      if (password == null || password.isEmpty()) {
+          if (onFailure != null) {
+              onFailure.accept("Vui lòng nhập mật khẩu");
+          }
+          return;
+      }
+
+      // connection guard
+      if (!AuctionClient.getInstance().isConnected()) {
+          if (!AuctionClient.getInstance().reconnect()) {
+              if (onFailure != null) {
+                  onFailure.accept("Không có kết nối đến server");
+              }
+              return;
+          }
+      }
+
+      LoginRequest payload =
+              LoginRequest.of(email.trim(), password);
+
+      ServerRequest<LoginRequest> request =
+              ServerRequest
+                      .<LoginRequest>builder(ActionType.LOGIN)
+                      .payload(payload)
+                      .build();
+
+      AuctionClient.getInstance().sendRequest(request, response -> {
+
+          // login fail
+          if (!response.isSuccess()) {
+
+              String msg =
+                      response.getMessage() != null
+                              ? response.getMessage()
+                              : "Đăng nhập thất bại";
+
+              if (onFailure != null) {
+                  onFailure.accept(msg);
+              }
+              return;
+          }
+
+          // parse result
+          var loginResult = response.getData(
+                  vn.edu.vnu.uet.group8.common.dto.model.LoginResultDTO.class
+          );
+
+          if (loginResult == null || loginResult.user() == null) {
+
+              if (onFailure != null) {
+                  onFailure.accept("Phản hồi server không hợp lệ");
+              }
+              return;
+          }
+
+          String role =
+                  loginResult.user().isAdmin()
+                          ? "ADMIN"
+                          : "MEMBER";
+
+          LoginResponse loginResp =
+                  LoginResponse.success(
+                          loginResult.user().getUserId(),
+                          loginResult.user().getUsername(),
+                          loginResult.user().getDisplayName(),
+                          null,
+                          role,
+                          loginResult.token()
+                  );
+
+          // save session
+          SessionManager.setSession(
+                  loginResp.getAuthToken(),
+                  loginResp.getUserId(),
+                  loginResp.getUsername(),
+                  loginResp.getFullName(),
+                  loginResp.getRole()
+          );
+
+          ClientModel.getInstance().setCurrentUser(loginResp);
+          ClientModel.getInstance().setLoggedIn(true);
+
+          // success callback
+          if (onSuccess != null) {
+              onSuccess.run();
+          }
+      });
   }
   /**
    * Đăng xuất: gửi LOGOUT request lên server( nếu còn kết nối), sau đó dọn session cục bộ.
@@ -113,49 +157,99 @@ public final class AuthService {
    * @param onSuccess Callback nhận mã OTP (String) nếu thành công
    * @param onFailure Callback nhận thông báo lỗi nếu thất bại
    */
-  public static void requestOtp(String email, Consumer<String> onSuccess, Consumer<String> onFailure) {
-    if (!AuctionClient.getInstance().isConnected()) {
-      if (!AuctionClient.getInstance().reconnect()) {
-        onFailure.accept("Không có kết nối đến server");
-        return;
-      }
-    }
+  public static void requestOtp(
+          String email,
+          Consumer<String> onSuccess,
+          Consumer<String> onFailure
+  ) {
 
-    // Lưu ý: Cần đảm bảo enum ActionType.AUTH_REQUEST_OTP đã được khai báo
-    ServerRequest<Map<String, String>> req = ServerRequest.<Map<String, String>>builder(ActionType.valueOf("AUTH_REQUEST_OTP"))
-        .payload(Map.of("email", email))
-        .build();
+      if (!AuctionClient.getInstance().isConnected()) {
 
-    AuctionClient.getInstance().sendRequest(req, response -> {
-      if (response.isSuccess()) {
-        String otp = vn.edu.vnu.uet.group8.common.util.GsonUtil.toObject(response.getData(), String.class);
-        onSuccess.accept(otp); // Thành công, trả về OTP để hiển thị lên màn hình
-      } else {
-        onFailure.accept(response.getMessage());
+          if (!AuctionClient.getInstance().reconnect()) {
+
+              if (onFailure != null) {
+                  onFailure.accept("Không có kết nối đến server");
+              }
+
+              return;
+          }
       }
-    });
+
+      ServerRequest<Map<String, String>> req =
+              ServerRequest
+                      .<Map<String, String>>builder(
+                              ActionType.valueOf("AUTH_REQUEST_OTP")
+                      )
+                      .payload(Map.of("email", email))
+                      .build();
+
+      AuctionClient.getInstance().sendRequest(req, response -> {
+
+          if (response.isSuccess()) {
+
+              String otp =
+                      vn.edu.vnu.uet.group8.common.util.GsonUtil
+                              .toObject(response.getData(), String.class);
+
+              if (onSuccess != null) {
+                  onSuccess.accept(otp);
+              }
+
+          } else {
+
+              if (onFailure != null) {
+                  onFailure.accept(response.getMessage());
+              }
+          }
+      });
   }
 
   /**
    * Đặt lại mật khẩu bằng mã OTP.
    */
-  public static void resetPassword(String email, String otp, String newPassword, Runnable onSuccess, Consumer<String> onFailure) {
-    if (!AuctionClient.getInstance().isConnected()) {
-      onFailure.accept("Không có kết nối đến server");
-      return;
-    }
+  public static void resetPassword(
+          String email,
+          String otp,
+          String newPassword,
+          Runnable onSuccess,
+          Consumer<String> onFailure
+  ) {
 
-    // Lưu ý: Cần đảm bảo enum ActionType.AUTH_RESET_PASSWORD đã được khai báo
-    ServerRequest<Map<String, String>> req = ServerRequest.<Map<String, String>>builder(ActionType.valueOf("AUTH_RESET_PASSWORD"))
-        .payload(Map.of("email", email, "otp", otp, "newPassword", newPassword))
-        .build();
+      if (!AuctionClient.getInstance().isConnected()) {
 
-    AuctionClient.getInstance().sendRequest(req, response -> {
-      if (response.isSuccess()) {
-        onSuccess.run(); // Thành công
-      } else {
-        onFailure.accept(response.getMessage());
+          if (onFailure != null) {
+              onFailure.accept("Không có kết nối đến server");
+          }
+
+          return;
       }
-    });
+
+      ServerRequest<Map<String, String>> req =
+              ServerRequest
+                      .<Map<String, String>>builder(
+                              ActionType.valueOf("AUTH_RESET_PASSWORD")
+                      )
+                      .payload(Map.of(
+                              "email", email,
+                              "otp", otp,
+                              "newPassword", newPassword
+                      ))
+                      .build();
+
+      AuctionClient.getInstance().sendRequest(req, response -> {
+
+          if (response.isSuccess()) {
+
+              if (onSuccess != null) {
+                  onSuccess.run();
+              }
+
+          } else {
+
+              if (onFailure != null) {
+                  onFailure.accept(response.getMessage());
+              }
+          }
+      });
   }
 }

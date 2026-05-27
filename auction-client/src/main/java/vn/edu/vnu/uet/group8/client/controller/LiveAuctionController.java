@@ -139,11 +139,16 @@ public class LiveAuctionController implements Initializable {
     void handleStatusUpdate(AuctionStatusDTO status) {
         if (status == null) return;
 
-        // Chi update neu la item dang xem
-        if (currentItem != null && status.getItemId() != currentItem.getItemId()) return;
+        // FIX: currentItem null cũng phải skip
+        if (currentItem == null || status.getItemId() != currentItem.getItemId()) {
+            return;
+        }
 
         BigDecimal oldPrice = currentPrice;
-        currentPrice = status.getCurrentPrice() != null ? status.getCurrentPrice() : currentPrice;
+        currentPrice = status.getCurrentPrice() != null
+                ? status.getCurrentPrice()
+                : currentPrice;
+
         updatePriceDisplay(oldPrice);
         addBidHistoryEntry(status);
     }
