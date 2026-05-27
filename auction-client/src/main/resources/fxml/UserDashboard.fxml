@@ -1,0 +1,262 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Hyperlink?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.effect.DropShadow?>
+<?import javafx.scene.layout.ColumnConstraints?>
+<?import javafx.scene.layout.GridPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Region?>
+<?import javafx.scene.layout.RowConstraints?>
+<?import javafx.scene.layout.StackPane?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.paint.Color?>
+<?import javafx.scene.text.Font?>
+<?import javafx.scene.image.ImageView?>
+<?import javafx.scene.chart.CategoryAxis?>
+<?import javafx.scene.chart.LineChart?>
+<?import javafx.scene.chart.NumberAxis?>
+
+<VBox spacing="24.0" style="-fx-background-color: transparent; -fx-background: transparent;" 
+      xmlns="http://javafx.com/javafx/21" 
+      xmlns:fx="http://javafx.com/fxml/1" 
+      fx:controller="vn.edu.vnu.uet.group8.client.controller.UserDashboardController">
+    <padding>
+        <Insets bottom="30.0" left="40.0" right="40.0" top="30.0" />
+    </padding>
+    <children>
+        <Label styleClass="text-heading" style="-fx-background-color: transparent;" text="Hồ sơ của tôi">
+            <font>
+                <Font name="System Bold" size="28.0" />
+            </font>
+        </Label>
+        
+        <!-- Row 1: Thông tin cá nhân (65%) & Ví tiền (35%) -->
+        <HBox spacing="24.0">
+            <!-- Thông tin cá nhân -->
+            <VBox HBox.hgrow="ALWAYS" styleClass="glass-card">
+                <children>
+                    <VBox style="-fx-padding: 24;">
+                        <Label minWidth="-Infinity" styleClass="text-sub" style="-fx-font-size: 14px; -fx-font-weight: bold;" text="Thông tin cá nhân" />
+                        <Region minHeight="16.0" prefHeight="16.0" />
+                        <HBox alignment="CENTER_LEFT" spacing="24.0">
+                            <StackPane fx:id="paneNavAvatar1" maxHeight="80.0" maxWidth="80.0" minHeight="80.0" minWidth="80.0" prefHeight="80.0" prefWidth="80.0" style="-fx-background-color: linear-gradient(to bottom right, #f97316, #ea580c); -fx-background-radius: 50px;">
+                                <children>
+                                    <Label fx:id="lblAvatarLetter1" onMouseClicked="#onAccountClick" style="-fx-text-fill: #ffffff; -fx-cursor: hand;" text="L">
+                                        <font><Font name="System Bold" size="32.0" /></font>
+                                    </Label>
+                                    <ImageView fx:id="imgAvatar1" fitHeight="80.0" fitWidth="80.0" onMouseClicked="#onAccountClick" pickOnBounds="true" preserveRatio="true" visible="false" />
+                                </children>
+                                <effect><DropShadow blurType="GAUSSIAN" offsetY="3.0" radius="8.0"><color><Color red="0.9" green="0.4" opacity="0.3" /></color></DropShadow></effect>
+                            </StackPane>
+                            <VBox spacing="12.0" HBox.hgrow="ALWAYS">
+                                <children>
+                                    <HBox alignment="CENTER_LEFT" spacing="10.0">
+                                        <Label minWidth="-Infinity" styleClass="text-sub" style="-fx-font-size: 13px;" text="👤 Người dùng:" />
+                                        <Region HBox.hgrow="ALWAYS" />
+                                        <Label fx:id="lblProfileName" minWidth="-Infinity" styleClass="text-heading" style="-fx-font-size: 14px; -fx-font-weight: bold;" text="Đang tải..." />
+                                    </HBox>
+                                    <HBox alignment="CENTER_LEFT" spacing="10.0">
+                                        <Label minWidth="-Infinity" styleClass="text-sub" style="-fx-font-size: 13px;" text="✉ Email:" />
+                                        <Region HBox.hgrow="ALWAYS" />
+                                        <Label fx:id="lblProfileEmail" minWidth="-Infinity" styleClass="text-heading" style="-fx-font-size: 14px; -fx-font-weight: bold;" text="Đang tải..." />
+                                    </HBox>
+                                    <HBox alignment="CENTER_LEFT" spacing="10.0">
+                                        <Label minWidth="-Infinity" styleClass="text-sub" style="-fx-font-size: 13px;" text="📅 Gia nhập:" />
+                                        <Region HBox.hgrow="ALWAYS" />
+                                        <Label fx:id="lblJoinDate" minWidth="-Infinity" styleClass="text-heading" style="-fx-font-size: 14px; -fx-font-weight: bold;" text="Đang tải..." />
+                                    </HBox>
+                                </children>
+                            </VBox>
+                        </HBox>
+                        <Region VBox.vgrow="ALWAYS" minHeight="16.0" />
+                        <HBox alignment="CENTER_RIGHT" style="-fx-padding: 16 0 0 0;">
+                            <children>
+                                <Hyperlink fx:id="lnkEditProfile" style="-fx-text-fill: #0ea5e9; -fx-font-size: 13px;" text="Chỉnh sửa hồ sơ" underline="true" />
+                            </children>
+                        </HBox>
+                    </VBox>
+                </children>
+            </VBox>
+
+            <!-- Ví tiền -->
+            <VBox HBox.hgrow="NEVER" prefWidth="400.0" maxWidth="400.0" styleClass="glass-card">
+                <children>
+                    <VBox style="-fx-padding: 20 24 16 24;">
+                        <Label minWidth="-Infinity" styleClass="text-sub" style="-fx-font-size: 15px; -fx-font-weight: bold;" text="💰 Ví tiền và Tài chính" />
+                        <Label fx:id="lblBalance" styleClass="text-heading" style="-fx-font-size: 26px; -fx-font-weight: bold; -fx-padding: 8 0 0 0;" text="0 đ" />
+                    </VBox>
+                    <Region minHeight="1.0" prefHeight="1.0" styleClass="divider" />
+                    <HBox alignment="CENTER_LEFT" onMouseClicked="#onViewTransactionHistoryClick" style="-fx-padding: 16 24 16 24; -fx-cursor: hand;">
+                        <Label minWidth="-Infinity" style="-fx-text-fill: #0ea5e9; -fx-font-size: 13px; -fx-font-weight: bold;" text="📊 Lịch sử giao dịch" />
+                        <Region HBox.hgrow="ALWAYS" />
+                        <Label styleClass="text-sub" style="-fx-font-size: 14px;" text="➔" />
+                    </HBox>
+                    <Region minHeight="1.0" prefHeight="1.0" styleClass="divider" />
+                    <HBox alignment="CENTER_LEFT" onMouseClicked="#onDepositClick" style="-fx-padding: 16 24 16 24; -fx-cursor: hand;">
+                        <Label minWidth="-Infinity" style="-fx-text-fill: #10b981; -fx-font-size: 13px; -fx-font-weight: bold;" text="📥 Nạp tiền" />
+                        <Region HBox.hgrow="ALWAYS" />
+                        <Label styleClass="text-sub" style="-fx-font-size: 14px;" text="➔" />
+                    </HBox>
+                    <Region minHeight="1.0" prefHeight="1.0" styleClass="divider" />
+                    <HBox alignment="CENTER_LEFT" onMouseClicked="#onWithdrawClick" style="-fx-padding: 16 24 16 24; -fx-cursor: hand; -fx-background-radius: 0 0 16px 16px;">
+                        <Label minWidth="-Infinity" style="-fx-text-fill: #f97316; -fx-font-size: 13px; -fx-font-weight: bold;" text="📤 Rút tiền" />
+                        <Region HBox.hgrow="ALWAYS" />
+                        <Label styleClass="text-sub" style="-fx-font-size: 14px;" text="➔" />
+                    </HBox>
+                </children>
+            </VBox>
+        </HBox>
+
+        <!-- Row 2: Grid 3 thẻ thống kê -->
+        <GridPane hgap="24.0">
+            <columnConstraints>
+                <ColumnConstraints hgrow="ALWAYS" percentWidth="33.33" />
+                <ColumnConstraints hgrow="ALWAYS" percentWidth="33.33" />
+                <ColumnConstraints hgrow="ALWAYS" percentWidth="33.33" />
+            </columnConstraints>
+            <rowConstraints>
+                <RowConstraints vgrow="ALWAYS" />
+            </rowConstraints>
+            <children>
+                <!-- Thống kê mua hàng -->
+                <VBox styleClass="glass-card" GridPane.columnIndex="0">
+                    <children>
+                        <VBox style="-fx-padding: 20 24 16 24;">
+                            <Label minWidth="-Infinity" styleClass="text-sub" style="-fx-font-size: 15px; -fx-font-weight: bold;" text="🛒 Thống kê mua hàng" />
+                            <Label fx:id="lblTotalWonItems" styleClass="text-heading" style="-fx-font-size: 26px; -fx-font-weight: bold; -fx-padding: 8 0 0 0;" text="0 Phiên thầu thắng" />
+                        </VBox>
+
+                        <HBox alignment="CENTER_LEFT" style="-fx-padding: 16 24 16 24;">
+                            <Label minWidth="-Infinity" styleClass="text-sub" style="-fx-font-size: 13px;" text="💰 Tổng chi tiêu:" />
+                            <Region HBox.hgrow="ALWAYS" />
+                            <Label fx:id="lblTotalSpent" minWidth="-Infinity" styleClass="text-heading" style="-fx-font-size: 14px; -fx-font-weight: bold;" text="0 đ" />
+                        </HBox>
+                        <Region VBox.vgrow="ALWAYS" />
+                        <HBox alignment="CENTER_LEFT" onMouseClicked="#onViewPurchaseHistoryClick" style="-fx-padding: 16 24 16 24; -fx-cursor: hand; -fx-background-radius: 0 0 16px 16px;">
+                            <Label minWidth="-Infinity" style="-fx-text-fill: #0ea5e9; -fx-font-size: 13px; -fx-font-weight: bold;" text="📜 Nhật ký mua hàng" />
+                            <Region HBox.hgrow="ALWAYS" />
+                            <Label styleClass="text-sub" style="-fx-font-size: 14px;" text="➔" />
+                        </HBox>
+                    </children>
+                </VBox>
+
+                <!-- Thống kê bán hàng -->
+                <VBox styleClass="glass-card" GridPane.columnIndex="1">
+                    <children>
+                        <VBox style="-fx-padding: 20 24 16 24;">
+                            <Label minWidth="-Infinity" styleClass="text-sub" style="-fx-font-size: 15px; -fx-font-weight: bold;" text="📈 Thống kê bán hàng" />
+                            <Label fx:id="lblTotalSalesRevenue" styleClass="text-heading" style="-fx-font-size: 26px; -fx-font-weight: bold; -fx-padding: 8 0 0 0;" text="0 đ" />
+                        </VBox>
+                        <Region minHeight="1.0" prefHeight="1.0" styleClass="divider" />
+                        <HBox alignment="CENTER_LEFT" style="-fx-padding: 16 24 16 24;">
+                            <Label minWidth="-Infinity" styleClass="text-sub" style="-fx-font-size: 13px;" text="📦 Trạng thái kho:" />
+                            <Region HBox.hgrow="ALWAYS" />
+                            <Label fx:id="lblInventoryStatus" minWidth="-Infinity" styleClass="text-heading" style="-fx-font-size: 14px; -fx-font-weight: bold;" text="0 đang sàn | 0 nháp" />
+                        </HBox>
+                        <Region minHeight="1.0" prefHeight="1.0" styleClass="divider" />
+                        <HBox alignment="CENTER_LEFT" style="-fx-padding: 16 24 16 24;">
+                            <Label minWidth="-Infinity" styleClass="text-sub" style="-fx-font-size: 13px;" text="🤝 Đấu giá thành công:" />
+                            <Region HBox.hgrow="ALWAYS" />
+                            <Label fx:id="lblTotalSoldItems" minWidth="-Infinity" style="-fx-font-size: 14px; -fx-font-weight: bold; -fx-text-fill: #10b981;" text="0 sản phẩm" />
+                        </HBox>
+                        <Region minHeight="1.0" prefHeight="1.0" styleClass="divider" />
+                        <HBox alignment="CENTER_LEFT" style="-fx-padding: 16 24 16 24;">
+                            <Label minWidth="-Infinity" styleClass="text-sub" style="-fx-font-size: 13px;" text="📊 Tỉ lệ chốt đơn:" />
+                            <Region HBox.hgrow="ALWAYS" />
+                            <Label fx:id="lblSalesSuccessRate" minWidth="-Infinity" styleClass="text-heading" style="-fx-font-size: 14px; -fx-font-weight: bold;" text="0%" />
+                        </HBox>
+                        <Region VBox.vgrow="ALWAYS" />
+                        <HBox alignment="CENTER_LEFT" onMouseClicked="#onViewSalesHistoryClick" style="-fx-padding: 16 24 16 24; -fx-cursor: hand; -fx-background-radius: 0 0 16px 16px;">
+                            <Label minWidth="-Infinity" style="-fx-text-fill: #0ea5e9; -fx-font-size: 13px; -fx-font-weight: bold;" text="📈 Quản lý kho hàng" />
+                            <Region HBox.hgrow="ALWAYS" />
+                            <Label styleClass="text-sub" style="-fx-font-size: 14px;" text="➔" />
+                        </HBox>
+                    </children>
+                </VBox>
+
+                <!-- Đánh giá của người mua -->
+                <VBox styleClass="glass-card" GridPane.columnIndex="2">
+                    <children>
+                        <VBox style="-fx-padding: 20 24 16 24;">
+                            <Label minWidth="-Infinity" styleClass="text-sub" style="-fx-font-size: 15px; -fx-font-weight: bold;" text="⭐ Đánh giá của người mua" />
+                            <Label fx:id="lblRatingValue" style="-fx-font-size: 26px; -fx-font-weight: bold; -fx-text-fill: #eab308; -fx-padding: 8 0 0 0;" text="0.0 ★" />
+                        </VBox>
+                        <Region minHeight="1.0" prefHeight="1.0" styleClass="divider" />
+                        <HBox alignment="CENTER_LEFT" style="-fx-padding: 16 24 16 24;">
+                            <Label minWidth="-Infinity" styleClass="text-sub" style="-fx-font-size: 13px;" text="💬 Số lượt đánh giá:" />
+                            <Region HBox.hgrow="ALWAYS" />
+                            <Label fx:id="lblReviewCount" minWidth="-Infinity" styleClass="text-heading" style="-fx-font-size: 14px; -fx-font-weight: bold;" text="0 lượt" />
+                        </HBox>
+                        <Region minHeight="1.0" prefHeight="1.0" styleClass="divider" />
+                        <HBox alignment="CENTER_LEFT" style="-fx-padding: 16 24 16 24;">
+                            <Label minWidth="-Infinity" styleClass="text-sub" style="-fx-font-size: 13px;" text="📈 Phản hồi tích cực:" />
+                            <Region HBox.hgrow="ALWAYS" />
+                            <Label fx:id="lblPositiveRate" minWidth="-Infinity" styleClass="text-heading" style="-fx-font-size: 14px; -fx-font-weight: bold;" text="0%" />
+                        </HBox>
+                        <Region VBox.vgrow="ALWAYS" />
+                        <HBox alignment="CENTER_LEFT" onMouseClicked="#onViewReviewHistoryClick" style="-fx-padding: 16 24 16 24; -fx-cursor: hand; -fx-background-radius: 0 0 16px 16px;">
+                            <Label minWidth="-Infinity" style="-fx-text-fill: #0ea5e9; -fx-font-size: 13px; -fx-font-weight: bold;" text="🏅 Xem lịch sử đánh giá" />
+                            <Region HBox.hgrow="ALWAYS" />
+                            <Label styleClass="text-sub" style="-fx-font-size: 14px;" text="➔" />
+                        </HBox>
+                    </children>
+                </VBox>
+            </children>
+        </GridPane>
+
+        <!-- Row 3: Biểu đồ & Lịch sử/Trạng thái bảo mật -->
+        <HBox spacing="24.0">
+            <!-- Biểu đồ Placeholder -->
+            <VBox HBox.hgrow="ALWAYS" styleClass="glass-card">
+                <children>
+                    <VBox style="-fx-padding: 20 24 16 24;">
+                        <Label minWidth="-Infinity" styleClass="text-sub" style="-fx-font-size: 15px; -fx-font-weight: bold;" text="📊 Biểu đồ hoạt động" />
+                    </VBox>
+                    <Region minHeight="1.0" prefHeight="1.0" styleClass="divider" />
+                    <VBox alignment="CENTER" VBox.vgrow="ALWAYS" minHeight="150.0">
+                        <LineChart fx:id="activityChart" legendVisible="true" style="-fx-background-color: transparent;">
+                            <xAxis>
+                                <CategoryAxis fx:id="xAxis" side="BOTTOM" tickLabelFill="#cbd5e1" />
+                            </xAxis>
+                            <yAxis>
+                                <NumberAxis fx:id="yAxis" side="LEFT" tickLabelFill="#cbd5e1" />
+                            </yAxis>
+                        </LineChart>
+                    </VBox>
+                </children>
+            </VBox>
+
+            <!-- Trạng thái và bảo mật -->
+            <VBox prefWidth="400.0" maxWidth="400.0" HBox.hgrow="NEVER" styleClass="glass-card">
+                <children>
+                    <VBox style="-fx-padding: 20 24 16 24;">
+                        <Label minWidth="-Infinity" styleClass="text-sub" style="-fx-font-size: 14px; -fx-font-weight: bold;" text="🛡 Trạng thái và Bảo mật" />
+                        <Label fx:id="lblSecuritySummary" style="-fx-font-size: 20px; -fx-font-weight: bold; -fx-text-fill: #10b981; -fx-padding: 8 0 0 0;" text="An toàn" />
+                    </VBox>
+                    <Region minHeight="1.0" prefHeight="1.0" styleClass="divider" />
+                    <HBox alignment="CENTER_LEFT" style="-fx-padding: 16 24 16 24;">
+                        <Label minWidth="-Infinity" styleClass="text-sub" style="-fx-font-size: 13px;" text="🆔 Xác thực tài khoản:" />
+                        <Region HBox.hgrow="ALWAYS" />
+                        <Label fx:id="lblKycStatus" minWidth="-Infinity" styleClass="text-heading" style="-fx-font-size: 13px; -fx-font-weight: bold;" text="Đã xác minh (KYC)" />
+                    </HBox>
+                    <Region minHeight="1.0" prefHeight="1.0" styleClass="divider" />
+                    <HBox alignment="CENTER_LEFT" style="-fx-padding: 16 24 16 24;">
+                        <Label minWidth="-Infinity" styleClass="text-sub" style="-fx-font-size: 13px;" text="🕒 Đăng nhập cuối:" />
+                        <Region HBox.hgrow="ALWAYS" />
+                        <Label fx:id="lblLastLogin" minWidth="-Infinity" styleClass="text-heading" style="-fx-font-size: 13px; -fx-font-weight: bold;" text="Hôm nay, 14:30" />
+                    </HBox>
+                    <Region VBox.vgrow="ALWAYS" />
+                    <Region minHeight="1.0" prefHeight="1.0" styleClass="divider" />
+                    <HBox alignment="CENTER_LEFT" onMouseClicked="#onChangePasswordClick" style="-fx-padding: 16 24 16 24; -fx-cursor: hand; -fx-background-radius: 0 0 16px 16px;">
+                        <Label minWidth="-Infinity" style="-fx-text-fill: #0ea5e9; -fx-font-size: 13px; -fx-font-weight: bold;" text="🔑 Đổi mật khẩu tài khoản" />
+                        <Region HBox.hgrow="ALWAYS" />
+                        <Label styleClass="text-sub" style="-fx-font-size: 14px;" text="➔" />
+                    </HBox>
+                </children>
+            </VBox>
+        </HBox>
+
+    </children>
+</VBox>

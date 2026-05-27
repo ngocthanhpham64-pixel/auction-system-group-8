@@ -1,41 +1,84 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <?import javafx.scene.layout.*?>
 <?import javafx.scene.control.*?>
+<?import javafx.geometry.Insets?>
+<?import java.net.URL?>
 
 <VBox xmlns:fx="http://javafx.com/fxml/1"
       fx:controller="vn.edu.vnu.uet.group8.client.controller.AdminUserListController"
-      style="-fx-padding: 30;" spacing="16">
+      spacing="16" styleClass="app-background">
+    <stylesheets>
+        <URL value="@../css/components.css" />
+    </stylesheets>
+    <padding>
+        <Insets top="28" right="28" bottom="24" left="28"/>
+    </padding>
 
-    <Label text="Quản lý người dùng" style="-fx-font-size: 24px; -fx-font-weight: bold; -fx-text-fill: #1a1a1a;"/>
-    <Label text="Quản lý tài khoản, vai trò và trạng thái người dùng" style="-fx-text-fill: #888; -fx-font-size: 12px;"/>
+    <VBox spacing="4">
+        <Label text="Quản lý người dùng"
+               style="-fx-font-size: 24px; -fx-font-weight: 800; -fx-text-fill: #0F172A;"/>
+        <Label text="Quản lý tài khoản, vai trò và trạng thái người dùng trong hệ thống"
+               style="-fx-text-fill: #64748B; -fx-font-size: 13px;"/>
+    </VBox>
 
-    <HBox spacing="12" alignment="CENTER_LEFT">
-        <TextField fx:id="tfSearch" promptText="Tìm theo tên đăng nhập, email..."
+    <HBox spacing="10" alignment="CENTER_LEFT"
+          style="-fx-background-color: white; -fx-padding: 12 16;
+                 -fx-background-radius: 10; -fx-border-color: #E2E8F0;
+                 -fx-border-radius: 10; -fx-border-width: 1;">
+        <TextField fx:id="tfSearch" promptText="🔍 Tìm kiếm theo tài khoản, email..."
                    prefWidth="320"
-                   style="-fx-background-radius: 8; -fx-border-color: #DDD; -fx-border-radius: 8; -fx-padding: 8;"/>
-        <ComboBox fx:id="cbFilterRole" prefWidth="160" promptText="Vai trò"/>
-        <ComboBox fx:id="cbFilterStatus" prefWidth="160" promptText="Trạng thái"/>
+                   style="-fx-background-radius: 6; -fx-padding: 8 12; -fx-font-size: 13px;"/>
+        <Region HBox.hgrow="ALWAYS"/>
+        <ComboBox fx:id="cbFilterRole" prefWidth="130"
+                  style="-fx-background-radius: 6; -fx-padding: 4; -fx-font-size: 13px;"/>
+        <ComboBox fx:id="cbFilterStatus" prefWidth="140"
+                  style="-fx-background-radius: 6; -fx-padding: 4; -fx-font-size: 13px;"/>
     </HBox>
 
-    <TableView fx:id="userTable" style="-fx-pref-height: 400; -fx-background-radius: 8;">
+    <TableView fx:id="userTable" VBox.vgrow="ALWAYS"
+               style="-fx-background-radius: 10; -fx-border-radius: 10; -fx-border-color: #E2E8F0;">
         <columns>
-            <TableColumn text="ID" fx:id="colId" prefWidth="60"/>
-            <TableColumn text="Tên đăng nhập" fx:id="colUsername" prefWidth="140"/>
-            <TableColumn text="Email" fx:id="colEmail" prefWidth="200"/>
-            <TableColumn text="Vai trò" fx:id="colRole" prefWidth="100"/>
-            <TableColumn text="Trạng thái" fx:id="colStatus" prefWidth="120"/>
-            <TableColumn text="Hành động" fx:id="colAction" prefWidth="260"/>
+            <TableColumn text="ID" fx:id="colId"
+                         minWidth="50" prefWidth="60" maxWidth="80"
+                         style="-fx-alignment: CENTER; -fx-font-size: 13px;"/>
+            <TableColumn text="Tên đăng nhập" fx:id="colUsername"
+                         minWidth="120" prefWidth="150" maxWidth="180"
+                         style="-fx-alignment: CENTER; -fx-font-size: 13px;"/>
+            <TableColumn text="Email" fx:id="colEmail"
+                         minWidth="180" prefWidth="250" maxWidth="350"
+                         style="-fx-alignment: CENTER; -fx-font-size: 13px;"/>
+            <TableColumn text="Vai trò" fx:id="colRole"
+                         minWidth="100" prefWidth="120" maxWidth="140"
+                         style="-fx-alignment: CENTER; -fx-font-size: 13px;"/>
+            <TableColumn text="Trạng thái" fx:id="colStatus"
+                         minWidth="110" prefWidth="130" maxWidth="150"
+                         style="-fx-alignment: CENTER; -fx-font-size: 13px;"/>
+            <TableColumn text="Hành động" fx:id="colAction"
+                         minWidth="140" prefWidth="150" maxWidth="180"
+                         style="-fx-alignment: CENTER;"/>
         </columns>
         <placeholder>
-            <Label text="Không có người dùng nào" style="-fx-text-fill: #888;"/>
+            <Label text="Không tìm thấy người dùng phù hợp"
+                   style="-fx-text-fill: #94A3B8; -fx-font-size: 13px;"/>
         </placeholder>
     </TableView>
 
-    <HBox spacing="10" style="-fx-padding: 10 0 0 0;">
-        <Label text="Hành động nhanh:" style="-fx-text-fill: #888; -fx-padding: 8 0 0 0;"/>
-        <Button text="Khóa tạm thời" onAction="#suspendSelected"
-                style="-fx-background-color: #F97316; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 8; -fx-padding: 8 16;"/>
-        <Button text="Cấm vĩnh viễn" onAction="#banSelected"
-                style="-fx-background-color: #E03030; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 8; -fx-padding: 8 16;"/>
+    <HBox spacing="10" alignment="CENTER_LEFT"
+          style="-fx-background-color: #F8FAFC; -fx-padding: 12 18;
+                 -fx-background-radius: 10; -fx-border-color: #E2E8F0;
+                 -fx-border-radius: 10; -fx-border-width: 1;">
+        <Label text="Thao tác nhanh trên dòng chọn:"
+               style="-fx-text-fill: #475569; -fx-font-weight: 700; -fx-font-size: 12.5px;"/>
+        <Region HBox.hgrow="ALWAYS"/>
+
+        <Button text="🔒 Khóa tạm thời" onAction="#suspendSelected"
+                style="-fx-background-color: #F59E0B; -fx-text-fill: white; -fx-font-weight: bold;
+                       -fx-padding: 6 12; -fx-background-radius: 6; -fx-cursor: hand;"/>
+        <Button text="🚫 Cấm vĩnh viễn" onAction="#banSelected"
+                style="-fx-background-color: #EF4444; -fx-text-fill: white; -fx-font-weight: bold;
+                       -fx-padding: 6 12; -fx-background-radius: 6; -fx-cursor: hand;"/>
+        <Button text="🔓 Kích hoạt lại" onAction="#restoreSelected"
+                style="-fx-background-color: #10B981; -fx-text-fill: white; -fx-font-weight: bold;
+                       -fx-padding: 6 12; -fx-background-radius: 6; -fx-cursor: hand;"/>
     </HBox>
 </VBox>
