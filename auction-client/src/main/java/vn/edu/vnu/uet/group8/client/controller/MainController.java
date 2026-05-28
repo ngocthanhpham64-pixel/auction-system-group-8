@@ -1,210 +1,237 @@
 package vn.edu.vnu.uet.group8.client.controller;
 
 import java.io.IOException;
-import java.net.URL;
-import java.util.ResourceBundle;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import javafx.application.Platform;
+import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
-import javafx.fxml.Initializable;
 import javafx.scene.Node;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
-import javafx.scene.layout.StackPane;
+import javafx.scene.image.ImageView;
+import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.VBox;
 import vn.edu.vnu.uet.group8.client.model.ClientModel;
-import vn.edu.vnu.uet.group8.client.service.AuthService;
-import vn.edu.vnu.uet.group8.client.util.AlertUtil;
-import vn.edu.vnu.uet.group8.client.util.SceneManager;
+import vn.edu.vnu.uet.group8.client.service.UserService;
+import vn.edu.vnu.uet.group8.client.util.PopupUtil;
 import vn.edu.vnu.uet.group8.client.util.SessionManager;
+import vn.edu.vnu.uet.group8.client.util.UIFormatter;
+import javafx.beans.value.ChangeListener;
+import javafx.beans.value.WeakChangeListener;
 
-public class MainController implements Initializable {
+/**
+ * Controller chính điều phối layout và navigation cho toàn bộ ứng dụng.
+ */
+public class MainController {
+    private static final Logger LOGGER = Logger.getLogger(MainController.class.getName());
 
-    protected static final Logger LOGGER = Logger.getLogger(MainController.class.getName());
+    @FXML private VBox vboxMainContentArea;
+    @FXML private Label lblAvatar;
+    @FXML private ImageView imgAvatar;
+    @FXML private Label lblOngoingCount;
+    @FXML private TextField tfSearch;
+    @FXML private Label lblFavCount;
+    @FXML private Label lblNotiCount;
 
-    @FXML Button btnToggle;
-    @FXML TextField tfSearch;
-    @FXML Button btnExplore;
-    @FXML Button btnLive;
-    @FXML Label lblFavCount;
-    @FXML Label lblNotiCount;
-    @FXML Label lblAvatar;
-    @FXML VBox sidebar;
-    @FXML Button btnHome;
-    @FXML Button btnMyAuctions;
-    @FXML Button btnWallet;
-    @FXML Button btnSeller;
-    @FXML Button btnSettings;
-    @FXML StackPane contentPane;
+    @FXML private Button btnHome;
+    @FXML private Button btnExplore;
+    @FXML private Button btnMyProducts;
+    @FXML private Button btnAccount;
+    @FXML private Button btnSettings;
 
-    protected Button activeNav;
-    protected static MainController instance;
-    protected ScheduledExecutorService timerScheduler; // Khai bao de quan ly tap trung
+    private static MainController instance;
+    private javafx.animation.Timeline syncTimeline;
+    private ChangeListener<String> avatarListener;
+
+    @FXML
+    public void initialize() {
+        instance = this;
+        ClientModel model = ClientModel.getInstance();
+
+        // 1. Đồng bộ thông tin Header
+        lblAvatar.setText(SessionManager.getAvatarText());
+        
+        avatarListener = (obs, oldUrl, newUrl) -> {
+            UIFormatter.setCircularAvatar(imgAvatar, lblAvatar, newUrl, 42.0);
+        };
+        model.avatarUrlProperty().addListener(new WeakChangeListener<>(avatarListener));
+        UIFormatter.setCircularAvatar(imgAvatar, lblAvatar, model.getAvatarUrl(), 42.0);
+        
+        // Tải lại thông tin profile để đồng bộ avatar/ví lúc khởi động
+        UserService.loadProfile(null);
+        
+        // Tải thông báo ban đầu
+        vn.edu.vnu.uet.group8.client.service.NotificationService.loadAll(null, null);
+        
+        // Đăng ký nhận thông báo real-time khi đang mở app
+        vn.edu.vnu.uet.group8.client.service.NotificationService.subscribePush(notif -> {
+            javafx.application.Platform.runLater(() -> {
+                ClientModel.getInstance().addNotification(notif);
+                
+                // Trừ khi bị vượt giá tiền max (autobid bị tắt) thì mới hiện popup
+                if ("OUTBID".equals(notif.getType())) {
+                    int itemId = notif.getRelatedId();
+                    if (itemId <= 0 && notif.getMessage() != null) {
+                        // Fallback: parse itemId từ message dạng "... sản phẩm #123..."
+                        int hashIdx = notif.getMessage().indexOf('#');
+                        if (hashIdx != -1) {
+                            int spaceIdx = notif.getMessage().indexOf(' ', hashIdx);
+                            String idStr = spaceIdx != -1 ? notif.getMessage().substring(hashIdx + 1, spaceIdx) : notif.getMessage().substring(hashIdx + 1);
+                            try {
+                                itemId = Integer.parseInt(idStr.trim());
+                            } catch (NumberFormatException e) {
+                                // Ignore
+                            }
+                        }
+                    }
+                    if (itemId > 0) {
+                        vn.edu.vnu.uet.group8.client.service.BidService.getAutoBidStatus(itemId, isActive -> {
+                            javafx.application.Platform.runLater(() -> {
+                                if (!isActive) {
+                                    // Chỉ hiển thị popup khi Auto-bid đã bị tắt (vượt giá max) hoặc người dùng không bật Auto-bid
+                                    vn.edu.vnu.uet.group8.client.util.AlertUtil.showInfo("🔔 " + notif.getTitle() + "\n" + notif.getMessage());
+                                }
+                            });
+                        });
+                        return; // Bỏ qua hiển thị popup mặc định
+                    }
+                }
+                
+                // Mặc định hiển thị popup cho các thông báo khác
+                vn.edu.vnu.uet.group8.client.util.AlertUtil.showInfo("🔔 " + notif.getTitle() + "\n" + notif.getMessage());
+            });
+        });
+
+        // Bind các con số thống kê (Badge) từ Model để tự động cập nhật UI
+        lblFavCount.textProperty().bind(model.favCountProperty().asString());
+        lblNotiCount.textProperty().bind(model.unreadNotificationCountProperty().asString());
+        lblOngoingCount.textProperty().bind(model.auctionItemsProperty().sizeProperty().asString());
+
+        // 2. Load View mặc định khi vừa vào App là Homepage (HomeView)
+        switchView("HomeView.fxml", "HOME");
+
+        // 3. Bắt sự kiện Enter ở ô Tìm kiếm
+        if (tfSearch != null) {
+            tfSearch.setOnAction(e -> {
+                ClientModel.getInstance().setSearchQuery(tfSearch.getText().trim());
+                switchView("ExploreView.fxml", null);
+            });
+        }
+
+        // 4. Định kỳ đồng bộ các con số thống kê (Badge) từ server mỗi 10 giây
+        syncTimeline = new javafx.animation.Timeline(
+            new javafx.animation.KeyFrame(javafx.util.Duration.seconds(10), event -> {
+                if (SessionManager.isLoggedIn() && vn.edu.vnu.uet.group8.client.networking.AuctionClient.getInstance().isConnected()) {
+                    vn.edu.vnu.uet.group8.client.service.AuctionService.loadAll(null, null);
+                    vn.edu.vnu.uet.group8.client.service.NotificationService.loadAll(null, null);
+                    vn.edu.vnu.uet.group8.client.service.FavoriteService.loadAll(null, null);
+                }
+            })
+        );
+        syncTimeline.setCycleCount(javafx.animation.Animation.INDEFINITE);
+        syncTimeline.play();
+    }
 
     public static MainController getInstance() {
         return instance;
     }
 
-    @Override
-    public void initialize(URL location, ResourceBundle resources) {
-        instance = this;
-        bindUserInfo();
-        bindBadges();
-        setupSearch();
+    /**
+     * Xử lý điều hướng khi bấm vào Menu Sidebar dựa trên userData của Button.
+     */
+    @FXML
+    private void onNavClick(ActionEvent event) {
+        Node source = (Node) event.getSource();
+        String targetView = (String) source.getUserData();
         
-        // Mặc định chọn Home
-        setActiveNav(btnHome);
-        loadView(SceneManager.VIEW_EXPLORE);
+        if (targetView == null) return;
+
+        switch (targetView) {
+            case "HOME": switchView("HomeView.fxml", targetView); break;
+            case "PROFILE": switchView("UserDashboard.fxml", targetView); break;
+            case "EXPLORE": switchView("ExploreView.fxml", targetView); break;
+        case "SELLER": switchView("ItemDashboard.fxml", targetView); break;
+        case "LIVE": switchView("ExploreView.fxml", "EXPLORE"); break;
+            case "SETTINGS": switchView("SettingsView.fxml", targetView); break;
+            default: 
+                LOGGER.warning("Nav target '" + targetView + "' chưa được xử lý.");
+        }
     }
 
-    /** 
-     * Gan scheduler tu ben ngoai vao de MainController co the shutdown khi logout.
+    public void switchView(String fxml, String navId) {
+        loadContentView(fxml);
+        updateNavStyles(navId);
+    }
+
+    public void updateNavStyles(String navId) {
+        if (btnHome == null) return;
+        
+        String baseStyle = "-fx-background-color: transparent; -fx-text-fill: #94a3b8; -fx-alignment: center-left; -fx-padding: 10 22 10 22; -fx-font-size: 14px; -fx-cursor: hand;";
+        btnHome.setStyle(baseStyle);
+        if (btnExplore != null) btnExplore.setStyle(baseStyle);
+        if (btnMyProducts != null) btnMyProducts.setStyle(baseStyle);
+        if (btnAccount != null) btnAccount.setStyle(baseStyle);
+        if (btnSettings != null) btnSettings.setStyle(baseStyle);
+
+        if (navId == null) return;
+        
+        String activeStyle = "-fx-text-fill: #ffffff; -fx-alignment: center-left; -fx-padding: 12 24 12 24; -fx-font-size: 15px; -fx-font-weight: bold; -fx-border-width: 0 0 0 4px; -fx-cursor: hand;";
+
+        switch (navId) {
+            case "HOME":
+                btnHome.setStyle("-fx-background-color: linear-gradient(to right, rgba(249,115,22,0.15), transparent); -fx-border-color: #f97316; " + activeStyle);
+                break;
+            case "PROFILE":
+                if (btnAccount != null) btnAccount.setStyle("-fx-background-color: linear-gradient(to right, rgba(239,68,68,0.15), transparent); -fx-border-color: #ef4444; " + activeStyle);
+                break;
+            case "EXPLORE":
+                if (btnExplore != null) btnExplore.setStyle("-fx-background-color: linear-gradient(to right, rgba(59,130,246,0.15), transparent); -fx-border-color: #3b82f6; " + activeStyle);
+                break;
+            case "SELLER":
+                if (btnMyProducts != null) btnMyProducts.setStyle("-fx-background-color: linear-gradient(to right, rgba(34,197,94,0.15), transparent); -fx-border-color: #22c55e; " + activeStyle);
+                break;
+            case "SETTINGS":
+                if (btnSettings != null) btnSettings.setStyle("-fx-background-color: linear-gradient(to right, rgba(168,85,247,0.15), transparent); -fx-border-color: #a855f7; " + activeStyle);
+                break;
+        }
+    }
+
+    /**
+     * Nạp FXML con vào vùng center của MainLayout (vboxMainContentArea).
      */
-    public void setTimerScheduler(ScheduledExecutorService scheduler) {
-        this.timerScheduler = scheduler;
-    }
-
-    void bindUserInfo() {
-        ClientModel.getInstance().currentUserProperty().addListener((obs, oldUser, newUser) -> 
-            Platform.runLater(() -> {
-                if (newUser != null && lblAvatar != null) {
-                    String name = newUser.getFullName() != null ? newUser.getFullName() : newUser.getUsername();
-                    if (name != null && !name.isEmpty()) {
-                        lblAvatar.setText(name.substring(0, 1).toUpperCase());
-                    }
-                }
-            })
-        );
-
-        if (lblAvatar != null) {
-            String avatarText = SessionManager.getAvatarText();
-            if (avatarText != null && !avatarText.isBlank()) {
-                lblAvatar.setText(avatarText);
-            }
-        }
-    }
-
-    void bindBadges() {
-        ClientModel model = ClientModel.getInstance();
-        if (lblFavCount != null) {
-            updateFavBadge(model.getFavCount());
-            model.favCountProperty().addListener((obs, oldVal, newVal) ->
-                    Platform.runLater(() -> updateFavBadge(newVal.intValue()))
-            );
-        }
-        if (lblNotiCount != null) {
-            updateNotiBadge(model.getUnreadNotificationCount());
-            model.unreadNotificationCountProperty().addListener((obs, oldVal, newVal) ->
-                    Platform.runLater(() -> updateNotiBadge(newVal.intValue()))
-            );
-        }
-    }
-
-    void updateFavBadge(int count) {
-        if (lblFavCount == null) return;
-        lblFavCount.setText(String.valueOf(count));
-        lblFavCount.setVisible(count > 0);
-        lblFavCount.setManaged(count > 0);
-    }
-
-    void updateNotiBadge(int count) {
-        if (lblNotiCount == null) return;
-        lblNotiCount.setText(String.valueOf(count));
-        lblNotiCount.setVisible(count > 0);
-        lblNotiCount.setManaged(count > 0);
-    }
-
-    void setupSearch() {
-        if (tfSearch == null) return;
-        tfSearch.setOnAction(e -> {
-            String query = tfSearch.getText().trim();
-            ClientModel.getInstance().setSearchQuery(query);
-            loadView(SceneManager.VIEW_EXPLORE);
-        });
-    }
-
-    public void loadView(String fxmlFile) {
-        if (!Platform.isFxApplicationThread()) {
-            Platform.runLater(() -> loadView(fxmlFile));
-            return;
-        }
+    public void loadContentView(String fxml) {
         try {
-            FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/" + fxmlFile));
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/" + fxml));
             Node view = loader.load();
-            contentPane.getChildren().setAll(view);
+            vboxMainContentArea.getChildren().setAll(view);
+            
+            // Cuộn lên đầu trang mỗi khi chuyển view
+            if (vboxMainContentArea.getParent() != null) {
+                vboxMainContentArea.getParent().requestLayout();
+            }
         } catch (IOException e) {
-            LOGGER.log(Level.SEVERE, "Loi khi load view: " + fxmlFile, e);
+            LOGGER.severe("Không thể nạp view " + fxml + ": " + e.getMessage());
         }
     }
 
-    void setActiveNav(Button target) {
-        if (target == null) return;
-        if (activeNav != null) {
-            activeNav.getStyleClass().remove("nav-item-active");
-            if (!activeNav.getStyleClass().contains("nav-item")) {
-                activeNav.getStyleClass().add("nav-item");
-            }
-        }
-        target.getStyleClass().remove("nav-item");
-        if (!target.getStyleClass().contains("nav-item-active")) {
-            target.getStyleClass().add("nav-item-active");
-        }
-        activeNav = target;
+    @FXML private void onLogoClick() { switchView("HomeView.fxml", "HOME"); }
+    
+    @FXML private void onProfileClick(MouseEvent event) { switchView("UserDashboard.fxml", "PROFILE"); }
+
+    @FXML
+    private void onLogout() {
+        SessionManager.logout();
     }
 
     @FXML
-    void onLogout() {
-        boolean ok = AlertUtil.showConfirm("Xác nhận", "Bạn có chắc chắn muốn đăng xuất?");
-        if (!ok) return;
-
-        cleanupResources();
-        AuthService.logout();
-    }
-
-    /** 
-     * Don dep tai nguyen truoc khi thoat de tránh Memory Leak.
-     */
-    void cleanupResources() {
-        if (timerScheduler != null) {
-            try {
-                timerScheduler.shutdownNow();
-                timerScheduler = null; // Tranh goi lan 2
-                LOGGER.info("TimerScheduler has been shut down.");
-            } catch (Exception e) {
-                LOGGER.warning("Error shutting down timerScheduler: " + e.getMessage());
-            }
-        }
+    private void onFavoriteClick(MouseEvent event) {
+        PopupUtil.showPopup((Node) event.getSource(), "FavoriteContent.fxml");
     }
 
     @FXML
-    void onNavClick(javafx.event.ActionEvent event) {
-        Object source = event.getSource();
-        if (!(source instanceof Button btn)) return;
-
-        String route = (String) btn.getUserData();
-        if (route == null) return;
-
-        setActiveNav(btn);
-        switch (route) {
-            case "HOME"        -> loadView(SceneManager.VIEW_EXPLORE);
-            case "EXPLORE"     -> loadView(SceneManager.VIEW_EXPLORE);
-            case "LIVE"        -> loadView(SceneManager.VIEW_LIVE_AUCTION);
-            case "MY_AUCTIONS" -> loadView(SceneManager.VIEW_PROFILE);
-            case "WALLET"      -> loadView(SceneManager.VIEW_WALLET);
-            case "SELLER"      -> loadView("SellerDashboardView.fxml");
-            case "SETTINGS"    -> loadView(SceneManager.VIEW_SETTINGS);
-            default            -> loadView(route);
-        }
+    private void onNotificationClick(MouseEvent event) {
+        PopupUtil.showPopup((Node) event.getSource(), "NotificationContent.fxml");
     }
-
-    @FXML void onLogoClick()         { setActiveNav(btnHome); loadView(SceneManager.VIEW_EXPLORE); }
-    @FXML void onFavoriteClick()     { loadView(SceneManager.VIEW_FAVORITES); }
-    @FXML void onNotificationClick() { loadView(SceneManager.VIEW_NOTIFICATIONS); }
-    @FXML void onProfileClick()      { loadView(SceneManager.VIEW_PROFILE); }
-    @FXML void onToggleSidebar()     { sidebar.setVisible(!sidebar.isVisible()); sidebar.setManaged(sidebar.isVisible()); }
 }
