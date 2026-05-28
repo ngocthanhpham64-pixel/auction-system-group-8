@@ -1,275 +1,228 @@
 package vn.edu.vnu.uet.group8.client.controller;
 
-import java.net.URL;
-import java.util.ResourceBundle;
-import java.util.logging.Logger;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
+import java.util.List;
 
-import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.collections.transformation.FilteredList;
+import javafx.collections.transformation.SortedList;
 import javafx.fxml.FXML;
-import javafx.fxml.Initializable;
-import javafx.scene.control.Button;
+import javafx.geometry.Pos;
 import javafx.scene.control.ComboBox;
+import javafx.scene.control.Label;
+import javafx.scene.control.MenuButton;
+import javafx.scene.control.MenuItem;
 import javafx.scene.control.TableCell;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
-import javafx.scene.control.cell.PropertyValueFactory;
-import javafx.scene.layout.HBox;
+import javafx.util.Callback;
 import vn.edu.vnu.uet.group8.client.service.AdminService;
 import vn.edu.vnu.uet.group8.client.util.AlertUtil;
-import vn.edu.vnu.uet.group8.client.util.SessionManager;
 import vn.edu.vnu.uet.group8.common.dto.model.UserAdminDTO;
 
-/**
- * AdminUserListController — quản lý người dùng.
- *
- * Tính năng PRO:
- *  - ObservableList + FilteredList → tự update UI khi data thay đổi
- *  - Search live (theo username/email khi user gõ)
- *  - Filter role (MEMBER/SELLER/ADMIN) + status (ACTIVE/SUSPENDED/BANNED)
- *  - Status cell color-coded (xanh/vàng/đỏ)
- *  - colAction render 3 nút Suspend / Ban / Unban
- *  - Buttons tự enable/disable dựa theo current status
- *  - Super admin only check cho Ban
- *  - Confirm dialog mỗi action
- *
- * FXML handlers (giữ nguyên): suspendSelected, banSelected
- * fx:id: userTable, colId, colUsername, colEmail, colRole, colStatus, colAction
- */
-public class AdminUserListController implements Initializable {
+public class AdminUserListController {
+    @FXML private TextField tfSearch;
+    @FXML private ComboBox<String> cbFilterRole;
+    @FXML private ComboBox<String> cbFilterStatus;
+    @FXML private TableView<UserAdminDTO> userTable;
+    @FXML private TableColumn<UserAdminDTO, Integer> colId;
+    @FXML private TableColumn<UserAdminDTO, String> colUsername;
+    @FXML private TableColumn<UserAdminDTO, String> colEmail;
+    @FXML private TableColumn<UserAdminDTO, String> colRole;
+    @FXML private TableColumn<UserAdminDTO, String> colStatus;
+    @FXML private TableColumn<UserAdminDTO, Void> colAction;
 
-    protected static final Logger LOGGER = Logger.getLogger(AdminUserListController.class.getName());
+    private final ObservableList<UserAdminDTO> users = FXCollections.observableArrayList();
+    private FilteredList<UserAdminDTO> filtered;
+    private final DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss").withZone(ZoneId.systemDefault());
 
-    @FXML TableView<UserAdminDTO> userTable;
-    @FXML TableColumn<UserAdminDTO, Integer> colId;
-    @FXML TableColumn<UserAdminDTO, String> colUsername;
-    @FXML TableColumn<UserAdminDTO, String> colEmail;
-    @FXML TableColumn<UserAdminDTO, String> colRole;
-    @FXML TableColumn<UserAdminDTO, String> colStatus;
-    @FXML TableColumn<UserAdminDTO, Void> colAction;
+    @FXML
+    public void initialize() {
+        cbFilterRole.getItems().addAll("Tất cả", UserAdminDTO.ROLE_MEMBER, UserAdminDTO.ROLE_SELLER, UserAdminDTO.ROLE_ADMIN, UserAdminDTO.ROLE_SUPER_ADMIN);
+        cbFilterRole.getSelectionModel().selectFirst();
+        cbFilterStatus.getItems().addAll("Tất cả", UserAdminDTO.STATUS_ACTIVE, UserAdminDTO.STATUS_SUSPENDED, UserAdminDTO.STATUS_BANNED);
+        cbFilterStatus.getSelectionModel().selectFirst();
 
-    // Optional FXML fields - chỉ render nếu FXML có
-    @FXML TextField tfSearch;
-    @FXML ComboBox<String> cbFilterRole;
-    @FXML ComboBox<String> cbFilterStatus;
+        colId.setCellValueFactory(new javafx.scene.control.cell.PropertyValueFactory<>("id"));
+        colUsername.setCellValueFactory(new javafx.scene.control.cell.PropertyValueFactory<>("username"));
+        colEmail.setCellValueFactory(new javafx.scene.control.cell.PropertyValueFactory<>("email"));
+        colRole.setCellValueFactory(new javafx.scene.control.cell.PropertyValueFactory<>("role"));
+        colStatus.setCellValueFactory(new javafx.scene.control.cell.PropertyValueFactory<>("status"));
 
-    protected final ObservableList<UserAdminDTO> allUsers = FXCollections.observableArrayList();
-    protected FilteredList<UserAdminDTO> filteredUsers;
+        colStatus.setCellFactory(column -> new TableCell<>() {
+            @Override
+            protected void updateItem(String item, boolean empty) {
+                super.updateItem(item, empty);
+                if (empty || item == null) {
+                    setGraphic(null);
+                } else {
+                    Label badge = new Label(item);
+                    badge.styleProperty().set("-fx-font-weight: bold; -fx-font-size: 11px; -fx-padding: 4 10 4 10; -fx-background-radius: 12;");
 
-    @Override
-    public void initialize(URL location, ResourceBundle resources) {
-        setupTable();
-        setupActionColumn();
-        setupStatusColorCoding();
-        setupFilters();
+                    if (item.equalsIgnoreCase(UserAdminDTO.STATUS_ACTIVE)) {
+                        badge.setStyle(badge.getStyle() + "-fx-background-color: #DCFCE7; -fx-text-fill: #15803D;");
+                    } else if (item.equalsIgnoreCase(UserAdminDTO.STATUS_SUSPENDED)) {
+                        badge.setStyle(badge.getStyle() + "-fx-background-color: #FEF3C7; -fx-text-fill: #B45309;");
+                    } else if (item.equalsIgnoreCase(UserAdminDTO.STATUS_BANNED)) {
+                        badge.setStyle(badge.getStyle() + "-fx-background-color: #FEE2E2; -fx-text-fill: #B91C1C;");
+                    } else {
+                        badge.setStyle(badge.getStyle() + "-fx-background-color: #F1F5F9; -fx-text-fill: #475569;");
+                    }
+
+                    // Đảm bảo huy hiệu luôn ra giữa
+                    setAlignment(Pos.CENTER);
+                    setGraphic(badge);
+                }
+            }
+        });
+
+        colAction.setCellFactory(createActionCellFactory());
+
+        filtered = new FilteredList<>(users, p -> true);
+        SortedList<UserAdminDTO> sorted = new SortedList<>(filtered);
+        sorted.comparatorProperty().bind(userTable.comparatorProperty());
+        userTable.setItems(sorted);
+
+        tfSearch.textProperty().addListener((obs, oldV, newV) -> applyFilters());
+        cbFilterRole.valueProperty().addListener((obs, oldV, newV) -> applyFilters());
+        cbFilterStatus.valueProperty().addListener((obs, oldV, newV) -> applyFilters());
+
         loadUsers();
     }
 
-    /** Setup các cột data cơ bản. */
-    void setupTable() {
-        colId.setCellValueFactory(new PropertyValueFactory<>("id"));
-        colUsername.setCellValueFactory(new PropertyValueFactory<>("username"));
-        colEmail.setCellValueFactory(new PropertyValueFactory<>("email"));
-        colRole.setCellValueFactory(new PropertyValueFactory<>("role"));
-        colStatus.setCellValueFactory(new PropertyValueFactory<>("status"));
-
-        filteredUsers = new FilteredList<>(allUsers, u -> true);
-        userTable.setItems(filteredUsers);
-    }
-
-    /** Status color-coded: green/orange/red. */
-    void setupStatusColorCoding() {
-        colStatus.setCellFactory(col -> new TableCell<>() {
-            @Override
-            protected void updateItem(String status, boolean empty) {
-                super.updateItem(status, empty);
-                if (empty || status == null) {
-                    setText(null);
-                    setStyle("");
-                    return;
-                }
-                setText(status);
-                setStyle(switch (status) {
-                    case "ACTIVE"    -> "-fx-text-fill: #22C55E; -fx-font-weight: bold;";
-                    case "SUSPENDED" -> "-fx-text-fill: #F59E0B; -fx-font-weight: bold;";
-                    case "BANNED"    -> "-fx-text-fill: #EF4444; -fx-font-weight: bold;";
-                    default -> "";
-                });
-            }
+    private void loadUsers() {
+        AdminService.getUsers(list -> {
+            users.setAll(list != null ? list : List.of());
+            applyFilters();
         });
     }
 
-    /** colAction render 3 button per row. */
-    void setupActionColumn() {
-        if (colAction == null) return;  // FXML cũ có thể không có colAction
+    private void applyFilters() {
+        String q = tfSearch.getText() != null ? tfSearch.getText().trim().toLowerCase() : "";
+        String role = cbFilterRole.getValue();
+        String status = cbFilterStatus.getValue();
 
-        colAction.setCellFactory(col -> new TableCell<>() {
-            protected final Button btnSuspend = new Button("Khóa tạm");
-            protected final Button btnBan = new Button("Cấm");
-            protected final Button btnUnban = new Button("Mở khóa");
-            protected final HBox box = new HBox(6, btnSuspend, btnBan, btnUnban);
+        filtered.setPredicate(u -> {
+            if (u == null) return false;
+            boolean matchesQ = q.isEmpty() || u.getUsername().toLowerCase().contains(q) || u.getEmail().toLowerCase().contains(q);
+            boolean matchesRole = role == null || role.equals("Tất cả") || u.getRole().equalsIgnoreCase(role);
+            boolean matchesStatus = status == null || status.equals("Tất cả") || u.getStatus().equalsIgnoreCase(status);
+            return matchesQ && matchesRole && matchesStatus;
+        });
+    }
+
+    private Callback<TableColumn<UserAdminDTO, Void>, TableCell<UserAdminDTO, Void>> createActionCellFactory() {
+        return col -> new TableCell<>() {
+            private final MenuButton menuBtn = new MenuButton("Thao tác ⚙️");
+            private final MenuItem itemDetail = new MenuItem("👁  Xem thống kê");
+            private final MenuItem itemRestore = new MenuItem("🔓  Mở khóa tài khoản");
+            private final MenuItem itemSuspend = new MenuItem("🔒  Khóa tạm thời");
+            private final MenuItem itemBan = new MenuItem("🚫  Cấm vĩnh viễn");
 
             {
-                btnSuspend.setStyle("-fx-background-color: #F59E0B; -fx-text-fill: white; -fx-font-size: 11px;");
-                btnBan.setStyle("-fx-background-color: #EF4444; -fx-text-fill: white; -fx-font-size: 11px;");
-                btnUnban.setStyle("-fx-background-color: #22C55E; -fx-text-fill: white; -fx-font-size: 11px;");
+                // Mở rộng độ rộng nút để không bị đứt chữ
+                menuBtn.setPrefWidth(120);
+                menuBtn.setStyle("-fx-background-color: #F1F5F9; -fx-text-fill: #334155; -fx-font-weight: bold; "
+                        + "-fx-background-radius: 6; -fx-padding: 6 12; -fx-cursor: hand; -fx-font-size: 12px;");
+
+                itemDetail.setStyle("-fx-text-fill: #1E293B;");
+                itemRestore.setStyle("-fx-text-fill: #16A34A; -fx-font-weight: bold;");
+                itemSuspend.setStyle("-fx-text-fill: #D97706;");
+                itemBan.setStyle("-fx-text-fill: #DC2626; -fx-font-weight: bold;");
+
+                menuBtn.getItems().addAll(itemDetail, itemRestore, itemSuspend, itemBan);
+
+                itemRestore.setOnAction(e -> {
+                    UserAdminDTO u = getTableView().getItems().get(getIndex());
+                    if (u != null) changeUserStatus(u, UserAdminDTO.STATUS_ACTIVE);
+                });
+                itemSuspend.setOnAction(e -> {
+                    UserAdminDTO u = getTableView().getItems().get(getIndex());
+                    if (u != null) changeUserStatus(u, UserAdminDTO.STATUS_SUSPENDED);
+                });
+                itemBan.setOnAction(e -> {
+                    UserAdminDTO u = getTableView().getItems().get(getIndex());
+                    if (u != null) changeUserStatus(u, UserAdminDTO.STATUS_BANNED);
+                });
+                itemDetail.setOnAction(e -> {
+                    UserAdminDTO u = getTableView().getItems().get(getIndex());
+                    if (u != null) showUserStats(u.getId());
+                });
             }
 
             @Override
             protected void updateItem(Void item, boolean empty) {
                 super.updateItem(item, empty);
-                if (empty || getTableRow() == null || getTableRow().getItem() == null) {
+                if (empty || getIndex() >= getTableView().getItems().size()) {
                     setGraphic(null);
-                    return;
+                } else {
+                    UserAdminDTO u = getTableView().getItems().get(getIndex());
+
+                    itemSuspend.setDisable(u.isSuspended() || u.isBanned());
+                    itemBan.setDisable(u.isBanned());
+                    itemRestore.setDisable(!u.isSuspended());
+
+                    setGraphic(menuBtn);
+                    // LỆNH QUAN TRỌNG: Ép nút Thao Tác ra giữa ô
+                    setAlignment(Pos.CENTER);
                 }
-                UserAdminDTO user = (UserAdminDTO) getTableRow().getItem();
-                String status = user.getStatus();
+            }
+        };
+    }
 
-                // Enable/disable theo status hiện tại
-                btnSuspend.setDisable("SUSPENDED".equals(status) || "BANNED".equals(status));
-                btnBan.setDisable("BANNED".equals(status));
-                btnUnban.setDisable("ACTIVE".equals(status));
+    private void showUserStats(int userId) {
+        AdminService.getUserStats(userId, stats -> {
+            if (stats == null) { AlertUtil.showError("Không tải được thông tin người dùng"); return; }
+            StringBuilder sb = new StringBuilder();
+            sb.append("Người dùng: ").append(stats.getUsername()).append(" (ID: ").append(stats.getUserId()).append(")\n\n");
+            sb.append("Tổng phiên tạo: ").append(stats.getTotalAuctionsCreated()).append("\n");
+            sb.append("Phiên đang hoạt động: ").append(stats.getActiveAuctions()).append("\n");
+            sb.append("Phiên đã bán: ").append(stats.getAuctionsSold()).append("\n");
+            sb.append("Tổng lượt đặt giá: ").append(stats.getTotalBidsPlaced()).append("\n");
+            sb.append("Tổng vật phẩm bán được: ").append(stats.getTotalItemsSold()).append("\n");
+            java.time.Instant li = stats.getLastLogin();
+            sb.append("Lần đăng nhập gần nhất: ").append(li != null ? dtf.format(li) : "Chưa có").append("\n");
+            sb.append("Tổng thu nhập: ").append(stats.getTotalEarned()).append(" đ\n");
+            sb.append("Tổng chi tiêu: ").append(stats.getTotalSpent()).append(" đ\n");
+            AlertUtil.showInfo(sb.toString());
+        });
+    }
 
-                btnSuspend.setOnAction(e -> changeStatus(user, "SUSPENDED", "khóa tạm thời"));
-                btnBan.setOnAction(e -> {
-                    if (!SessionManager.isSuperAdmin()) {
-                        AlertUtil.showError("Chỉ Super Admin mới có quyền Ban người dùng");
-                        return;
-                    }
-                    changeStatus(user, "BANNED", "cấm vĩnh viễn");
-                });
-                btnUnban.setOnAction(e -> changeStatus(user, "ACTIVE", "kích hoạt lại"));
-
-                setGraphic(box);
+    private void changeUserStatus(UserAdminDTO user, String newStatus) {
+        if (user == null) return;
+        boolean ok = AlertUtil.showConfirm("Xác nhận", "Bạn có chắc muốn đổi trạng thái của '" + user.getUsername() + "' thành " + newStatus + "?");
+        if (!ok) return;
+        AdminService.updateUserStatus(user.getId(), newStatus, success -> {
+            if (success) {
+                AlertUtil.showInfo("Cập nhật thành công");
+                loadUsers();
+            } else {
+                AlertUtil.showError("Không thể cập nhật trạng thái. Vui lòng thử lại.");
             }
         });
     }
 
-    /** Setup filter UI nếu FXML có. */
-    void setupFilters() {
-        if (cbFilterRole != null) {
-            cbFilterRole.getItems().setAll("Tất cả vai trò", "MEMBER", "SELLER", "ADMIN");
-            cbFilterRole.getSelectionModel().selectFirst();
-            cbFilterRole.setOnAction(e -> applyFilters());
-        }
-        if (cbFilterStatus != null) {
-            cbFilterStatus.getItems().setAll("Tất cả trạng thái", "ACTIVE", "SUSPENDED", "BANNED");
-            cbFilterStatus.getSelectionModel().selectFirst();
-            cbFilterStatus.setOnAction(e -> applyFilters());
-        }
-        if (tfSearch != null) {
-            tfSearch.textProperty().addListener((obs, oldV, newV) -> applyFilters());
-        }
-    }
-
-    void applyFilters() {
-        if (filteredUsers == null) return;
-        String search = tfSearch != null && tfSearch.getText() != null
-                ? tfSearch.getText().toLowerCase().trim() : "";
-        String role = cbFilterRole != null ? cbFilterRole.getValue() : null;
-        String status = cbFilterStatus != null ? cbFilterStatus.getValue() : null;
-
-        filteredUsers.setPredicate(u -> matchSearch(u, search)
-                && matchRole(u, role)
-                && matchStatus(u, status));
-    }
-
-    protected boolean matchSearch(UserAdminDTO u, String search) {
-
-        if (search == null || search.isBlank()) {
-            return true;
-        }
-
-        String keyword = search.toLowerCase();
-
-        String username = u.getUsername() != null
-                ? u.getUsername().toLowerCase()
-                : "";
-
-        String email = u.getEmail() != null
-                ? u.getEmail().toLowerCase()
-                : "";
-
-        return username.contains(keyword)
-                || email.contains(keyword);
-    }
-
-    protected boolean matchRole(UserAdminDTO u, String filter) {
-        if (filter == null || filter.startsWith("Tất cả")) return true;
-        if ("ADMIN".equals(filter)) return u.isAdmin();
-        return filter.equals(u.getRole());
-    }
-
-    protected boolean matchStatus(UserAdminDTO u, String filter) {
-        if (filter == null || filter.startsWith("Tất cả")) return true;
-        return filter.equals(u.getStatus());
-    }
-
-    // ===== LOAD =====
-
-    void loadUsers() {
-        AdminService.getUsers(users -> Platform.runLater(() -> {
-            allUsers.setAll(users != null ? users : java.util.List.of());
-            LOGGER.info(() -> "Loaded " + allUsers.size() + " users");
-        }));
-    }
-
-    // ===== FXML HANDLERS (giữ nguyên signature) =====
-
-    /** Suspend user đang select trong table. */
     @FXML
     public void suspendSelected() {
-        UserAdminDTO user = userTable.getSelectionModel().getSelectedItem();
-        if (user == null) {
-            AlertUtil.showWarning("Vui lòng chọn một người dùng");
-            return;
-        }
-        if ("SUSPENDED".equals(user.getStatus()) || "BANNED".equals(user.getStatus())) {
-            AlertUtil.showInfo("Tài khoản đã ở trạng thái " + user.getStatus());
-            return;
-        }
-        changeStatus(user, "SUSPENDED", "khóa tạm thời");
+        UserAdminDTO sel = userTable.getSelectionModel().getSelectedItem();
+        if (sel == null) { AlertUtil.showWarning("Vui lòng chọn người dùng"); return; }
+        changeUserStatus(sel, UserAdminDTO.STATUS_SUSPENDED);
     }
 
-    /** Ban user đang select - chỉ super admin. */
     @FXML
     public void banSelected() {
-        if (!SessionManager.isSuperAdmin()) {
-            AlertUtil.showError("Chỉ Super Admin mới có quyền Ban người dùng");
-            return;
-        }
-        UserAdminDTO user = userTable.getSelectionModel().getSelectedItem();
-        if (user == null) {
-            AlertUtil.showWarning("Vui lòng chọn một người dùng");
-            return;
-        }
-        if ("BANNED".equals(user.getStatus())) {
-            AlertUtil.showInfo("Tài khoản đã bị cấm");
-            return;
-        }
-        changeStatus(user, "BANNED", "cấm vĩnh viễn");
+        UserAdminDTO sel = userTable.getSelectionModel().getSelectedItem();
+        if (sel == null) { AlertUtil.showWarning("Vui lòng chọn người dùng"); return; }
+        changeUserStatus(sel, UserAdminDTO.STATUS_BANNED);
     }
 
-    /** Generic change status với confirm + reload. */
-    void changeStatus(UserAdminDTO user, String newStatus, String action) {
-        boolean ok = AlertUtil.showConfirm("Xác nhận",
-                "Bạn có chắc muốn " + action + " tài khoản '" + user.getUsername() + "'?");
-        if (!ok) return;
-
-        LOGGER.info(() -> "Change status " + user.getUsername() + " -> " + newStatus);
-
-        AdminService.updateUserStatus(user.getId(), newStatus,
-                success -> Platform.runLater(() -> {
-                    if (success) {
-                        AlertUtil.showInfo("Đã " + action + " tài khoản " + user.getUsername());
-                        loadUsers();
-                    } else {
-                        AlertUtil.showError("Thao tác thất bại");
-                    }
-                })
-        );
+    @FXML
+    public void restoreSelected() {
+        UserAdminDTO sel = userTable.getSelectionModel().getSelectedItem();
+        if (sel == null) { AlertUtil.showWarning("Vui lòng chọn người dùng"); return; }
+        changeUserStatus(sel, UserAdminDTO.STATUS_ACTIVE);
     }
 }

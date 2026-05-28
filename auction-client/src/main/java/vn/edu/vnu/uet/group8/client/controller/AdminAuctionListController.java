@@ -1,234 +1,230 @@
 package vn.edu.vnu.uet.group8.client.controller;
 
-import java.net.URL;
-import java.util.Optional;
-import java.util.ResourceBundle;
-import java.util.logging.Logger;
+import java.math.BigDecimal;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
+import java.util.List;
 
-import javafx.application.Platform;
-import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.collections.transformation.FilteredList;
+import javafx.collections.transformation.SortedList;
 import javafx.fxml.FXML;
-import javafx.fxml.Initializable;
-import javafx.scene.control.Button;
+import javafx.geometry.Pos;
 import javafx.scene.control.ComboBox;
+import javafx.scene.control.Label;
+import javafx.scene.control.MenuButton;
+import javafx.scene.control.MenuItem;
 import javafx.scene.control.TableCell;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
-import javafx.scene.control.TextInputDialog;
-import javafx.scene.control.cell.PropertyValueFactory;
+import javafx.util.Callback;
 import vn.edu.vnu.uet.group8.client.service.AdminService;
 import vn.edu.vnu.uet.group8.client.util.AlertUtil;
-import vn.edu.vnu.uet.group8.client.util.UIFormatter;
 import vn.edu.vnu.uet.group8.common.dto.model.AuctionItemDTO;
-import vn.edu.vnu.uet.group8.common.enums.SessionStatus;
 
-/**
- * AdminAuctionListController — quản lý phiên đấu giá.
- *
- * Tính năng PRO:
- *  - ObservableList + FilteredList
- *  - Search live by title
- *  - Filter status (ACTIVE/SOLD/ENDED_NO_BID/CANCELLED)
- *  - Price + EndTime formatted via UIFormatter
- *  - Status color-coded
- *  - colAction render nút "Hủy phiên"
- *  - Cancel với dialog nhập lý do (optional)
- *
- * FXML handlers: cancelSelected
- * fx:id: auctionTable, colId, colTitle, colPrice, colStatus, colEndTime, colAction
- */
-public class AdminAuctionListController implements Initializable {
+public class AdminAuctionListController {
+    @FXML private TextField tfSearch;
+    @FXML private ComboBox<String> cbFilterStatus;
+    @FXML private TableView<AuctionItemDTO> auctionTable;
+    @FXML private TableColumn<AuctionItemDTO, Integer> colId;
+    @FXML private TableColumn<AuctionItemDTO, String> colTitle;
+    @FXML private TableColumn<AuctionItemDTO, String> colPrice; // Khớp chính xác với fx:id="colPrice"
+    @FXML private TableColumn<AuctionItemDTO, String> colStatus;
+    @FXML private TableColumn<AuctionItemDTO, String> colEndTime;
+    @FXML private TableColumn<AuctionItemDTO, Void> colAction;
 
-    protected static final Logger LOGGER = Logger.getLogger(AdminAuctionListController.class.getName());
+    private final ObservableList<AuctionItemDTO> items = FXCollections.observableArrayList();
+    private FilteredList<AuctionItemDTO> filtered;
+    private final DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss").withZone(ZoneId.systemDefault());
 
-    @FXML TableView<AuctionItemDTO> auctionTable;
-    @FXML TableColumn<AuctionItemDTO, Integer> colId;
-    @FXML TableColumn<AuctionItemDTO, String> colTitle;
-    @FXML TableColumn<AuctionItemDTO, String> colPrice;
-    @FXML TableColumn<AuctionItemDTO, String> colStatus;
-    @FXML TableColumn<AuctionItemDTO, String> colEndTime;
-    @FXML TableColumn<AuctionItemDTO, Void> colAction;
+    @FXML
+    public void initialize() {
+        cbFilterStatus.getItems().addAll("Tất cả", "ACTIVE", "SOLD", "CANCELLED", "UPCOMING");
+        cbFilterStatus.getSelectionModel().selectFirst();
 
-    // Optional fields
-    @FXML TextField tfSearch;
-    @FXML ComboBox<String> cbFilterStatus;
+        colId.setCellValueFactory(new javafx.scene.control.cell.PropertyValueFactory<>("itemId"));
+        colTitle.setCellValueFactory(new javafx.scene.control.cell.PropertyValueFactory<>("title"));
 
-    protected final ObservableList<AuctionItemDTO> allAuctions = FXCollections.observableArrayList();
-    protected FilteredList<AuctionItemDTO> filteredAuctions;
+        colPrice.setCellValueFactory(cell -> {
+            var price = cell.getValue().getCurrentPrice();
+            String s;
+            if (price != null) {
+                java.text.NumberFormat nf = java.text.NumberFormat.getInstance(new java.util.Locale("vi", "VN"));
+                s = nf.format(price) + " đ";
+            } else {
+                s = "0 đ";
+            }
+            return new javafx.beans.property.SimpleStringProperty(s);
+        });
 
-    @Override
-    public void initialize(URL location, ResourceBundle resources) {
-        setupTable();
-        setupStatusColorCoding();
-        setupActionColumn();
-        setupFilters();
+        colStatus.setCellValueFactory(cell -> new javafx.beans.property.SimpleStringProperty(
+                cell.getValue().getStatus() != null ? cell.getValue().getStatus().name() : ""));
+
+        // ==========================================
+        // CẢI TIẾN 1: TỐI ƯU HIỆU NĂNG RENDER CELL FACTORY CHO BADGE STATUS
+        // ==========================================
+        colStatus.setCellFactory(column -> new TableCell<>() {
+            private final Label badge = new Label();
+            private final String baseStyle = "-fx-font-weight: bold; -fx-font-size: 11px; -fx-padding: 4 10; -fx-background-radius: 12;";
+
+            @Override
+            protected void updateItem(String item, boolean empty) {
+                super.updateItem(item, empty);
+                if (empty || item == null || item.isEmpty()) {
+                    setGraphic(null);
+                } else {
+                    switch (item.toUpperCase()) {
+                        case "ACTIVE":
+                            badge.setText("Đang diễn ra");
+                            badge.setStyle(baseStyle + "-fx-background-color: #DCFCE7; -fx-text-fill: #15803D;");
+                            break;
+                        case "SOLD":
+                            badge.setText("Đã bán");
+                            badge.setStyle(baseStyle + "-fx-background-color: #E0F2FE; -fx-text-fill: #0369A1;");
+                            break;
+                        case "CANCELLED":
+                            badge.setText("Đã hủy");
+                            badge.setStyle(baseStyle + "-fx-background-color: #FEE2E2; -fx-text-fill: #B91C1C;");
+                            break;
+                        case "UPCOMING":
+                            badge.setText("Sắp diễn ra");
+                            badge.setStyle(baseStyle + "-fx-background-color: #FEF3C7; -fx-text-fill: #B45309;");
+                            break;
+                        default:
+                            badge.setText(item);
+                            badge.setStyle(baseStyle + "-fx-background-color: #F1F5F9; -fx-text-fill: #475569;");
+                            break;
+                    }
+                    setGraphic(badge);
+                    setAlignment(Pos.CENTER); // Ép huy hiệu ra chính giữa ô lưới
+                }
+            }
+        });
+
+        colEndTime.setCellValueFactory(cell -> new javafx.beans.property.SimpleStringProperty(
+                cell.getValue().getEndTime() != null ? dtf.format(cell.getValue().getEndTime()) : ""));
+
+        colAction.setCellFactory(createActionCellFactory());
+
+        filtered = new FilteredList<>(items, p -> true);
+        SortedList<AuctionItemDTO> sorted = new SortedList<>(filtered);
+        sorted.comparatorProperty().bind(auctionTable.comparatorProperty());
+        auctionTable.setItems(sorted);
+
+        tfSearch.textProperty().addListener((obs, oldV, newV) -> applyFilters());
+        cbFilterStatus.valueProperty().addListener((obs, oldV, newV) -> applyFilters());
+
         loadAuctions();
     }
 
-    void setupTable() {
-        colId.setCellValueFactory(new PropertyValueFactory<>("itemId"));
-        colTitle.setCellValueFactory(new PropertyValueFactory<>("title"));
-        colPrice.setCellValueFactory(cell ->
-                new SimpleStringProperty(UIFormatter.formatPrice(cell.getValue().getCurrentPrice())));
-        colStatus.setCellValueFactory(cell ->
-                new SimpleStringProperty(cell.getValue().getStatus() != null ? cell.getValue().getStatus().name() : ""));
-        colEndTime.setCellValueFactory(cell ->
-                new SimpleStringProperty(UIFormatter.formatInstant(cell.getValue().getEndTime())));
-
-        filteredAuctions = new FilteredList<>(allAuctions, a -> true);
-        auctionTable.setItems(filteredAuctions);
-    }
-
-    void setupStatusColorCoding() {
-        colStatus.setCellFactory(col -> new TableCell<>() {
-            @Override
-            protected void updateItem(String status, boolean empty) {
-                super.updateItem(status, empty);
-                if (empty || status == null) {
-                    setText(null);
-                    setStyle("");
-                    return;
-                }
-                setText(status);
-                setStyle(switch (status) {
-                    case "ACTIVE"        -> "-fx-text-fill: #22C55E; -fx-font-weight: bold;";
-                    case "SOLD"          -> "-fx-text-fill: #1E3A6E; -fx-font-weight: bold;";
-                    case "ENDED_NO_BID"  -> "-fx-text-fill: #9CA3AF;";
-                    case "CANCELLED"     -> "-fx-text-fill: #EF4444; -fx-font-weight: bold;";
-                    default -> "";
-                });
-            }
+    private void loadAuctions() {
+        AdminService.getAuctions(list -> {
+            items.setAll(list != null ? list : List.of());
+            applyFilters();
         });
     }
 
-    void setupActionColumn() {
-        if (colAction == null) return;
+    private void applyFilters() {
+        String q = tfSearch.getText() != null ? tfSearch.getText().trim().toLowerCase() : "";
+        String status = cbFilterStatus.getValue();
+        filtered.setPredicate(a -> {
+            if (a == null) return false;
+            boolean matchesQ = q.isEmpty()
+                    || (a.getTitle() != null && a.getTitle().toLowerCase().contains(q))
+                    || (a.getSellerUsername() != null && a.getSellerUsername().toLowerCase().contains(q));
+            boolean matchesStatus = status == null || status.equals("Tất cả")
+                    || (a.getStatus() != null && a.getStatus().name().equalsIgnoreCase(status));
+            return matchesQ && matchesStatus;
+        });
+    }
 
-        colAction.setCellFactory(col -> new TableCell<>() {
-            protected final Button btnCancel = new Button("Hủy phiên");
+    // ==========================================
+    // CẢI TIẾN 2: THAY THẾ HBOX BUTTONS BẰNG PREMIUM DROPDOWN MENUBUTTON
+    // ==========================================
+    private Callback<TableColumn<AuctionItemDTO, Void>, TableCell<AuctionItemDTO, Void>> createActionCellFactory() {
+        return col -> new TableCell<>() {
+            private final MenuButton menuBtn = new MenuButton("Thao tác ⚙️");
+            private final MenuItem itemBidders = new MenuItem("👥  Lịch sử đặt giá");
+            private final MenuItem itemCancel = new MenuItem("❌  Hủy phiên đấu giá");
 
             {
-                btnCancel.setStyle("-fx-background-color: #EF4444; -fx-text-fill: white; -fx-font-size: 11px;");
+                // Khóa cứng độ rộng tối thiểu để không bao giờ bị đứt chữ "Thao tác"
+                menuBtn.setMinWidth(115);
+                menuBtn.setStyle("-fx-background-color: #F1F5F9; -fx-text-fill: #334155; -fx-font-weight: bold; "
+                        + "-fx-background-radius: 6; -fx-padding: 5 10; -fx-cursor: hand; -fx-font-size: 12px;");
+
+                itemBidders.setStyle("-fx-text-fill: #1E293B; -fx-font-size: 12px;");
+                itemCancel.setStyle("-fx-text-fill: #DC2626; -fx-font-weight: bold; -fx-font-size: 12px;");
+
+                menuBtn.getItems().addAll(itemBidders, itemCancel);
+
+                itemCancel.setOnAction(e -> {
+                    AuctionItemDTO a = getTableView().getItems().get(getIndex());
+                    if (a != null) cancelAuction(a);
+                });
+                itemBidders.setOnAction(e -> {
+                    AuctionItemDTO a = getTableView().getItems().get(getIndex());
+                    if (a != null) showBiddersForItem(a.getItemId(), a.getTitle());
+                });
             }
 
             @Override
             protected void updateItem(Void item, boolean empty) {
                 super.updateItem(item, empty);
-                if (empty || getTableRow() == null || getTableRow().getItem() == null) {
+                if (empty || getIndex() >= getTableView().getItems().size()) {
                     setGraphic(null);
-                    return;
+                } else {
+                    AuctionItemDTO a = getTableView().getItems().get(getIndex());
+
+                    boolean isEnded = a.getStatus() != null &&
+                            (a.getStatus().name().equals("SOLD") || a.getStatus().name().equals("CANCELLED"));
+                    itemCancel.setDisable(isEnded);
+
+                    setGraphic(menuBtn);
+                    setAlignment(Pos.CENTER); // Đảm bảo nút Thao tác nằm chính giữa cột Hành động
                 }
-                AuctionItemDTO auction = (AuctionItemDTO) getTableRow().getItem();
-                SessionStatus status = auction.getStatus();
+            }
+        };
+    }
 
-                // Chỉ cho phép hủy phiên đang ACTIVE
-                btnCancel.setDisable(SessionStatus.ACTIVE != status);
-
-                btnCancel.setOnAction(e -> cancelAuction(auction));
-
-                setGraphic(btnCancel);
+    private void cancelAuction(AuctionItemDTO a) {
+        if (a == null) return;
+        boolean ok = AlertUtil.showConfirm("Xác nhận", "Bạn có chắc muốn huỷ phiên đấu giá: '" + a.getTitle() + "'?\n(Lưu ý: thao tác này có thể hoàn tiền cho người đã đặt giá)");
+        if (!ok) return;
+        AdminService.cancelAuction(a.getSessionId(), success -> {
+            if (success) {
+                AlertUtil.showInfo("Đã huỷ phiên đấu giá");
+                loadAuctions();
+            } else {
+                AlertUtil.showError("Không thể huỷ phiên. Vui lòng thử lại.");
             }
         });
     }
 
-    void setupFilters() {
-        if (cbFilterStatus != null) {
-            cbFilterStatus.getItems().setAll("Tất cả trạng thái",
-                    "ACTIVE", "SOLD", "ENDED_NO_BID", "CANCELLED");
-            cbFilterStatus.getSelectionModel().selectFirst();
-            cbFilterStatus.setOnAction(e -> applyFilters());
-        }
-        if (tfSearch != null) {
-            tfSearch.textProperty().addListener((obs, oldV, newV) -> applyFilters());
-        }
-    }
-
-    void applyFilters() {
-        if (filteredAuctions == null) return;
-        String search = tfSearch != null && tfSearch.getText() != null
-                ? tfSearch.getText().toLowerCase().trim() : "";
-        String status = cbFilterStatus != null ? cbFilterStatus.getValue() : null;
-
-        filteredAuctions.setPredicate(a -> matchSearch(a, search) && matchStatus(a, status));
-    }
-
-    protected boolean matchSearch(AuctionItemDTO a, String search) {
-        if (search == null || search.isBlank()) {
-            return true;
-        }
-
-        String keyword = search.toLowerCase();
-
-        String title = a.getTitle() != null
-                ? a.getTitle().toLowerCase()
-                : "";
-
-        return title.contains(keyword);
-    }
-
-    protected boolean matchStatus(AuctionItemDTO a, String filter) {
-        if (filter == null || filter.startsWith("Tất cả")) return true;
-        return a.getStatus() != null && filter.equals(a.getStatus().name());
-    }
-
-    // ===== LOAD =====
-
-    void loadAuctions() {
-        AdminService.getAuctions(auctions -> Platform.runLater(() -> {
-            allAuctions.setAll(auctions != null ? auctions : java.util.List.of());
-            LOGGER.info(() -> "Loaded " + allAuctions.size() + " auctions");
-        }));
-    }
-
-    // ===== FXML HANDLER =====
-
-    /** Hủy phiên đang select. */
     @FXML
     public void cancelSelected() {
-        AuctionItemDTO auction = auctionTable.getSelectionModel().getSelectedItem();
-        if (auction == null) {
-            AlertUtil.showWarning("Vui lòng chọn một phiên đấu giá");
-            return;
-        }
-        if (SessionStatus.ACTIVE != auction.getStatus()) {
-            AlertUtil.showWarning("Chỉ có thể hủy phiên đang ACTIVE.\n"
-                    + "Phiên này đang ở trạng thái: " + auction.getStatus());
-            return;
-        }
-        cancelAuction(auction);
+        AuctionItemDTO sel = auctionTable.getSelectionModel().getSelectedItem();
+        if (sel == null) { AlertUtil.showWarning("Vui lòng chọn phiên đấu giá"); return; }
+        cancelAuction(sel);
     }
 
-    /** Logic chung — dialog nhập lý do + confirm + gọi service. */
-    void cancelAuction(AuctionItemDTO auction) {
-        // Dialog nhập lý do
-        TextInputDialog dialog = new TextInputDialog();
-        dialog.setTitle("Hủy phiên đấu giá");
-        dialog.setHeaderText("Hủy phiên: " + auction.getTitle());
-        dialog.setContentText("Lý do hủy (tùy chọn):");
-
-        Optional<String> result = dialog.showAndWait();
-        if (result.isEmpty()) return;  // user nhấn Cancel
-
-        String reason = result.get().trim();
-
-        boolean ok = AlertUtil.showConfirm("Xác nhận",
-                "Bạn có chắc muốn hủy phiên '" + auction.getTitle() + "'?"
-                        + (reason.isEmpty() ? "" : "\n\nLý do: " + reason));
-        if (!ok) return;
-
-        LOGGER.info(() -> "Cancel auction " + auction.getItemId() + " - reason: " + reason);
-
-        AdminService.cancelAuction(auction.getItemId(), success -> Platform.runLater(() -> {
-            if (success) {
-                AlertUtil.showInfo("Đã hủy phiên: " + auction.getTitle());
-                loadAuctions();
-            } else {
-                AlertUtil.showError("Thao tác thất bại");
+    private void showBiddersForItem(int itemId, String title) {
+        vn.edu.vnu.uet.group8.client.service.AuctionService.getItemBidHistory(itemId, list -> {
+            if (list == null || list.isEmpty()) {
+                AlertUtil.showInfo("Không có lịch sử đặt giá cho '" + title + "'");
+                return;
             }
-        }));
+            StringBuilder sb = new StringBuilder();
+            sb.append("Lịch sử đặt giá - ").append(title).append("\n\n");
+            for (var r : list) {
+                sb.append("• Người dùng: ").append(r.getDisplayName())
+                        .append(" (ID: ").append(r.getUserId()).append(")\n")
+                        .append("  ↳ Mức giá: ").append(String.format("%,d", (BigDecimal)r.getAmount())).append(" đ\n")
+                        .append("  ↳ Thời gian: ").append(r.getPlacedAt()).append("\n\n");
+            }
+            AlertUtil.showInfo(sb.toString());
+        });
     }
 }
