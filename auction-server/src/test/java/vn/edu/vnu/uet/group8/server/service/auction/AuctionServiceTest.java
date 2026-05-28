@@ -35,7 +35,7 @@ class AuctionServiceTest {
 
     @Mock private AuctionSessionDAO sessionDAO;
     @Mock private BidValidator validator;
-    @Mock private BidProcessor processor;
+    @Mock private HybridBidExecutor executor;
     @Mock private AntiSnipingService antiSniping;
     @Mock private AuctionEventBus eventBus;
     @Mock private BidTransactionDAO bidTransactionDAO;
@@ -46,7 +46,7 @@ class AuctionServiceTest {
     @BeforeEach
     void setUp() {
         service = new AuctionService(
-                sessionDAO, validator, processor,
+                sessionDAO, validator, executor,
                 antiSniping, eventBus, bidTransactionDAO, autoBidService);
     }
 
@@ -87,11 +87,11 @@ class AuctionServiceTest {
 
             BidContext ctx = mock(BidContext.class);
             when(ctx.getAuctionSession()).thenReturn(session);
-            when(validator.validate(1, 5, new BigDecimal("2000000"))).thenReturn(ctx);
+            when(validator.validate(1, 5, new BigDecimal("2000000"), false)).thenReturn(ctx);
 
             BidResult bidResult = mock(BidResult.class);
             when(bidResult.getNewPrice()).thenReturn(new BigDecimal("2000000"));
-            when(processor.process(ctx)).thenReturn(bidResult);
+            when(executor.execute(ctx, false)).thenReturn(bidResult);
 
             AntiSnipingService.AntiSnipingResult snipingResult = mock(AntiSnipingService.AntiSnipingResult.class);
             when(snipingResult.isExtended()).thenReturn(false);
@@ -100,8 +100,8 @@ class AuctionServiceTest {
             assertDoesNotThrow(() ->
                     service.placeBid(1, 10, new BigDecimal("2000000")));
 
-            verify(validator).validate(1, 5, new BigDecimal("2000000"));
-            verify(processor).process(ctx);
+            verify(validator).validate(1, 5, new BigDecimal("2000000"), false);
+            verify(executor).execute(ctx, false);
             verify(antiSniping).checkAndExtend(session);
             verify(eventBus).publish(any());
         }
@@ -114,11 +114,11 @@ class AuctionServiceTest {
 
             BidContext ctx = mock(BidContext.class);
             when(ctx.getAuctionSession()).thenReturn(session);
-            when(validator.validate(anyInt(), anyInt(), any())).thenReturn(ctx);
+            when(validator.validate(anyInt(), anyInt(), any(), anyBoolean())).thenReturn(ctx);
 
             BidResult bidResult = mock(BidResult.class);
             when(bidResult.getNewPrice()).thenReturn(new BigDecimal("3000000"));
-            when(processor.process(ctx)).thenReturn(bidResult);
+            when(executor.execute(ctx, false)).thenReturn(bidResult);
 
             AntiSnipingService.AntiSnipingResult snipingResult = mock(AntiSnipingService.AntiSnipingResult.class);
             when(snipingResult.isExtended()).thenReturn(true);
@@ -135,7 +135,7 @@ class AuctionServiceTest {
 
             assertThrows(AuctionException.class,
                     () -> service.placeBid(1, 99, new BigDecimal("1000000")));
-            verifyNoInteractions(validator, processor);
+            verifyNoInteractions(validator, executor);
         }
 
         @Test
@@ -143,12 +143,12 @@ class AuctionServiceTest {
         void validatorNemException() throws Exception {
             AuctionSession session = sessionActive(5, 10);
             when(sessionDAO.findActiveSessionByItemId(10)).thenReturn(Optional.of(session));
-            when(validator.validate(anyInt(), anyInt(), any()))
+            when(validator.validate(anyInt(), anyInt(), any(), anyBoolean()))
                     .thenThrow(new vn.edu.vnu.uet.group8.common.exception.InvalidBidException("Giá quá thấp"));
 
             assertThrows(vn.edu.vnu.uet.group8.common.exception.InvalidBidException.class,
                     () -> service.placeBid(1, 10, new BigDecimal("100")));
-            verifyNoInteractions(processor);
+            verifyNoInteractions(executor);
         }
 
         @Test
@@ -159,12 +159,12 @@ class AuctionServiceTest {
 
             BidContext ctx = mock(BidContext.class);
             lenient().when(ctx.getAuctionSession()).thenReturn(session);
-            when(validator.validate(anyInt(), anyInt(), any())).thenReturn(ctx);
-            when(processor.process(ctx)).thenThrow(new SQLException("DB lỗi"));
+            when(validator.validate(anyInt(), anyInt(), any(), anyBoolean())).thenReturn(ctx);
+            when(executor.execute(ctx, false)).thenThrow(new SQLException("DB lỗi"));
 
             assertThrows(SQLException.class,
                     () -> service.placeBid(1, 10, new BigDecimal("2000000")));
-            // antiSniping không được gọi khi processor lỗi
+            // antiSniping không được gọi khi executor lỗi
             verifyNoInteractions(antiSniping);
         }
     }
@@ -230,6 +230,7 @@ class AuctionServiceTest {
             verify(sessionDAO)
                     .updateStatus(8, SessionStatus.ACTIVE);
         }
+    }
 
     // ─────────────────────────────────────────────────────────────
     // cancelSession
@@ -366,6 +367,7 @@ class AuctionServiceTest {
                             5,
                             "user01",
                             new BigDecimal("1500000"),
+                            "LEADER",
                             Instant.now());
             when(bidTransactionDAO.findHistoryByItem(5)).thenReturn(List.of(entry));
 
@@ -409,9 +411,9 @@ class AuctionServiceTest {
 
             Instant now = Instant.now();
             List<BidTransactionDAO.BidHistoryEntry> entries = List.of(
-                    new BidTransactionDAO.BidHistoryEntry(1, 10, 5, "user01", new BigDecimal("1500000"), now),
-                    new BidTransactionDAO.BidHistoryEntry(2, 10, 6, "user02", new BigDecimal("2000000"), now),
-                    new BidTransactionDAO.BidHistoryEntry(3, 10, 7, "user03", new BigDecimal("2500000"), now));
+                    new BidTransactionDAO.BidHistoryEntry(1, 10, 5, "user01", new BigDecimal("1500000"), "LEADER", now),
+                    new BidTransactionDAO.BidHistoryEntry(2, 10, 6, "user02", new BigDecimal("2000000"), "LEADER", now),
+                    new BidTransactionDAO.BidHistoryEntry(3, 10, 7, "user03", new BigDecimal("2500000"), "LEADER", now));
             when(bidTransactionDAO.findHistoryByItem(5)).thenReturn(entries);
 
             List<BidRecord> result = service.getItemBidHistory(10);
@@ -477,9 +479,13 @@ class AuctionServiceTest {
             AuctionSession session = sessionActive(5, 10);
             when(sessionDAO.findActiveSessionByItemId(10)).thenReturn(Optional.of(session));
 
+            BidContext ctx = mock(BidContext.class);
+            when(ctx.getAuctionSession()).thenReturn(session);
+            when(validator.validate(1, 5, new BigDecimal("5000000"), false)).thenReturn(ctx);
+
             BidResult autoBidResult = mock(BidResult.class);
             when(autoBidResult.getNewPrice()).thenReturn(new BigDecimal("2000000"));
-            when(autoBidService.resolveAutoBids(session)).thenReturn(autoBidResult);
+            when(executor.execute(ctx, true)).thenReturn(autoBidResult);
 
             AntiSnipingService.AntiSnipingResult snipingResult = mock(AntiSnipingService.AntiSnipingResult.class);
             when(snipingResult.isExtended()).thenReturn(false);
@@ -488,19 +494,22 @@ class AuctionServiceTest {
             assertDoesNotThrow(() ->
                     service.placeAutoBid(1, 10, new BigDecimal("5000000")));
 
-            verify(autoBidService).configureAutoBid(1, 5, new BigDecimal("5000000"));
-            verify(autoBidService).resolveAutoBids(session);
+            verify(validator).validate(1, 5, new BigDecimal("5000000"), false);
+            verify(executor).execute(ctx, true);
             verify(antiSniping).checkAndExtend(session);
         }
 
         @Test
-        @DisplayName("Success - resolveAutoBids trả null → không gọi antiSniping")
-        void successKhongCoResult() throws Exception {
+        @DisplayName("Executor ném SQLException → không gọi antiSniping")
+        void executorNemSQLException() throws Exception {
             AuctionSession session = sessionActive(5, 10);
             when(sessionDAO.findActiveSessionByItemId(10)).thenReturn(Optional.of(session));
-            when(autoBidService.resolveAutoBids(session)).thenReturn(null);
 
-            assertDoesNotThrow(() ->
+            BidContext ctx = mock(BidContext.class);
+            when(validator.validate(1, 5, new BigDecimal("5000000"), false)).thenReturn(ctx);
+            when(executor.execute(ctx, true)).thenThrow(new SQLException("DB error"));
+
+            assertThrows(SQLException.class, () ->
                     service.placeAutoBid(1, 10, new BigDecimal("5000000")));
 
             verifyNoInteractions(antiSniping);
@@ -529,9 +538,11 @@ class AuctionServiceTest {
                     .status(SessionStatus.ACTIVE)
                     .bidCount(0).highestBidderId(null).build();
             when(sessionDAO.findActiveSessionByItemId(10)).thenReturn(Optional.of(session));
+            when(validator.validate(1, 5, new BigDecimal("5000000"), false))
+                    .thenThrow(new AuctionException("Phiên đấu giá đã kết thúc"));
 
             assertThrows(AuctionException.class,
                     () -> service.placeAutoBid(1, 10, new BigDecimal("5000000")));
         }
     }
-}}
+}

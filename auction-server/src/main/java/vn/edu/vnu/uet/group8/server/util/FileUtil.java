@@ -12,10 +12,10 @@ import org.slf4j.LoggerFactory;
 
 public class FileUtil {
   private static final Logger log = LoggerFactory.getLogger(FileUtil.class);
-  
+
   // Thư mục lưu ảnh trên ổ cứng máy chủ
-  private static final String UPLOAD_DIR = "uploads"; 
-  // Tên miền của Mini HTTP Server (Sẽ tạo ở bước sau)
+  private static final String UPLOAD_DIR = "uploads";
+  // Tên miền của Mini HTTP Server
   private static final String SERVER_URL = "http://localhost:8081/uploads/";
 
   static {
@@ -28,28 +28,33 @@ public class FileUtil {
 
   public static List<String> saveBase64Images(List<String> base64Images) {
     List<String> savedUrls = new ArrayList<>();
-    if (base64Images == null) return savedUrls;
+    if (base64Images == null) {
+      return savedUrls;
+    }
 
     for (String base64Data : base64Images) {
-      if (base64Data == null) continue;
-      
+      if (base64Data == null) {
+        continue;
+      }
+      String cleaned = base64Data.trim();
+      if (cleaned.isEmpty()) {
+        continue;
+      }
       // Nếu data gửi lên đã là Link HTTP (trường hợp Edit giữ nguyên ảnh cũ)
-      if (base64Data.startsWith("http")) {
-        savedUrls.add(base64Data);
+      if (cleaned.startsWith("http")) {
+        savedUrls.add(cleaned);
         continue;
       }
 
       try {
-        String cleanBase64 = base64Data.replaceAll("\\s+", "");
-        if (cleanBase64.startsWith("data:")) {
-          int commaIndex = cleanBase64.indexOf(',');
-          if (commaIndex != -1) {
-            cleanBase64 = cleanBase64.substring(commaIndex + 1);
-          }
+        int base64Idx = cleaned.indexOf("base64,");
+        if (base64Idx != -1) {
+          cleaned = cleaned.substring(base64Idx + "base64,".length());
         }
-        
+        cleaned = cleaned.replaceAll("\\s+", "");
+
         String fileName = UUID.randomUUID().toString() + ".jpg";
-        byte[] decodedBytes = Base64.getDecoder().decode(cleanBase64);
+        byte[] decodedBytes = Base64.getDecoder().decode(cleaned);
         try (FileOutputStream fos = new FileOutputStream(UPLOAD_DIR + File.separator + fileName)) {
           fos.write(decodedBytes);
         }

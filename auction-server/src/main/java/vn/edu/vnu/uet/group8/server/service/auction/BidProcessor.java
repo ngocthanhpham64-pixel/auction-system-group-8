@@ -146,18 +146,24 @@ public class BidProcessor {
         conn.commit();
 
         // Đồng bộ Memory để trả về event bus
-        lockedSession.raiseCurrentPrice(newPrice);
+        if (newPrice.compareTo(lockedSession.getCurrentPrice()) > 0) {
+            lockedSession.raiseCurrentPrice(newPrice);
+        }
         for (int i = 0; i < actions.size(); i++) {
             lockedSession.incrementBidCount();
         }
         lockedSession.setHighestBidderId(winnerId);
         
         // Đồng bộ vào context để các hàm bên ngoài có giá mới nhất
-        context.getAuctionSession().raiseCurrentPrice(newPrice);
-        for (int i = 0; i < actions.size(); i++) {
-            context.getAuctionSession().incrementBidCount();
+        if (lockedSession != context.getAuctionSession()) {
+            if (newPrice.compareTo(context.getAuctionSession().getCurrentPrice()) > 0) {
+                context.getAuctionSession().raiseCurrentPrice(newPrice);
+            }
+            for (int i = 0; i < actions.size(); i++) {
+                context.getAuctionSession().incrementBidCount();
+            }
+            context.getAuctionSession().setHighestBidderId(winnerId);
         }
-        context.getAuctionSession().setHighestBidderId(winnerId);
 
         if (!leaderChanged) {
             // Ném ngoại lệ y như code cũ
@@ -166,7 +172,7 @@ public class BidProcessor {
 
         return new BidResult(
             lastTransactionId, lockedSession.getItemId(), sessionId, winnerId,
-            context.getBidder().getUsername(), newPrice, totalBids, lockedSession.getEndTime(), leaderId);
+            context.getBidder().getUsername(), newPrice, totalBids, lockedSession.getEndTime(), leaderId == 0 ? null : leaderId);
             
       } catch (Exception e) {
         conn.rollback();

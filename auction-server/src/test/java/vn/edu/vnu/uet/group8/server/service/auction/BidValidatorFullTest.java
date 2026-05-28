@@ -167,7 +167,7 @@ class BidValidatorFullTest {
             when(auctionSessionDAO.findById(ITEM_ID)).thenReturn(Optional.empty());
 
             assertThrows(ItemNotFoundException.class,
-                    () -> bidValidator.validate(BIDDER_ID, ITEM_ID, new BigDecimal("2000000")));
+                    () -> bidValidator.validate(BIDDER_ID, ITEM_ID, new BigDecimal("2000000"), false));
         }
 
         @Test
@@ -178,7 +178,7 @@ class BidValidatorFullTest {
             when(auctionSessionDAO.findById(ITEM_ID)).thenReturn(Optional.of(session));
 
             AuctionException ex = assertThrows(AuctionException.class,
-                    () -> bidValidator.validate(BIDDER_ID, ITEM_ID, new BigDecimal("2000000")));
+                    () -> bidValidator.validate(BIDDER_ID, ITEM_ID, new BigDecimal("2000000"), false));
             assertTrue(ex.getMessage().contains("UPCOMING"));
         }
 
@@ -190,7 +190,7 @@ class BidValidatorFullTest {
             when(auctionSessionDAO.findById(ITEM_ID)).thenReturn(Optional.of(session));
 
             assertThrows(AuctionException.class,
-                    () -> bidValidator.validate(BIDDER_ID, ITEM_ID, new BigDecimal("2000000")));
+                    () -> bidValidator.validate(BIDDER_ID, ITEM_ID, new BigDecimal("2000000"), false));
         }
     }
 
@@ -206,7 +206,7 @@ class BidValidatorFullTest {
         when(itemDAO.findById(ITEM_ID)).thenReturn(Optional.empty());
 
         assertThrows(ItemNotFoundException.class,
-                () -> bidValidator.validate(BIDDER_ID, ITEM_ID, new BigDecimal("2000000")));
+                () -> bidValidator.validate(BIDDER_ID, ITEM_ID, new BigDecimal("2000000"), false));
     }
 
     // ════════════════════════════════════════════════════
@@ -227,7 +227,7 @@ class BidValidatorFullTest {
             when(userDAO.findById(BIDDER_ID)).thenReturn(Optional.empty());
 
             assertThrows(UserNotFoundException.class,
-                    () -> bidValidator.validate(BIDDER_ID, ITEM_ID, new BigDecimal("2000000")));
+                    () -> bidValidator.validate(BIDDER_ID, ITEM_ID, new BigDecimal("2000000"), false));
         }
 
         @Test
@@ -243,7 +243,7 @@ class BidValidatorFullTest {
             when(userDAO.findById(BIDDER_ID)).thenReturn(Optional.of(bidder));
 
             ValidationException ex = assertThrows(ValidationException.class,
-                    () -> bidValidator.validate(BIDDER_ID, ITEM_ID, new BigDecimal("2000000")));
+                    () -> bidValidator.validate(BIDDER_ID, ITEM_ID, new BigDecimal("2000000"), false));
             assertTrue(ex.getMessage().contains("SUSPENDED"));
         }
 
@@ -260,7 +260,7 @@ class BidValidatorFullTest {
             when(userDAO.findById(BIDDER_ID)).thenReturn(Optional.of(bidder));
 
             assertThrows(ValidationException.class,
-                    () -> bidValidator.validate(BIDDER_ID, ITEM_ID, new BigDecimal("2000000")));
+                    () -> bidValidator.validate(BIDDER_ID, ITEM_ID, new BigDecimal("2000000"), false));
         }
     }
 
@@ -286,7 +286,7 @@ class BidValidatorFullTest {
             when(userDAO.findById(SELLER_ID)).thenReturn(Optional.of(bidder));
 
             ValidationException ex = assertThrows(ValidationException.class,
-                    () -> bidValidator.validate(SELLER_ID, ITEM_ID, new BigDecimal("2000000")));
+                    () -> bidValidator.validate(SELLER_ID, ITEM_ID, new BigDecimal("2000000"), false));
             assertTrue(ex.getMessage().contains("chính mình"));
         }
 
@@ -302,7 +302,7 @@ class BidValidatorFullTest {
             when(userDAO.findById(BIDDER_ID)).thenReturn(Optional.of(bidder));
 
             ValidationException ex = assertThrows(ValidationException.class,
-                    () -> bidValidator.validate(BIDDER_ID, ITEM_ID, null));
+                    () -> bidValidator.validate(BIDDER_ID, ITEM_ID, null, false));
             assertTrue(ex.getMessage().contains("lớn hơn 0"));
         }
 
@@ -318,7 +318,7 @@ class BidValidatorFullTest {
             when(userDAO.findById(BIDDER_ID)).thenReturn(Optional.of(bidder));
 
             assertThrows(ValidationException.class,
-                    () -> bidValidator.validate(BIDDER_ID, ITEM_ID, BigDecimal.ZERO));
+                    () -> bidValidator.validate(BIDDER_ID, ITEM_ID, BigDecimal.ZERO, false));
         }
 
         @Test
@@ -333,7 +333,7 @@ class BidValidatorFullTest {
             when(userDAO.findById(BIDDER_ID)).thenReturn(Optional.of(bidder));
 
             assertThrows(ValidationException.class,
-                    () -> bidValidator.validate(BIDDER_ID, ITEM_ID, new BigDecimal("-1000")));
+                    () -> bidValidator.validate(BIDDER_ID, ITEM_ID, new BigDecimal("-1000"), false));
         }
     }
 
@@ -358,7 +358,7 @@ class BidValidatorFullTest {
 
             // Bid = 1.005.000 < minNext = 1.010.000 → fail
             ValidationException ex = assertThrows(ValidationException.class,
-                    () -> bidValidator.validate(BIDDER_ID, ITEM_ID, new BigDecimal("1005000")));
+                    () -> bidValidator.validate(BIDDER_ID, ITEM_ID, new BigDecimal("1005000"), false));
             assertTrue(ex.getMessage().contains("tối thiểu"));
         }
 
@@ -375,7 +375,7 @@ class BidValidatorFullTest {
 
             // Bid = exact minNext 1.010.000 → pass
             assertDoesNotThrow(
-                    () -> bidValidator.validate(BIDDER_ID, ITEM_ID, MIN_NEXT_BID));
+                    () -> bidValidator.validate(BIDDER_ID, ITEM_ID, MIN_NEXT_BID, false));
         }
 
         @Test
@@ -391,7 +391,7 @@ class BidValidatorFullTest {
             when(userDAO.findById(BIDDER_ID)).thenReturn(Optional.of(bidder));
 
             ValidationException ex = assertThrows(ValidationException.class,
-                    () -> bidValidator.validate(BIDDER_ID, ITEM_ID, MIN_NEXT_BID));
+                    () -> bidValidator.validate(BIDDER_ID, ITEM_ID, MIN_NEXT_BID, false));
             assertTrue(ex.getMessage().contains("Số dư"));
         }
 
@@ -408,7 +408,7 @@ class BidValidatorFullTest {
             when(userDAO.findById(BIDDER_ID)).thenReturn(Optional.of(bidder));
 
             assertDoesNotThrow(
-                    () -> bidValidator.validate(BIDDER_ID, ITEM_ID, MIN_NEXT_BID));
+                    () -> bidValidator.validate(BIDDER_ID, ITEM_ID, MIN_NEXT_BID, false));
         }
     }
 
@@ -427,7 +427,7 @@ class BidValidatorFullTest {
         when(itemDAO.findById(ITEM_ID)).thenReturn(Optional.of(item));
         when(userDAO.findById(BIDDER_ID)).thenReturn(Optional.of(bidder));
 
-        BidContext context = bidValidator.validate(BIDDER_ID, ITEM_ID, new BigDecimal("2000000"));
+        BidContext context = bidValidator.validate(BIDDER_ID, ITEM_ID, new BigDecimal("2000000"), false);
 
         assertNotNull(context, "BidContext không được null");
         // BidContext giữ entity đã load - kiểm tra qua getter (nếu có)

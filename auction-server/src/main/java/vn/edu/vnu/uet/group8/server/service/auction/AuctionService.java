@@ -2,7 +2,9 @@ package vn.edu.vnu.uet.group8.server.service.auction;
 
 import java.math.BigDecimal;
 import java.sql.SQLException;
+import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
@@ -283,8 +285,15 @@ public class AuctionService {
    *
    */
   public List<BidRecord> getItemBidHistory(int itemId) throws SQLException {
-    AuctionSession session = sessionDAO.findByItemId(itemId).get(0);
-        
+    Optional<AuctionSession> sessionOpt = sessionDAO.findActiveSessionByItemId(itemId);
+    if (sessionOpt.isEmpty()) {
+      sessionOpt = sessionDAO.findUpcomingByItemId(itemId);
+    }
+    if (sessionOpt.isEmpty()) {
+      return Collections.emptyList();
+    }
+    AuctionSession session = sessionOpt.get();
+         
     List<BidHistoryEntry> history = bidTransactionDAO.findHistoryByItem(session.getId());
     
     return history.stream().map(h -> BidRecord.builder()

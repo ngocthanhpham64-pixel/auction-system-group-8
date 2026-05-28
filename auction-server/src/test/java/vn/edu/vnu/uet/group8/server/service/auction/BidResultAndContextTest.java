@@ -95,11 +95,12 @@ class BidResultAndContextTest {
             AuctionSession session = taoSession();
             BigDecimal amount = new BigDecimal("150");
 
-            BidContext ctx = new BidContext(bidder, item, session, amount);
+            BidContext ctx = new BidContext(bidder, item, session, amount, false);
             assertSame(bidder, ctx.getBidder());
             assertSame(item, ctx.getItem());
             assertSame(session, ctx.getAuctionSession());
             assertEquals(amount, ctx.getBidAmount());
+            assertFalse(ctx.isTieBreaker());
         }
     }
 }

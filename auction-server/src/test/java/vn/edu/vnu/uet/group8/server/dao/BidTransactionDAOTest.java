@@ -13,7 +13,6 @@ import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
-
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -23,7 +22,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
-
+import vn.edu.vnu.uet.group8.server.dao.BidTransactionDAO.BidAction;
 import vn.edu.vnu.uet.group8.server.dao.BidTransactionDAO.BidExecutionResult;
 import vn.edu.vnu.uet.group8.server.dao.BidTransactionDAO.BidHistoryEntry;
 import vn.edu.vnu.uet.group8.server.dao.BidTransactionDAO.BidOutpricedException;
@@ -34,387 +33,391 @@ import vn.edu.vnu.uet.group8.server.dao.BidTransactionDAO.UserBidRecord;
 @ExtendWith(MockitoExtension.class)
 class BidTransactionDAOTest {
 
-    @Mock private DatabaseConnection dbConn;
-    @Mock private Connection conn;
-    @Mock private ResultSet rs;
+  @Mock private DatabaseConnection dbConn;
+  @Mock private Connection conn;
+  @Mock private ResultSet rs;
 
-    private BidTransactionDAO dao;
-    private MockedStatic<DatabaseConnection> staticMock;
+  private BidTransactionDAO dao;
+  private MockedStatic<DatabaseConnection> staticMock;
 
-    @BeforeEach
-    void setUp() throws SQLException {
-        staticMock = mockStatic(DatabaseConnection.class);
-        staticMock.when(DatabaseConnection::getInstance).thenReturn(dbConn);
-        when(dbConn.getConnection()).thenReturn(conn);
+  @BeforeEach
+  void setUp() throws SQLException {
+    staticMock = mockStatic(DatabaseConnection.class);
+    staticMock.when(DatabaseConnection::getInstance).thenReturn(dbConn);
+    when(dbConn.getConnection()).thenReturn(conn);
 
-        dao = new BidTransactionDAO();
+    dao = new BidTransactionDAO();
+  }
+
+  @AfterEach
+  void tearDown() {
+    staticMock.close();
+  }
+
+  @Nested
+  @DisplayName("executeBid()")
+  class ExecuteBidTest {
+
+    @Test
+    @DisplayName("Success - bid đầu tiên")
+    void successBidDauTien() throws SQLException {
+
+      PreparedStatement psUpdate = mock(PreparedStatement.class);
+      PreparedStatement psHold = mock(PreparedStatement.class);
+      PreparedStatement psWalletTx = mock(PreparedStatement.class);
+      PreparedStatement psInsertBid = mock(PreparedStatement.class);
+      PreparedStatement psCount = mock(PreparedStatement.class);
+
+      when(conn.prepareStatement(contains("UPDATE auction_session"))).thenReturn(psUpdate);
+
+      when(conn.prepareStatement(contains("frozen_balance +"))).thenReturn(psHold);
+
+      when(conn.prepareStatement(contains("INSERT INTO wallet_transaction"))).thenReturn(psWalletTx);
+
+      when(conn.prepareStatement(
+              contains("INSERT INTO bid_transaction"), eq(PreparedStatement.RETURN_GENERATED_KEYS)))
+          .thenReturn(psInsertBid);
+
+      when(conn.prepareStatement(contains("COUNT(*)"))).thenReturn(psCount);
+
+      when(psUpdate.executeUpdate()).thenReturn(1);
+      when(psHold.executeUpdate()).thenReturn(1);
+      when(psInsertBid.executeUpdate()).thenReturn(1);
+
+      ResultSet keySet = mock(ResultSet.class);
+      when(psInsertBid.getGeneratedKeys()).thenReturn(keySet);
+      when(keySet.next()).thenReturn(true);
+      when(keySet.getLong(1)).thenReturn(99L);
+
+      ResultSet countSet = mock(ResultSet.class);
+      when(psCount.executeQuery()).thenReturn(countSet);
+      when(countSet.next()).thenReturn(true);
+      when(countSet.getInt(1)).thenReturn(1);
+
+      BidExecutionResult result =
+          dao.executeFightBatch(
+              1,
+              new BigDecimal("1500000"),
+              5,
+              List.of(new BidAction(5, new BigDecimal("1500000"))),
+              true,
+              null,
+              null,
+              new BigDecimal("1500000"),
+              1);
+
+      assertEquals(99L, result.transactionId());
+      assertEquals(1, result.totalBids());
+
+      verify(conn).commit();
     }
 
-    @AfterEach
-    void tearDown() {
-        staticMock.close();
+    @Test
+    @DisplayName("Success - có refund bidder cũ")
+    void successCoRefund() throws SQLException {
+
+      PreparedStatement psUpdate = mock(PreparedStatement.class);
+      PreparedStatement psRefund = mock(PreparedStatement.class);
+      PreparedStatement psHold = mock(PreparedStatement.class);
+      PreparedStatement psWalletTx = mock(PreparedStatement.class);
+      PreparedStatement psInsertBid = mock(PreparedStatement.class);
+      PreparedStatement psCount = mock(PreparedStatement.class);
+
+      when(conn.prepareStatement(contains("UPDATE auction_session"))).thenReturn(psUpdate);
+
+      when(conn.prepareStatement(contains("balance +"))).thenReturn(psRefund);
+
+      when(conn.prepareStatement(contains("frozen_balance +"))).thenReturn(psHold);
+
+      when(conn.prepareStatement(contains("INSERT INTO wallet_transaction"))).thenReturn(psWalletTx);
+
+      when(conn.prepareStatement(
+              contains("INSERT INTO bid_transaction"), eq(PreparedStatement.RETURN_GENERATED_KEYS)))
+          .thenReturn(psInsertBid);
+
+      when(conn.prepareStatement(contains("COUNT(*)"))).thenReturn(psCount);
+
+      when(psUpdate.executeUpdate()).thenReturn(1);
+      when(psRefund.executeUpdate()).thenReturn(1);
+      when(psHold.executeUpdate()).thenReturn(1);
+      when(psInsertBid.executeUpdate()).thenReturn(1);
+
+      ResultSet keySet = mock(ResultSet.class);
+      when(psInsertBid.getGeneratedKeys()).thenReturn(keySet);
+      when(keySet.next()).thenReturn(true);
+      when(keySet.getLong(1)).thenReturn(10L);
+
+      ResultSet countSet = mock(ResultSet.class);
+      when(psCount.executeQuery()).thenReturn(countSet);
+      when(countSet.next()).thenReturn(true);
+      when(countSet.getInt(1)).thenReturn(3);
+
+      LeaderInfo prevLeader = new LeaderInfo(7, new BigDecimal("1000000"));
+
+      BidExecutionResult result =
+          dao.executeFightBatch(
+              1,
+              new BigDecimal("1500000"),
+              5,
+              List.of(
+                  new BidAction(7, new BigDecimal("1000000")),
+                  new BidAction(5, new BigDecimal("1500000"))),
+              true,
+              7,
+              new BigDecimal("1000000"),
+              new BigDecimal("1500000"),
+              2);
+
+      assertEquals(10L, result.transactionId());
+      assertEquals(3, result.totalBids());
+
+      verify(psRefund).executeUpdate();
     }
 
-    @Nested
-    @DisplayName("executeBid()")
-    class ExecuteBidTest {
+    @Test
+    @DisplayName("Same bidder → không refund")
+    void sameBidderNoRefund() throws SQLException {
 
-        @Test
-        @DisplayName("Success - bid đầu tiên")
-        void successBidDauTien() throws SQLException {
+      PreparedStatement psUpdate = mock(PreparedStatement.class);
+      PreparedStatement psInsertBid = mock(PreparedStatement.class);
+      PreparedStatement psCount = mock(PreparedStatement.class);
 
-            PreparedStatement psUpdate = mock(PreparedStatement.class);
-            PreparedStatement psHold = mock(PreparedStatement.class);
-            PreparedStatement psWalletTx = mock(PreparedStatement.class);
-            PreparedStatement psInsertBid = mock(PreparedStatement.class);
-            PreparedStatement psCount = mock(PreparedStatement.class);
+      when(conn.prepareStatement(contains("UPDATE auction_session"))).thenReturn(psUpdate);
 
-            when(conn.prepareStatement(contains("UPDATE auction_session")))
-                    .thenReturn(psUpdate);
+      when(conn.prepareStatement(
+              contains("INSERT INTO bid_transaction"), eq(PreparedStatement.RETURN_GENERATED_KEYS)))
+          .thenReturn(psInsertBid);
 
-            when(conn.prepareStatement(contains("frozen_balance = frozen_balance +")))
-                    .thenReturn(psHold);
+      when(conn.prepareStatement(contains("COUNT(*)"))).thenReturn(psCount);
 
-            when(conn.prepareStatement(contains("INSERT INTO wallet_transaction")))
-                    .thenReturn(psWalletTx);
+      when(psUpdate.executeUpdate()).thenReturn(1);
+      when(psInsertBid.executeUpdate()).thenReturn(1);
 
-            when(conn.prepareStatement(
-                    contains("INSERT INTO bid_transaction"),
-                    eq(PreparedStatement.RETURN_GENERATED_KEYS)))
-                    .thenReturn(psInsertBid);
+      ResultSet keySet = mock(ResultSet.class);
+      when(psInsertBid.getGeneratedKeys()).thenReturn(keySet);
+      when(keySet.next()).thenReturn(true);
+      when(keySet.getLong(1)).thenReturn(20L);
 
-            when(conn.prepareStatement(contains("COUNT(*)")))
-                    .thenReturn(psCount);
+      ResultSet countSet = mock(ResultSet.class);
+      when(psCount.executeQuery()).thenReturn(countSet);
+      when(countSet.next()).thenReturn(true);
+      when(countSet.getInt(1)).thenReturn(2);
 
-            when(psUpdate.executeUpdate()).thenReturn(1);
-            when(psHold.executeUpdate()).thenReturn(1);
+      LeaderInfo prevLeader = new LeaderInfo(1, new BigDecimal("1000000"));
 
-            ResultSet keySet = mock(ResultSet.class);
-            when(psInsertBid.getGeneratedKeys()).thenReturn(keySet);
-            when(keySet.next()).thenReturn(true);
-            when(keySet.getLong(1)).thenReturn(99L);
+      dao.executeFightBatch(
+          1,
+          new BigDecimal("1500000"),
+          1,
+          List.of(new BidAction(1, new BigDecimal("1500000"))),
+          false,
+          1,
+          new BigDecimal("1000000"),
+          new BigDecimal("1500000"),
+          1);
 
-            ResultSet countSet = mock(ResultSet.class);
-            when(psCount.executeQuery()).thenReturn(countSet);
-            when(countSet.next()).thenReturn(true);
-            when(countSet.getInt(1)).thenReturn(1);
-
-            BidExecutionResult result = dao.executeBid(
-                    1,
-                    5,
-                    new BigDecimal("1500000"),
-                    Optional.empty());
-
-            assertEquals(99L, result.transactionId());
-            assertEquals(1, result.totalBids());
-
-            verify(conn).commit();
-        }
-
-        @Test
-        @DisplayName("Success - có refund bidder cũ")
-        void successCoRefund() throws SQLException {
-
-            PreparedStatement psUpdate = mock(PreparedStatement.class);
-            PreparedStatement psRefund = mock(PreparedStatement.class);
-            PreparedStatement psHold = mock(PreparedStatement.class);
-            PreparedStatement psWalletTx = mock(PreparedStatement.class);
-            PreparedStatement psInsertBid = mock(PreparedStatement.class);
-            PreparedStatement psCount = mock(PreparedStatement.class);
-
-            when(conn.prepareStatement(contains("UPDATE auction_session")))
-                    .thenReturn(psUpdate);
-
-            when(conn.prepareStatement(contains("balance = balance +")))
-                    .thenReturn(psRefund);
-
-            when(conn.prepareStatement(contains("frozen_balance = frozen_balance +")))
-                    .thenReturn(psHold);
-
-            when(conn.prepareStatement(contains("INSERT INTO wallet_transaction")))
-                    .thenReturn(psWalletTx);
-
-            when(conn.prepareStatement(
-                    contains("INSERT INTO bid_transaction"),
-                    eq(PreparedStatement.RETURN_GENERATED_KEYS)))
-                    .thenReturn(psInsertBid);
-
-            when(conn.prepareStatement(contains("COUNT(*)")))
-                    .thenReturn(psCount);
-
-            when(psUpdate.executeUpdate()).thenReturn(1);
-            when(psRefund.executeUpdate()).thenReturn(1);
-            when(psHold.executeUpdate()).thenReturn(1);
-
-            ResultSet keySet = mock(ResultSet.class);
-            when(psInsertBid.getGeneratedKeys()).thenReturn(keySet);
-            when(keySet.next()).thenReturn(true);
-            when(keySet.getLong(1)).thenReturn(10L);
-
-            ResultSet countSet = mock(ResultSet.class);
-            when(psCount.executeQuery()).thenReturn(countSet);
-            when(countSet.next()).thenReturn(true);
-            when(countSet.getInt(1)).thenReturn(3);
-
-            LeaderInfo prevLeader =
-                    new LeaderInfo(7, new BigDecimal("1000000"));
-
-            BidExecutionResult result = dao.executeBid(
-                    1,
-                    5,
-                    new BigDecimal("1500000"),
-                    Optional.of(prevLeader));
-
-            assertEquals(10L, result.transactionId());
-            assertEquals(3, result.totalBids());
-
-            verify(psRefund).executeUpdate();
-        }
-
-        @Test
-        @DisplayName("Same bidder → không refund")
-        void sameBidderNoRefund() throws SQLException {
-
-            PreparedStatement psUpdate = mock(PreparedStatement.class);
-            PreparedStatement psHold = mock(PreparedStatement.class);
-            PreparedStatement psWalletTx = mock(PreparedStatement.class);
-            PreparedStatement psInsertBid = mock(PreparedStatement.class);
-            PreparedStatement psCount = mock(PreparedStatement.class);
-
-            when(conn.prepareStatement(contains("UPDATE auction_session")))
-                    .thenReturn(psUpdate);
-
-            when(conn.prepareStatement(contains("frozen_balance = frozen_balance +")))
-                    .thenReturn(psHold);
-
-            when(conn.prepareStatement(contains("INSERT INTO wallet_transaction")))
-                    .thenReturn(psWalletTx);
-
-            when(conn.prepareStatement(
-                    contains("INSERT INTO bid_transaction"),
-                    eq(PreparedStatement.RETURN_GENERATED_KEYS)))
-                    .thenReturn(psInsertBid);
-
-            when(conn.prepareStatement(contains("COUNT(*)")))
-                    .thenReturn(psCount);
-
-            when(psUpdate.executeUpdate()).thenReturn(1);
-            when(psHold.executeUpdate()).thenReturn(1);
-
-            ResultSet keySet = mock(ResultSet.class);
-            when(psInsertBid.getGeneratedKeys()).thenReturn(keySet);
-            when(keySet.next()).thenReturn(true);
-            when(keySet.getLong(1)).thenReturn(20L);
-
-            ResultSet countSet = mock(ResultSet.class);
-            when(psCount.executeQuery()).thenReturn(countSet);
-            when(countSet.next()).thenReturn(true);
-            when(countSet.getInt(1)).thenReturn(2);
-
-            LeaderInfo prevLeader =
-                    new LeaderInfo(1, new BigDecimal("1000000"));
-
-            dao.executeBid(
-                    1,
-                    5,
-                    new BigDecimal("1500000"),
-                    Optional.of(prevLeader));
-
-            verify(conn, never())
-                    .prepareStatement(contains("balance = balance +"));
-        }
-
-        @Test
-        @DisplayName("Outpriced → rollback")
-        void outpriced() throws SQLException {
-
-            PreparedStatement psUpdate = mock(PreparedStatement.class);
-
-            when(conn.prepareStatement(contains("UPDATE auction_session")))
-                    .thenReturn(psUpdate);
-
-            when(psUpdate.executeUpdate()).thenReturn(0);
-
-            assertThrows(
-                    BidOutpricedException.class,
-                    () -> dao.executeBid(
-                            1,
-                            5,
-                            BigDecimal.TEN,
-                            Optional.empty()));
-
-            verify(conn).rollback();
-        }
-
-        @Test
-        @DisplayName("Insufficient balance → rollback")
-        void insufficientBalance() throws SQLException {
-
-            PreparedStatement psUpdate = mock(PreparedStatement.class);
-            PreparedStatement psHold = mock(PreparedStatement.class);
-
-            when(conn.prepareStatement(contains("UPDATE auction_session")))
-                    .thenReturn(psUpdate);
-
-            when(conn.prepareStatement(contains("frozen_balance = frozen_balance +")))
-                    .thenReturn(psHold);
-
-            when(psUpdate.executeUpdate()).thenReturn(1);
-            when(psHold.executeUpdate()).thenReturn(0);
-
-            assertThrows(
-                    InsufficientBalanceException.class,
-                    () -> dao.executeBid(
-                            1,
-                            5,
-                            new BigDecimal("1000000"),
-                            Optional.empty()));
-
-            verify(conn).rollback();
-        }
+      verify(conn, never()).prepareStatement(contains("balance +"));
     }
 
-    @Nested
-    @DisplayName("findCurrentLeader()")
-    class FindCurrentLeaderTest {
+    @Test
+    @DisplayName("Outpriced → rollback")
+    void outpriced() throws SQLException {
 
-        @Test
-        void coLeader() throws SQLException {
+      PreparedStatement psUpdate = mock(PreparedStatement.class);
+      PreparedStatement psHold = mock(PreparedStatement.class);
+      PreparedStatement psWalletTx = mock(PreparedStatement.class);
+      PreparedStatement psInsertBid = mock(PreparedStatement.class);
 
-            PreparedStatement ps = mock(PreparedStatement.class);
+      when(conn.prepareStatement(contains("UPDATE auction_session"))).thenReturn(psUpdate);
+      when(conn.prepareStatement(contains("frozen_balance +"))).thenReturn(psHold);
+      when(conn.prepareStatement(contains("INSERT INTO wallet_transaction"))).thenReturn(psWalletTx);
+      when(conn.prepareStatement(
+              contains("INSERT INTO bid_transaction"), eq(PreparedStatement.RETURN_GENERATED_KEYS)))
+          .thenReturn(psInsertBid);
 
-            when(conn.prepareStatement(anyString())).thenReturn(ps);
-            when(ps.executeQuery()).thenReturn(rs);
+      when(psUpdate.executeUpdate()).thenReturn(0);
+      when(psHold.executeUpdate()).thenReturn(1);
+      when(psInsertBid.executeUpdate()).thenReturn(1);
 
-            when(rs.next()).thenReturn(true);
-            when(rs.getInt("bidder_id")).thenReturn(7);
-            when(rs.getBigDecimal("bid_amount"))
-                    .thenReturn(new BigDecimal("2000000"));
+      ResultSet keySet = mock(ResultSet.class);
+      when(psInsertBid.getGeneratedKeys()).thenReturn(keySet);
+      when(keySet.next()).thenReturn(true);
+      when(keySet.getLong(1)).thenReturn(99L);
 
-            Optional<LeaderInfo> result =
-                    dao.findCurrentLeader(5);
+      assertThrows(
+          BidOutpricedException.class,
+          () ->
+              dao.executeFightBatch(
+                  1,
+                  BigDecimal.TEN,
+                  5,
+                  List.of(new BidAction(5, BigDecimal.TEN)),
+                  true,
+                  null,
+                  null,
+                  BigDecimal.TEN,
+                  1));
 
-            assertTrue(result.isPresent());
-            assertEquals(7, result.get().bidderId());
-        }
-
-        @Test
-        void khongCoLeader() throws SQLException {
-
-            PreparedStatement ps = mock(PreparedStatement.class);
-
-            when(conn.prepareStatement(anyString())).thenReturn(ps);
-            when(ps.executeQuery()).thenReturn(rs);
-
-            when(rs.next()).thenReturn(false);
-
-            assertTrue(dao.findCurrentLeader(5).isEmpty());
-        }
+      verify(conn).rollback();
     }
 
-    @Nested
-    @DisplayName("findHistoryByItem()")
-    class FindHistoryByItemTest {
+    @Test
+    @DisplayName("Insufficient balance → rollback")
+    void insufficientBalance() throws SQLException {
 
-        @Test
-        void coHistory() throws SQLException {
+      PreparedStatement psHold = mock(PreparedStatement.class);
 
-            PreparedStatement ps = mock(PreparedStatement.class);
+      when(conn.prepareStatement(contains("frozen_balance +"))).thenReturn(psHold);
 
-            when(conn.prepareStatement(anyString())).thenReturn(ps);
-            when(ps.executeQuery()).thenReturn(rs);
+      when(psHold.executeUpdate()).thenReturn(0);
 
-            Instant now = Instant.now();
+      assertThrows(
+          InsufficientBalanceException.class,
+          () ->
+              dao.executeFightBatch(
+                  1,
+                  new BigDecimal("1000000"),
+                  5,
+                  List.of(new BidAction(5, new BigDecimal("1000000"))),
+                  true,
+                  null,
+                  null,
+                  new BigDecimal("1000000"),
+                  1));
 
-            when(rs.next()).thenReturn(true, false);
+      verify(conn).rollback();
+    }
+  }
 
-            when(rs.getInt("bid_id")).thenReturn(1);
-            when(rs.getInt("session_id")).thenReturn(5);
-            when(rs.getInt("bidder_id")).thenReturn(7);
+  @Nested
+  @DisplayName("findCurrentLeader()")
+  class FindCurrentLeaderTest {
 
-            when(rs.getString("username")).thenReturn("user01");
+    @Test
+    void coLeader() throws SQLException {
 
-            when(rs.getBigDecimal("bid_amount"))
-                    .thenReturn(new BigDecimal("2000000"));
+      PreparedStatement ps = mock(PreparedStatement.class);
 
-            when(rs.getTimestamp("created_at"))
-                    .thenReturn(Timestamp.from(now));
+      when(conn.prepareStatement(anyString())).thenReturn(ps);
+      when(ps.executeQuery()).thenReturn(rs);
 
-            List<BidHistoryEntry> result =
-                    dao.findHistoryByItem(5);
+      when(rs.next()).thenReturn(true);
+      when(rs.getInt("bidder_id")).thenReturn(7);
+      when(rs.getBigDecimal("bid_amount")).thenReturn(new BigDecimal("2000000"));
 
-            assertEquals(1, result.size());
-            assertEquals("user01", result.get(0).bidderUsername());
-        }
+      Optional<LeaderInfo> result = dao.findCurrentLeader(5);
 
-        @Test
-        void emptyHistory() throws SQLException {
-
-            PreparedStatement ps = mock(PreparedStatement.class);
-
-            when(conn.prepareStatement(anyString())).thenReturn(ps);
-            when(ps.executeQuery()).thenReturn(rs);
-
-            when(rs.next()).thenReturn(false);
-
-            assertTrue(dao.findHistoryByItem(5).isEmpty());
-        }
+      assertTrue(result.isPresent());
+      assertEquals(7, result.get().bidderId());
     }
 
-    @Nested
-    @DisplayName("findHistoryByUser()")
-    class FindHistoryByUserTest {
+    @Test
+    void khongCoLeader() throws SQLException {
 
-        @Test
-        void coHistory() throws SQLException {
+      PreparedStatement ps = mock(PreparedStatement.class);
 
-            PreparedStatement ps = mock(PreparedStatement.class);
+      when(conn.prepareStatement(anyString())).thenReturn(ps);
+      when(ps.executeQuery()).thenReturn(rs);
 
-            when(conn.prepareStatement(anyString())).thenReturn(ps);
-            when(ps.executeQuery()).thenReturn(rs);
+      when(rs.next()).thenReturn(false);
 
-            Instant now = Instant.now();
+      assertTrue(dao.findCurrentLeader(5).isEmpty());
+    }
+  }
 
-            when(rs.next()).thenReturn(true, false);
+  @Nested
+  @DisplayName("findHistoryByItem()")
+  class FindHistoryByItemTest {
 
-            when(rs.getInt("bid_id")).thenReturn(10);
-            when(rs.getInt("session_id")).thenReturn(5);
-            when(rs.getInt("item_id")).thenReturn(20);
+    @Test
+    void coHistory() throws SQLException {
 
-            when(rs.getString("item_title"))
-                    .thenReturn("iPhone 17");
+      PreparedStatement ps = mock(PreparedStatement.class);
 
-            when(rs.getBigDecimal("bid_amount"))
-                    .thenReturn(new BigDecimal("2000000"));
+      when(conn.prepareStatement(anyString())).thenReturn(ps);
+      when(ps.executeQuery()).thenReturn(rs);
 
-            when(rs.getBigDecimal("current_price"))
-                    .thenReturn(new BigDecimal("2500000"));
+      Instant now = Instant.now();
 
-            when(rs.getTimestamp("created_at"))
-                    .thenReturn(Timestamp.from(now));
+      when(rs.next()).thenReturn(true, false);
 
-            when(rs.getTimestamp("end_time"))
-                    .thenReturn(Timestamp.from(now.plusSeconds(3600)));
+      when(rs.getInt("bid_id")).thenReturn(1);
+      when(rs.getInt("session_id")).thenReturn(5);
+      when(rs.getInt("bidder_id")).thenReturn(7);
 
-            List<UserBidRecord> result =
-                    dao.findHistoryByUser(3);
+      when(rs.getString("username")).thenReturn("user01");
 
-            assertEquals(1, result.size());
-            assertEquals("iPhone 17", result.get(0).itemTitle());
-        }
+      when(rs.getBigDecimal("bid_amount")).thenReturn(new BigDecimal("2000000"));
 
-        @Test
-        void emptyHistory() throws SQLException {
+      when(rs.getTimestamp("created_at")).thenReturn(Timestamp.from(now));
 
-            PreparedStatement ps = mock(PreparedStatement.class);
+      List<BidHistoryEntry> result = dao.findHistoryByItem(5);
 
-            when(conn.prepareStatement(anyString())).thenReturn(ps);
-            when(ps.executeQuery()).thenReturn(rs);
-
-            when(rs.next()).thenReturn(false);
-
-            assertTrue(dao.findHistoryByUser(3).isEmpty());
-        }
+      assertEquals(1, result.size());
+      assertEquals("user01", result.get(0).bidderUsername());
     }
 
+    @Test
+    void emptyHistory() throws SQLException {
+
+      PreparedStatement ps = mock(PreparedStatement.class);
+
+      when(conn.prepareStatement(anyString())).thenReturn(ps);
+      when(ps.executeQuery()).thenReturn(rs);
+
+      when(rs.next()).thenReturn(false);
+
+      assertTrue(dao.findHistoryByItem(5).isEmpty());
+    }
+  }
+
+  @Nested
+  @DisplayName("findHistoryByUser()")
+  class FindHistoryByUserTest {
+
+    @Test
+    void coHistory() throws SQLException {
+
+      PreparedStatement ps = mock(PreparedStatement.class);
+
+      when(conn.prepareStatement(anyString())).thenReturn(ps);
+      when(ps.executeQuery()).thenReturn(rs);
+
+      Instant now = Instant.now();
+
+      when(rs.next()).thenReturn(true, false);
+
+      when(rs.getInt("bid_id")).thenReturn(10);
+      when(rs.getInt("session_id")).thenReturn(5);
+      when(rs.getInt("item_id")).thenReturn(20);
+
+      when(rs.getString("item_title")).thenReturn("iPhone 17");
+
+      when(rs.getBigDecimal("bid_amount")).thenReturn(new BigDecimal("2000000"));
+
+      when(rs.getBigDecimal("current_price")).thenReturn(new BigDecimal("2500000"));
+
+      when(rs.getTimestamp("created_at")).thenReturn(Timestamp.from(now));
+
+      when(rs.getTimestamp("end_time")).thenReturn(Timestamp.from(now.plusSeconds(3600)));
+
+      List<UserBidRecord> result = dao.findHistoryByUser(3);
+
+      assertEquals(1, result.size());
+      assertEquals("iPhone 17", result.get(0).itemTitle());
+    }
+
+    @Test
+    void emptyHistory() throws SQLException {
+
+      PreparedStatement ps = mock(PreparedStatement.class);
+
+      when(conn.prepareStatement(anyString())).thenReturn(ps);
+      when(ps.executeQuery()).thenReturn(rs);
+
+      when(rs.next()).thenReturn(false);
+
+      assertTrue(dao.findHistoryByUser(3).isEmpty());
+    }
+  }
 }

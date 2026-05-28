@@ -14,8 +14,8 @@ import vn.edu.vnu.uet.group8.common.dto.response.ServerResponse;
 import vn.edu.vnu.uet.group8.common.enums.UserStatus;
 import vn.edu.vnu.uet.group8.common.exception.UnauthorizedException;
 import vn.edu.vnu.uet.group8.server.dao.UserDAO;
-import vn.edu.vnu.uet.group8.server.service.auction.AuctionService;
 import vn.edu.vnu.uet.group8.server.service.user.AdminUserService;
+import vn.edu.vnu.uet.group8.server.service.auction.AuctionService;
 
 /**
  * AdminController — handle các action ADMIN_* từ client.
@@ -27,14 +27,8 @@ public class AdminController {
   private static final Logger log = LoggerFactory.getLogger(AdminController.class);
   private final AdminUserService adminService;
 
-  /** Dùng cho môi trường Production/Runtime */
   public AdminController(UserDAO userDAO, AuctionService auctionService) {
     this.adminService = new AdminUserService(userDAO, auctionService);
-  }
-
-  /** Dùng cho Unit Test (Dependency Injection) */
-  public AdminController(AdminUserService adminService) {
-    this.adminService = adminService;
   }
 
   // ===========================================================================

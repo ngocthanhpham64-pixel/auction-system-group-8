@@ -55,26 +55,28 @@ class AuctionEventClassesTest {
         @DisplayName("sold() factory - đầy đủ thông tin winner")
         void soldFactory() {
             AuctionEndedEvent e = AuctionEndedEvent.sold(
-                    10, "iPhone 17", new BigDecimal("25000000"), 50, "alice");
+                    10, "iPhone 17", new BigDecimal("25000000"), 50, "alice", 99);
             assertEquals(10, e.getItemId());
             assertEquals("iPhone 17", e.getItemTitle());
             assertEquals(AuctionEndedEvent.Outcome.SOLD, e.getOutcome());
             assertEquals(new BigDecimal("25000000"), e.getFinalPrice());
             assertEquals(50, e.getWinnerId());
             assertEquals("alice", e.getWinnerUsername());
+            assertEquals(99, e.getSellerId());
             assertTrue(e.hasSold());
         }
 
         @Test
         @DisplayName("noBid() factory - không có winner")
         void noBidFactory() {
-            AuctionEndedEvent e = AuctionEndedEvent.noBid(10, "Watch");
+            AuctionEndedEvent e = AuctionEndedEvent.noBid(10, "Watch", 99);
             assertEquals(10, e.getItemId());
             assertEquals("Watch", e.getItemTitle());
             assertEquals(AuctionEndedEvent.Outcome.NO_BID, e.getOutcome());
             assertNull(e.getFinalPrice());
             assertNull(e.getWinnerId());
             assertNull(e.getWinnerUsername());
+            assertEquals(99, e.getSellerId());
             assertFalse(e.hasSold());
         }
 

@@ -191,22 +191,28 @@ public class HybridBidExecutor {
                 conn.commit();
 
                 // Đồng bộ Memory để trả về event bus
-                lockedSession.raiseCurrentPrice(newPrice);
+                if (newPrice.compareTo(lockedSession.getCurrentPrice()) > 0) {
+                    lockedSession.raiseCurrentPrice(newPrice);
+                }
                 lockedSession.incrementBidCount(); // Tăng 1 hoặc 2 tùy số record ghi nhận
                 if (top2_original != null && top2_original.userId() != top1.userId()) lockedSession.incrementBidCount();
                 lockedSession.setHighestBidderId(winnerId);
                 
                 // Đồng bộ vào context
-                context.getAuctionSession().raiseCurrentPrice(newPrice);
-                context.getAuctionSession().incrementBidCount();
-                if (top2_original != null && top2_original.userId() != top1.userId()) context.getAuctionSession().incrementBidCount();
-                context.getAuctionSession().setHighestBidderId(winnerId);
+                if (lockedSession != context.getAuctionSession()) {
+                    if (newPrice.compareTo(context.getAuctionSession().getCurrentPrice()) > 0) {
+                        context.getAuctionSession().raiseCurrentPrice(newPrice);
+                    }
+                    context.getAuctionSession().incrementBidCount();
+                    if (top2_original != null && top2_original.userId() != top1.userId()) context.getAuctionSession().incrementBidCount();
+                    context.getAuctionSession().setHighestBidderId(winnerId);
+                }
 
 
 
                 return new BidResult(
                     lastTransactionId, lockedSession.getItemId(), sessionId, winnerId,
-                    context.getBidder().getUsername(), newPrice, totalBids, lockedSession.getEndTime(), previousLeaderId);
+                    context.getBidder().getUsername(), newPrice, totalBids, lockedSession.getEndTime(), previousLeaderId == 0 ? null : previousLeaderId);
 
             } catch (Exception e) {
                 conn.rollback();
