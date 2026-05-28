@@ -31,6 +31,8 @@ public class FileUtil {
     if (base64Images == null) return savedUrls;
 
     for (String base64Data : base64Images) {
+      if (base64Data == null) continue;
+      
       // Nếu data gửi lên đã là Link HTTP (trường hợp Edit giữ nguyên ảnh cũ)
       if (base64Data.startsWith("http")) {
         savedUrls.add(base64Data);
@@ -38,8 +40,16 @@ public class FileUtil {
       }
 
       try {
+        String cleanBase64 = base64Data.replaceAll("\\s+", "");
+        if (cleanBase64.startsWith("data:")) {
+          int commaIndex = cleanBase64.indexOf(',');
+          if (commaIndex != -1) {
+            cleanBase64 = cleanBase64.substring(commaIndex + 1);
+          }
+        }
+        
         String fileName = UUID.randomUUID().toString() + ".jpg";
-        byte[] decodedBytes = Base64.getDecoder().decode(base64Data);
+        byte[] decodedBytes = Base64.getDecoder().decode(cleanBase64);
         try (FileOutputStream fos = new FileOutputStream(UPLOAD_DIR + File.separator + fileName)) {
           fos.write(decodedBytes);
         }

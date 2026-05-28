@@ -101,7 +101,7 @@ public class ItemQueryService {
 
     if (!sessionActive.isPresent() && !sessionComing.isPresent()) {
       // Item chưa có phiên — trả DTO không có giá và thời gian
-      return AuctionItemDTO.from(null, item, sellerUsername, 0, sellerRating, totalItemsSold);
+      return AuctionItemDTO.from(null, item, seller != null ? seller.getId() : item.getSellerId(), sellerUsername, 0, sellerRating, totalItemsSold);
     }
 
     AuctionSession session = sessionActive.isPresent() ? sessionActive.get() : sessionComing.get();
@@ -112,7 +112,7 @@ public class ItemQueryService {
 
     // bidCount lấy từ session — không cần query BidTransactionDAO
     return AuctionItemDTO.from(
-        session, item, sellerUsername, session.getBidCount(), sellerRating, totalItemsSold);
+        session, item, seller != null ? seller.getId() : item.getSellerId(), sellerUsername, session.getBidCount(), sellerRating, totalItemsSold);
   }
 
   // ════════════════════════════════════════════════════
@@ -182,11 +182,11 @@ public class ItemQueryService {
       if (sessionOpt.isPresent()) {
         AuctionSession session = sessionOpt.get();
         result.add(AuctionItemDTO.from(
-            session, item, sellerUsername,
+            session, item, seller != null ? seller.getId() : item.getSellerId(), sellerUsername,
             session.getBidCount(), sellerRating, totalItemsSold));
       } else {
         result.add(AuctionItemDTO.from(
-            null, item, sellerUsername, 0, sellerRating, totalItemsSold));
+            null, item, seller != null ? seller.getId() : item.getSellerId(), sellerUsername, 0, sellerRating, totalItemsSold));
       }
     }
 
@@ -214,11 +214,11 @@ public class ItemQueryService {
       if (sessionOpt.isPresent()) {
         AuctionSession session = sessionOpt.get();
         result.add(AuctionItemDTO.from(
-            session, item, sellerUsername,
+            session, item, seller != null ? seller.getId() : item.getSellerId(), sellerUsername,
             session.getBidCount(), sellerRating, totalItemsSold));
       } else {
         result.add(AuctionItemDTO.from(
-            null, item, sellerUsername, 0, sellerRating, totalItemsSold));
+            null, item, seller != null ? seller.getId() : item.getSellerId(), sellerUsername, 0, sellerRating, totalItemsSold));
       }
     }
 
@@ -310,7 +310,7 @@ public class ItemQueryService {
       }
 
       result.add(AuctionItemDTO.from(
-          session, item, sellerUsername,
+          session, item, seller != null ? seller.getId() : item.getSellerId(), sellerUsername,
           session.getBidCount(), sellerRating, totalItemsSold));
     }
 

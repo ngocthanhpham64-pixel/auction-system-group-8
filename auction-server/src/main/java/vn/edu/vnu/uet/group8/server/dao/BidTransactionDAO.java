@@ -3,6 +3,7 @@ package vn.edu.vnu.uet.group8.server.dao;
 import java.math.BigDecimal;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
+import java.sql.Statement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
@@ -41,74 +42,58 @@ public class BidTransactionDAO {
   // Mọi thao tác DB của một lần đặt giá đều nằm ở đây.
   // ════════════════════════════════════════════════════════
 
+  public record BidAction(int bidderId, BigDecimal amount) {}
+
   /**
-   * Thực thi toàn bộ thao tác DB của một lần đặt giá.
+   * Thực thi toàn bộ thao tác DB của một cuộc giao tranh đấu giá.
    *
-   * <p>Bốn thao tác sau đây là atomic — tất cả thành công
-   * hoặc tất cả rollback:
-   * <ol>
-   *   <li>Cập nhật {@code current_price} của item
-   *       (optimistic lock: {@code current_price < bidAmount})
-   *   <li>Hoàn tiền cho bidder cũ nếu có và khác bidder mới
-   *   <li>Trừ tiền bidder mới
-   *   <li>Lưu bản ghi vào {@code bid_transaction}
-   * </ol>
-   *
-   * <p>Connection được mở, dùng và đóng hoàn toàn trong method này.
-   * Không có connection leak.
-   *
-   * @param bidderId      ID người đặt giá mới
-   * @param sessionId        ID sessionId
-   * @param bidAmount     số tiền đặt
-   * @param prevLeader    thông tin bidder đang dẫn đầu, empty nếu chưa có bid
    * @return {@link BidExecutionResult} chứa thông tin sau khi thành công
-   * @throws BidOutpricedException nếu có bid khác vào trước với giá cao hơn
-   * @throws InsufficientBalanceException nếu balance thay đổi giữa validate và execute
-   * @throws SQLException nếu lỗi DB khác
    */
-  public BidExecutionResult executeBid(
-      int bidderId,
+  public BidExecutionResult executeFightBatch(
       int sessionId,
-      BigDecimal bidAmount,
-      Optional<LeaderInfo> prevLeader)
+      BigDecimal newPrice,
+      int newLeaderId,
+      List<BidAction> bidsToInsert,
+      boolean leaderChanged,
+      Integer oldLeaderId,
+      BigDecimal oldLeaderMax,
+      BigDecimal newLeaderMax,
+      int bidsToAdd)
       throws SQLException {
 
-    // Connection được lấy, dùng và đóng tại đây
-    // Không truyền Connection ra ngoài method
     Connection conn = DatabaseConnection.getInstance().getConnection();
     conn.setAutoCommit(false);
 
     try {
-      // -- Bước 1: Atomic price update với optimistic lock
-      int affected = updateItemPrice(conn, sessionId, bidAmount, bidderId);
-      if (affected == 0) {
-        // affected = 0: có bid khác vào trước, giá đã cao hơn bidAmount
-        throw new BidOutpricedException(
-            "Đã có người đặt giá cao hơn. Vui lòng thử lại");
+      // -- Bước 1: Hoàn tiền bidder cũ (Nếu có đổi chủ)
+      if (leaderChanged && oldLeaderId != null) {
+        refundBidder(conn, oldLeaderId, oldLeaderMax, sessionId);
+        logger.debug(
+            "Hoàn tiền bidderId={}, amount={}",
+            oldLeaderId, oldLeaderMax);
       }
 
-      // -- Bước 2: Hoàn tiền bidder cũ
-      if (prevLeader.isPresent()) {
-        LeaderInfo leader = prevLeader.get();
-
-        if (leader.bidderId() != bidderId) {
-          refundBidder(conn, leader.bidderId(), leader.bidAmount(), sessionId);
-          logger.debug(
-              "Hoàn tiền bidderId={}, amount={}",
-              leader.bidderId(), leader.bidAmount());
+      // -- Bước 2: Trừ tiền bidder mới (Nếu có đổi chủ)
+      if (leaderChanged) {
+        boolean holdBalance = holdBalance(conn, newLeaderId, newLeaderMax, sessionId);
+        if (!holdBalance) {
+          throw new InsufficientBalanceException(
+              "Số dư thay đổi trong quá trình xử lý. Vui lòng thử lại");
         }
       }
 
-      // -- Bước 3: Trừ tiền bidder mới
-      boolean holdBalance = holdBalance(conn, bidderId, bidAmount, sessionId);
-      if (!holdBalance) {
-        // Balance thay đổi giữa validate và execute — race condition hiếm
-        throw new InsufficientBalanceException(
-            "Số dư thay đổi trong quá trình xử lý. Vui lòng thử lại");
+      // -- Bước 3: Lưu bid_transaction
+      long lastTransactionId = -1;
+      for (BidAction action : bidsToInsert) {
+        lastTransactionId = insertBidTransaction(conn, action.bidderId(), sessionId, action.amount());
       }
 
-      // -- Bước 4: Lưu bid_transaction -- dùng đúng tên cột bid_amount
-      long transactionId = insertBidTransaction(conn, bidderId, sessionId, bidAmount);
+      // -- Bước 4: Cập nhật giá item
+      int affected = updateSessionAfterFight(conn, sessionId, newPrice, newLeaderId, bidsToAdd);
+      if (affected == 0) {
+        throw new BidOutpricedException(
+            "Đã có lỗi xảy ra hoặc phiên đã kết thúc. Vui lòng thử lại");
+      }
 
       // -- Bước 5: Đếm tổng bid trong cùng transaction
       int totalBids = countByItemInTx(conn, sessionId);
@@ -116,19 +101,19 @@ public class BidTransactionDAO {
       conn.commit();
 
       logger.info(
-          "executeBid thành công: txId={}, sessionId={}, bidderId={}, price={}",
-          transactionId, sessionId, bidderId, bidAmount);
+          "executeFightBatch thành công: txId={}, sessionId={}, newLeader={}, newPrice={}",
+          lastTransactionId, sessionId, newLeaderId, newPrice);
 
-      return new BidExecutionResult(transactionId, totalBids);
+      return new BidExecutionResult(lastTransactionId, totalBids);
 
     } catch (SQLException e) {
       safeRollback(conn);
       throw e;
-
     } finally {
       safeResetAndClose(conn);
     }
   }
+
 
   // ════════════════════════════════════════════════════════
   // QUERY METHODS — không cần transaction riêng
@@ -194,11 +179,12 @@ public class BidTransactionDAO {
   public List<BidHistoryEntry> findHistoryByItem(int sessionId)
       throws SQLException {
     String sql = """
-          SELECT bt.bid_id, bt.session_id, bt.bidder_id, u.username, bt.bid_amount, bt.created_at
+          SELECT bt.bid_id, bt.session_id, bt.bidder_id, u.username, bt.bid_amount, bt.status, bt.created_at
           FROM bid_transaction bt
           JOIN users u ON bt.bidder_id = u.user_id
           WHERE session_id = ?
-          ORDER BY bt.created_at DESC
+          ORDER BY bt.created_at DESC, bt.bid_id DESC
+          LIMIT 50
         """;
 
     List<BidHistoryEntry> history = new ArrayList<>();
@@ -213,6 +199,7 @@ public class BidTransactionDAO {
               rs.getInt("bidder_id"),
               rs.getString("username"),
               rs.getBigDecimal("bid_amount"),
+              rs.getString("status"),
               rs.getTimestamp("created_at").toInstant()));
         }
       }
@@ -230,7 +217,7 @@ public class BidTransactionDAO {
         JOIN auction_session s ON bt.session_id = s.session_id
         JOIN item i ON s.item_id = i.item_id
         WHERE bt.bidder_id = ?
-        ORDER BY bt.created_at DESC;
+        ORDER BY bt.created_at DESC, bt.bid_id DESC;
         """;
       
     List<UserBidRecord> history = new ArrayList<>();
@@ -261,28 +248,26 @@ public class BidTransactionDAO {
   // ════════════════════════════════════════════════════════
 
   /**
-   * Cập nhật giá item.
-   * Điều kiện {@code current_price < bidAmount} là optimistic lock.
+   * Cập nhật phiên đấu giá sau cuộc chiến.
    *
-   * @return số row affected -- 0 nếu có bid khác vào trước
+   * @return số row affected -- 0 nếu phiên đã bị xóa hoặc đóng
    */
-  private int updateItemPrice(Connection conn, int sessionId, BigDecimal bidAmount, int bidderId)
+  public int updateSessionAfterFight(Connection conn, int sessionId, BigDecimal newPrice, int highestBidderId, int bidsToAdd)
       throws SQLException {
     String sql =
         "UPDATE auction_session"
             + " SET current_price = ?,"
             + "     highest_bidder_id = ?,"
-            + "     bid_count = bid_count + 1"
+            + "     bid_count = bid_count + ?"
             + " WHERE session_id = ?"
-            + "   AND current_price < ?"
             + "   AND status = 'ACTIVE'"
             + "   AND is_deleted = false";
 
     try (PreparedStatement ps = conn.prepareStatement(sql)) {
-      ps.setBigDecimal(1, bidAmount);
-      ps.setInt(2, bidderId);
-      ps.setInt(3, sessionId);
-      ps.setBigDecimal(4, bidAmount);
+      ps.setBigDecimal(1, newPrice);
+      ps.setInt(2, highestBidderId);
+      ps.setInt(3, bidsToAdd);
+      ps.setInt(4, sessionId);
       return ps.executeUpdate();
     }
   }
@@ -301,23 +286,25 @@ public class BidTransactionDAO {
    * @param sessionId ID của phiên đấu giá liên quan.
    * @throws SQLException Nếu có lỗi truy vấn hoặc vi phạm ràng buộc dữ liệu.
    */
-  private void refundBidder(Connection conn, int bidderId, BigDecimal amount, int sessionId)
+  public void refundBidder(Connection conn, int bidderId, BigDecimal amount, int sessionId)
       throws SQLException {
     String sql = 
         "UPDATE users "
             + "SET balance = balance + ?, "
             + "    frozen_balance = frozen_balance - ? "
             + "WHERE user_id = ? "
+            + "  AND frozen_balance >= ? "
             + "  AND is_deleted = false";
 
     try (PreparedStatement ps = conn.prepareStatement(sql)) {
       ps.setBigDecimal(1, amount);
       ps.setBigDecimal(2, amount);
       ps.setInt(3, bidderId);
+      ps.setBigDecimal(4, amount);
 
       int affectedRows = ps.executeUpdate();
       if (affectedRows == 0) {
-        throw new SQLException("Không thể hoàn tiền: Người dùng không tồn tại hoặc đã bị xóa.");
+        throw new SQLException("Không thể hoàn tiền: Số dư đóng băng không đủ hoặc tài khoản đã bị xóa.");
       }
 
       // Tạo ID giao dịch duy nhất cho nghiệp vụ hoàn tiền
@@ -353,7 +340,7 @@ public class BidTransactionDAO {
    * @return
    * @throws SQLException
    */
-  private boolean holdBalance(Connection conn, int bidderId, BigDecimal amount, int sessionId)
+  public boolean holdBalance(Connection conn, int bidderId, BigDecimal amount, int sessionId)
       throws SQLException {
     String sql = """
         UPDATE users
@@ -385,39 +372,44 @@ public class BidTransactionDAO {
     }
   }
 
-  /**
-   * Lưu bid_transaction -- dùng đúng tên cột {@code bid_amount} theo schema.
-   *
-   * @return generated key (bid_transaction_id)
-   */
-  private long insertBidTransaction(
-      Connection conn, int bidderId, int sessionId, BigDecimal bidAmount)
+  public long insertBidTransaction(
+      Connection conn, int bidderId, int sessionId, BigDecimal bidAmount, String status)
       throws SQLException {
-    String sql =
-        "INSERT INTO bid_transaction"
-            + " (bidder_id, session_id, bid_amount, created_at)"
-            + " VALUES (?, ?, ?, ?)";
+    String sql = """
+        INSERT INTO bid_transaction (session_id, bidder_id, bid_amount, status)
+        VALUES (?, ?, ?, ?)
+        """;
 
-    try (PreparedStatement ps =
-        conn.prepareStatement(sql, PreparedStatement.RETURN_GENERATED_KEYS)) {
-      ps.setInt(1, bidderId);
-      ps.setInt(2, sessionId);
-      ps.setBigDecimal(3, bidAmount);  // tên cột: bid_amount
-      ps.setTimestamp(4, Timestamp.from(Instant.now()));
-      ps.executeUpdate();
+    try (PreparedStatement ps = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+      ps.setInt(1, sessionId);
+      ps.setInt(2, bidderId);
+      ps.setBigDecimal(3, bidAmount);
+      ps.setString(4, status);
 
-      try (ResultSet keys = ps.getGeneratedKeys()) {
-        if (keys.next()) {
-          return keys.getLong(1);
+      int affectedRows = ps.executeUpdate();
+      if (affectedRows == 0) {
+        throw new SQLException("Không thể lưu lịch sử đặt giá, không có dòng nào được thêm.");
+      }
+
+      try (ResultSet generatedKeys = ps.getGeneratedKeys()) {
+        if (generatedKeys.next()) {
+          return generatedKeys.getLong(1);
+        } else {
+          throw new SQLException("Không thể lấy ID của giao dịch đặt giá vừa lưu.");
         }
       }
     }
-    throw new SQLException(
-        "INSERT bid_transaction thành công nhưng không có generated key");
+  }
+
+  // Overload cho tương thích cũ nếu cần (nhưng ta sẽ dùng bản có status cho code mới)
+  public long insertBidTransaction(
+      Connection conn, int bidderId, int sessionId, BigDecimal bidAmount)
+      throws SQLException {
+      return insertBidTransaction(conn, bidderId, sessionId, bidAmount, "LEADER");
   }
 
   /** Đếm bid trong cùng transaction -- tránh đọc stale data. */
-  private int countByItemInTx(Connection conn, int sessionId) throws SQLException {
+  public int countByItemInTx(Connection conn, int sessionId) throws SQLException {
     String sql = "SELECT COUNT(*) FROM bid_transaction WHERE session_id = ?";
     try (PreparedStatement ps = conn.prepareStatement(sql)) {
       ps.setInt(1, sessionId);
@@ -468,6 +460,7 @@ public class BidTransactionDAO {
       int bidderId,
       String bidderUsername,
       BigDecimal bidAmount,
+      String status,
       Instant bidTime) {}
 
   /** Lịch sử đấu giá của 1 người cụ thể */

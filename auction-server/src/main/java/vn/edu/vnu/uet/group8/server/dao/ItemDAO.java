@@ -164,6 +164,27 @@ public class ItemDAO {
     }
   }
 
+  public void updateStatus(Connection conn, int itemId, ItemStatus status) throws SQLException {
+    String sql = """
+        UPDATE item
+        SET status = ?
+        WHERE item_id = ? AND is_deleted = false
+        """;
+    try (PreparedStatement ps = conn.prepareStatement(sql)) {
+      ps.setString(1, status.name());
+      ps.setInt(2, itemId);
+      int affected = ps.executeUpdate();
+      if (affected == 0)
+        throw new IllegalStateException("Không thể cập nhật status. itemId=" + itemId);
+    }
+  }
+
+  public void updateStatus(int itemId, ItemStatus status) throws SQLException {
+    try (Connection conn = getConn()) {
+      updateStatus(conn, itemId, status);
+    }
+  }
+
   public void update(Item item) throws SQLException {
     String sql = """
         UPDATE item
@@ -245,7 +266,7 @@ public class ItemDAO {
           SELECT COUNT(*)
           FROM item
           WHERE seller_id = ?
-            AND status = ?
+            AND status = ? AND is_deleted = false
         """;
 
     try (Connection conn = getConn();

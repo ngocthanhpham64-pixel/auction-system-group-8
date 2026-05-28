@@ -52,6 +52,22 @@ public class AuctionSessionDAO {
   // PHẦN 2 — CRUD CƠ BẢN
   // ═══════════════════════════════════════════════════
 
+  public Optional<AuctionSession> lockSessionForUpdate(Connection conn, int sessionId) throws SQLException {
+    String sql = """
+        SELECT * FROM auction_session
+        WHERE session_id = ? AND status = 'ACTIVE' AND is_deleted = false
+        FOR UPDATE
+        """;
+    try (PreparedStatement ps = conn.prepareStatement(sql)) {
+      ps.setInt(1, sessionId);
+      try (ResultSet rs = ps.executeQuery()) {
+        if (rs.next())
+          return Optional.of(mapRow(rs));
+      }
+    }
+    return Optional.empty();
+  }
+
   public void insert(AuctionSession session) throws SQLException {
     String sql = """
         INSERT INTO auction_session
@@ -153,6 +169,16 @@ public class AuctionSessionDAO {
       }
     }
     return Optional.empty();
+  }
+  
+  public List<AuctionSession> findUpcomingToStart() throws SQLException {
+    String sql = """
+          SELECT * FROM auction_session
+          WHERE status = 'UPCOMING'
+            AND start_time <= ?
+            AND is_deleted = false
+        """;
+    return queryList(sql, ps -> ps.setTimestamp(1, Timestamp.from(Instant.now())));
   }
 
   // ═══════════════════════════════════════════════════
@@ -292,18 +318,22 @@ public class AuctionSessionDAO {
     }
   }
 
-  public void updateStatus(int sessionId, SessionStatus newStatus) throws SQLException {
+  public void updateStatus(Connection conn, int sessionId, SessionStatus newStatus) throws SQLException {
     String sql = """
         UPDATE auction_session
         SET status = ?
         WHERE session_id = ?
         """;
-
-    try (Connection conn = getConn();
-        PreparedStatement ps = conn.prepareStatement(sql)) {
+    try (PreparedStatement ps = conn.prepareStatement(sql)) {
       ps.setString(1, newStatus.name());
       ps.setInt(2, sessionId);
       ps.executeUpdate();
+    }
+  }
+
+  public void updateStatus(int sessionId, SessionStatus newStatus) throws SQLException {
+    try (Connection conn = getConn()) {
+      updateStatus(conn, sessionId, newStatus);
     }
   }
 

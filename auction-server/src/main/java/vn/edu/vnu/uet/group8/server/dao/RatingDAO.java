@@ -16,26 +16,27 @@ public class RatingDAO {
     return DatabaseConnection.getInstance().getConnection();
   }
 
-  public void insertRating(int raterId, String raterUsername, int sellerId, int score, String comment) throws SQLException {
+  public void insertRating(int raterId, String raterUsername, int sellerId, int itemId, int score, String comment) throws SQLException {
     String sql = """
-        INSERT INTO ratings (buyer_id, buyer_username, seller_id, score, comment, created_at) 
-        VALUES (?, ?, ?, ?, ?, NOW())
+        INSERT INTO ratings (buyer_id, buyer_username, seller_id, item_id, score, comment, created_at) 
+        VALUES (?, ?, ?, ?, ?, ?, NOW())
         """;
     try (Connection conn = getConn(); PreparedStatement ps = conn.prepareStatement(sql)) {
       ps.setInt(1, raterId);
       ps.setString(2, raterUsername);
       ps.setInt(3, sellerId);
-      ps.setInt(4, score);
-      ps.setString(5, comment);
+      ps.setInt(4, itemId);
+      ps.setInt(5, score);
+      ps.setString(6, comment);
       ps.executeUpdate();
     }
   }
 
-  public boolean hasRated(int raterId, int sellerId) throws SQLException {
-    String sql = "SELECT 1 FROM ratings WHERE buyer_id = ? AND seller_id = ?";
+  public boolean hasRated(int raterId, int itemId) throws SQLException {
+    String sql = "SELECT 1 FROM ratings WHERE buyer_id = ? AND item_id = ?";
     try (Connection conn = getConn(); PreparedStatement ps = conn.prepareStatement(sql)) {
       ps.setInt(1, raterId);
-      ps.setInt(2, sellerId);
+      ps.setInt(2, itemId);
       try (ResultSet rs = ps.executeQuery()) {
         return rs.next();
       }

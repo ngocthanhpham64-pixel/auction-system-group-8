@@ -40,7 +40,7 @@ import vn.edu.vnu.uet.group8.server.service.auction.AuctionClosingService;
 import vn.edu.vnu.uet.group8.server.service.auction.AuctionEventBus;
 import vn.edu.vnu.uet.group8.server.service.auction.AuctionService;
 import vn.edu.vnu.uet.group8.server.service.auction.AutoBidService;
-import vn.edu.vnu.uet.group8.server.service.auction.BidProcessor;
+import vn.edu.vnu.uet.group8.server.service.auction.HybridBidExecutor;
 import vn.edu.vnu.uet.group8.server.service.auction.BidValidator;
 import vn.edu.vnu.uet.group8.server.service.item.FavoriteService;
 import vn.edu.vnu.uet.group8.server.service.item.ItemQueryService;
@@ -113,6 +113,7 @@ public class AuctionServer {
       NotificationService notificationService = new NotificationService(notificationDAO);
       RatingService ratingService = new RatingService(ratingDAO, userDAO, commentDAO);
       AuctionEventSubscriber auctionEventSubscriber = new AuctionEventSubscriber(broadcastChannel, notificationService);
+      auctionEventSubscriber.registerTo(eventBus);
 
       PasswordService passwordService = new PasswordService(userDAO);
 
@@ -126,15 +127,15 @@ public class AuctionServer {
       // Auction
       // Sửa thứ tự: (itemDAO, userDAO, sessionDAO) theo yêu cầu constructor
       BidValidator bidValidator = new BidValidator(itemDAO, userDAO, sessionDAO);
-      BidProcessor bidProcessor = new BidProcessor(bidDAO);
-      AutoBidService autoBidService = new AutoBidService(autoBidDAO, bidValidator, bidProcessor, userDAO);
+      HybridBidExecutor executor = new HybridBidExecutor(bidDAO, autoBidDAO, sessionDAO);
+      AutoBidService autoBidService = new AutoBidService(autoBidDAO, bidValidator, executor, userDAO);
       AntiSnipingService antiSniping = new AntiSnipingService(sessionDAO);
       AuctionService auctionService = new AuctionService(
-          sessionDAO, bidValidator, bidProcessor, antiSniping, eventBus, bidDAO, autoBidService);
+          sessionDAO, bidValidator, executor, antiSniping, eventBus, bidDAO, autoBidService);
 
       // Sửa thứ tự: (sessionDAO, itemDAO, userDAO, bidDAO, auctionEventSubscriber)
       AuctionClosingService closingService = new AuctionClosingService(
-          sessionDAO, itemDAO, userDAO, bidDAO, balanceService, eventBus);
+          sessionDAO, itemDAO, userDAO, bidDAO, autoBidDAO, balanceService, eventBus, auctionService.getSessionLocks());
       closingService.start();
       log.info("AuctionClosingService đã start");
 

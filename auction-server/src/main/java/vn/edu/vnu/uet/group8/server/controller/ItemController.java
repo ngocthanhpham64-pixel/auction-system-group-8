@@ -144,10 +144,15 @@ public class ItemController {
         startPrice = new BigDecimal(payload.get("startPrice").getAsString());
       }
       Integer durationHours = RequestParser.optionalInt(payload, "durationHours");
+      
+      Long startTime = null;
+      if (payload.has("startTime") && !payload.get("startTime").isJsonNull()) {
+        startTime = payload.get("startTime").getAsLong();
+      }
 
       Item item = itemWriteService.createItem(
           authenticatedUserId, title, description, category, condition, imageUrls,
-          startPrice, durationHours);
+          startPrice, durationHours, startTime);
 
       return ServerResponse.reply("ITEM_CREATE", requestId)
           .success(true)

@@ -101,7 +101,17 @@ public class AuctionEventSubscriber {
             "Giá của bạn tại sản phẩm #" + event.getItemId() + " vừa bị vượt qua. Hãy đặt giá mới để giành lại vị trí dẫn đầu!",
             NotificationType.OUTBID
         );
-        ServerResponse notifResponse = ServerResponse.broadcast(EventType.NOTIFICATION).data(notif).build();
+        NotificationDTO notifWithRelated = NotificationDTO.builder()
+            .id(notif.getId())
+            .userId(notif.getUserId())
+            .title(notif.getTitle())
+            .message(notif.getMessage())
+            .type(notif.getType())
+            .isRead(notif.isRead())
+            .createdAt(notif.getCreatedAt())
+            .relatedId(event.getItemId())
+            .build();
+        ServerResponse notifResponse = ServerResponse.broadcast(EventType.NOTIFICATION).data(notifWithRelated).build();
         
         channel.sendToUser(prevBidderId, notifResponse); // Gửi trực tiếp Socket đến chính chủ
       } catch (Exception e) {
@@ -143,22 +153,55 @@ public class AuctionEventSubscriber {
 
     channel.broadcast(response);
 
-    // Tự động sinh Notification cho người thắng (nếu có)
+    // Tự động sinh Notification cho người thắng và người bán (nếu có)
     if (event.hasSold()) {
       try {
         Integer winnerId = event.getWinnerId(); 
         if (winnerId != null && winnerId > 0) {
-          NotificationDTO notif = notificationService.createNotification(
+          NotificationDTO notifWinner = notificationService.createNotification(
               winnerId,
               "Thắng đấu giá!",
               "Chúc mừng bạn đã thắng phiên đấu giá sản phẩm: " + event.getItemTitle() + " với giá " + event.getFinalPrice() + " VND.",
               NotificationType.AUCTION_WON
           );
-          ServerResponse notifResponse = ServerResponse.broadcast(EventType.NOTIFICATION).data(notif).build();
-          channel.sendToUser(winnerId, notifResponse);
+          NotificationDTO notifWinnerWithRelated = NotificationDTO.builder()
+              .id(notifWinner.getId())
+              .userId(notifWinner.getUserId())
+              .title(notifWinner.getTitle())
+              .message(notifWinner.getMessage())
+              .type(notifWinner.getType())
+              .isRead(notifWinner.isRead())
+              .createdAt(notifWinner.getCreatedAt())
+              .relatedId(event.getItemId())
+              .build();
+          ServerResponse notifWinnerResponse = ServerResponse.broadcast(EventType.NOTIFICATION).data(notifWinnerWithRelated).build();
+          channel.sendToUser(winnerId, notifWinnerResponse);
+        }
+
+        // Thêm thông báo cho người bán
+        Integer sellerId = event.getSellerId();
+        if (sellerId != null && sellerId > 0) {
+          NotificationDTO notifSeller = notificationService.createNotification(
+              sellerId,
+              "Sản phẩm đã bán thành công!",
+              "Sản phẩm '" + event.getItemTitle() + "' của bạn đã được chốt với giá " + event.getFinalPrice() + " VND. Số tiền đã được cộng vào ví.",
+              NotificationType.SYSTEM
+          );
+          NotificationDTO notifSellerWithRelated = NotificationDTO.builder()
+              .id(notifSeller.getId())
+              .userId(notifSeller.getUserId())
+              .title(notifSeller.getTitle())
+              .message(notifSeller.getMessage())
+              .type(notifSeller.getType())
+              .isRead(notifSeller.isRead())
+              .createdAt(notifSeller.getCreatedAt())
+              .relatedId(event.getItemId())
+              .build();
+          ServerResponse notifSellerResponse = ServerResponse.broadcast(EventType.NOTIFICATION).data(notifSellerWithRelated).build();
+          channel.sendToUser(sellerId, notifSellerResponse);
         }
       } catch (Exception e) {
-        logger.error("Lỗi tạo thông báo AUCTION_WON: {}", e.getMessage());
+        logger.error("Lỗi tạo thông báo AUCTION_WON/SYSTEM: {}", e.getMessage());
       }
     }
   }

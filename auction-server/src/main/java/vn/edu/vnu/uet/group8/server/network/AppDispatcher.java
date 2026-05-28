@@ -66,7 +66,7 @@ public class AppDispatcher {
    * @param request JSON request gốc từ client
    * @return ServerResponse đã sẵn sàng gửi đi
    */
-  public ServerResponse dispatch(JsonObject request) {
+  public ServerResponse dispatch(JsonObject request, ClientHandler clientHandler) {
     String action = null;
     String requestId = null;
     try {
@@ -94,10 +94,10 @@ public class AppDispatcher {
 
         // ---- Authenticated actions ----
         default:
-          return dispatchAuthenticated(normalized, request, requestId);
+          return dispatchAuthenticated(normalized, request, requestId, clientHandler);
       }
 
-    } catch (Exception e) {
+    } catch (Throwable e) {
       log.error("Lỗi không mong muốn khi dispatch action={}", action, e);
       return ServerResponse.replyError(
           action != null ? action : "UNKNOWN", requestId,
@@ -109,7 +109,7 @@ public class AppDispatcher {
    * Verify token rồi route các action cần đăng nhập.
    */
   private ServerResponse dispatchAuthenticated(String action, JsonObject request,
-                                               String requestId) {
+                                               String requestId, ClientHandler clientHandler) {
     String token = RequestParser.getToken(request);
     int userId = sessionManager.validateToken(token);
     if (userId == -1) {
@@ -117,6 +117,10 @@ public class AppDispatcher {
                action, (token != null ? "EXISTS" : "NULL"));
       return ServerResponse.replyError(action, requestId, 
           "Phiên đăng nhập không hợp lệ hoặc đã hết hạn");
+    }
+
+    if (clientHandler != null) {
+      clientHandler.associateUser(userId);
     }
 
     switch (action) {
@@ -150,6 +154,8 @@ public class AppDispatcher {
         return itemController.handleDeleteItem(request, requestId, userId);
       case "BID_AUTO":
         return bidController.handleAutoBid(request, requestId, userId);
+      case "GET_AUTO_BID_STATUS":
+        return bidController.handleGetAutoBidStatus(request, requestId, userId);
       // case "BID_HISTORY":
       //   return bidController.handleBidHistory(request, requestId, userId);
 
@@ -186,16 +192,20 @@ public class AppDispatcher {
       case "NOTIF_ALL":
         return notificationController.handleGetAll(requestId, userId);
       case "NOTIF_MARK_READ":
+      case "NOTIF_READ":
         return notificationController.handleMarkRead(request, requestId, userId);
       case "NOTIF_DELETE":
         return notificationController.handleDelete(request, requestId, userId);
 
       // Favorites
       case "FAVORITE_LIST":
+      case "FAV_LIST":
         return favoriteController.handleGetList(requestId, userId);
       case "FAVORITE_ADD":
+      case "FAV_ADD":
         return favoriteController.handleAdd(request, requestId, userId);
       case "FAVORITE_REMOVE":
+      case "FAV_REMOVE":
         return favoriteController.handleRemove(request, requestId, userId);
 
       case "USER_RATE_SELLER":

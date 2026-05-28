@@ -26,13 +26,14 @@ public class RatingController {
           ? request.getAsJsonObject("payload") : request;
 
       int sellerId = RequestParser.requireInt(payload, "sellerId");
+      int itemId = RequestParser.requireInt(payload, "itemId");
       String username = RequestParser.requireString(payload, "username");
       int score = RequestParser.requireInt(payload, "score");
       String comment = RequestParser.optionalString(payload, "comment");
 
-      ratingService.rateSeller(authenticatedUserId, username, sellerId, score, comment);
+      ratingService.rateSeller(authenticatedUserId, username, sellerId, itemId, score, comment);
 
-      log.info("User {} đã đánh giá Seller {} với {} sao", authenticatedUserId, sellerId, score);
+      log.info("User {} đã đánh giá Seller {} với {} sao cho itemId={}", authenticatedUserId, sellerId, score, itemId);
       return ServerResponse.reply("USER_RATE_SELLER", requestId)
           .success(true)
           .message("Đánh giá người bán thành công")

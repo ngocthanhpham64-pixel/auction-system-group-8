@@ -16,28 +16,33 @@ public class AutoBidDAO {
     return DatabaseConnection.getInstance().getConnection();
   }
 
-  public void saveConfig(AutoBidConfig config) throws SQLException {
+  public void saveConfig(Connection conn, AutoBidConfig config) throws SQLException {
     String deactivateSql = "UPDATE auto_bid_config SET is_active = false WHERE session_id = ? AND user_id = ?";
     String insertSql = """
         INSERT INTO auto_bid_config (session_id, user_id, max_price, is_active, created_at)
         VALUES (?, ?, ?, ?, ?)
         """;
 
+    try (PreparedStatement psDeactivate = conn.prepareStatement(deactivateSql);
+         PreparedStatement psInsert = conn.prepareStatement(insertSql, Statement.RETURN_GENERATED_KEYS)) {
+      psDeactivate.setInt(1, config.getSessionId());
+      psDeactivate.setInt(2, config.getUserId());
+      psDeactivate.executeUpdate();
+
+      psInsert.setInt(1, config.getSessionId());
+      psInsert.setInt(2, config.getUserId());
+      psInsert.setBigDecimal(3, config.getMaxPrice());
+      psInsert.setBoolean(4, config.isActive());
+      psInsert.setTimestamp(5, Timestamp.from(config.getCreatedAt()));
+      psInsert.executeUpdate();
+    }
+  }
+
+  public void saveConfig(AutoBidConfig config) throws SQLException {
     try (Connection conn = getConn()) {
       conn.setAutoCommit(false);
-      try (PreparedStatement psDeactivate = conn.prepareStatement(deactivateSql);
-           PreparedStatement psInsert = conn.prepareStatement(insertSql, Statement.RETURN_GENERATED_KEYS)) {
-        psDeactivate.setInt(1, config.getSessionId());
-        psDeactivate.setInt(2, config.getUserId());
-        psDeactivate.executeUpdate();
-
-        psInsert.setInt(1, config.getSessionId());
-        psInsert.setInt(2, config.getUserId());
-        psInsert.setBigDecimal(3, config.getMaxPrice());
-        psInsert.setBoolean(4, config.isActive());
-        psInsert.setTimestamp(5, Timestamp.from(config.getCreatedAt()));
-        psInsert.executeUpdate();
-
+      try {
+        saveConfig(conn, config);
         conn.commit();
       } catch (SQLException e) {
         conn.rollback();
@@ -48,19 +53,47 @@ public class AutoBidDAO {
     }
   }
 
-  public void deactivate(int configId) throws SQLException {
+  public void deactivate(Connection conn, int configId) throws SQLException {
     String sql = "UPDATE auto_bid_config SET is_active = false WHERE config_id = ?";
-    try (Connection conn = getConn(); PreparedStatement ps = conn.prepareStatement(sql)) {
+    try (PreparedStatement ps = conn.prepareStatement(sql)) {
       ps.setInt(1, configId);
       ps.executeUpdate();
     }
   }
 
-  public List<AutoBidConfig> findActiveBySession(int sessionId) throws SQLException {
+  public void deactivate(int configId) throws SQLException {
+    try (Connection conn = getConn()) {
+      deactivate(conn, configId);
+    }
+  }
+
+  public void deactivateOutbidConfigs(Connection conn, int sessionId, java.math.BigDecimal currentPrice, int highestBidderId) throws SQLException {
+    String sql = """
+        UPDATE auto_bid_config 
+        SET is_active = false 
+        WHERE session_id = ? 
+          AND is_active = true 
+          AND (max_price < ? OR (max_price = ? AND user_id != ?))
+        """;
+    try (PreparedStatement ps = conn.prepareStatement(sql)) {
+      ps.setInt(1, sessionId);
+      ps.setBigDecimal(2, currentPrice);
+      ps.setBigDecimal(3, currentPrice);
+      ps.setInt(4, highestBidderId);
+      ps.executeUpdate();
+    }
+  }
+
+  public void deactivateOutbidConfigs(int sessionId, java.math.BigDecimal currentPrice, int highestBidderId) throws SQLException {
+    try (Connection conn = getConn()) {
+      deactivateOutbidConfigs(conn, sessionId, currentPrice, highestBidderId);
+    }
+  }
+
+  public List<AutoBidConfig> findActiveBySession(Connection conn, int sessionId) throws SQLException {
     String sql = "SELECT * FROM auto_bid_config WHERE session_id = ? AND is_active = true ORDER BY max_price DESC, created_at ASC";
     List<AutoBidConfig> configs = new ArrayList<>();
-    // ... Parse Result ... (Tôi viết thu gọn để tối ưu)
-    try (Connection conn = getConn(); PreparedStatement ps = conn.prepareStatement(sql)) {
+    try (PreparedStatement ps = conn.prepareStatement(sql)) {
       ps.setInt(1, sessionId);
       try (ResultSet rs = ps.executeQuery()) {
         while (rs.next()) {
@@ -73,5 +106,22 @@ public class AutoBidDAO {
       }
     }
     return configs;
+  }
+
+  public List<AutoBidConfig> findActiveBySession(int sessionId) throws SQLException {
+    try (Connection conn = getConn()) {
+      return findActiveBySession(conn, sessionId);
+    }
+  }
+
+  public boolean hasActiveAutoBid(int userId, int sessionId) throws SQLException {
+    String sql = "SELECT 1 FROM auto_bid_config WHERE user_id = ? AND session_id = ? AND is_active = true LIMIT 1";
+    try (Connection conn = getConn(); PreparedStatement ps = conn.prepareStatement(sql)) {
+      ps.setInt(1, userId);
+      ps.setInt(2, sessionId);
+      try (ResultSet rs = ps.executeQuery()) {
+        return rs.next();
+      }
+    }
   }
 }

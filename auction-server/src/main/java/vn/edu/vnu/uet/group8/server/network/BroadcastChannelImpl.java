@@ -58,8 +58,24 @@ public class BroadcastChannelImpl implements BroadcastChannel {
   @Override
   public void registerUser(int userId, ClientHandler handler) {
     if (handler == null) return;
-    userSessions.computeIfAbsent(userId, k -> ConcurrentHashMap.newKeySet()).add(handler);
-    log.debug("User {} đã map với một kết nối socket", userId);
+    Set<ClientHandler> sessions = userSessions.computeIfAbsent(userId, k -> ConcurrentHashMap.newKeySet());
+    for (ClientHandler oldHandler : sessions) {
+      if (oldHandler != handler) {
+        log.info("Kicking duplicate session cho userId={} (addr={})", userId, oldHandler.getClientAddr());
+        try {
+          ServerResponse kickResponse = ServerResponse.broadcast(EventType.KICKED)
+              .message("Tài khoản của bạn đã được đăng nhập từ một thiết bị khác.")
+              .build();
+          oldHandler.send(kickResponse);
+        } catch (Exception e) {
+          log.warn("Không gửi được gói tin KICKED tới userId={}: {}", userId, e.getMessage());
+        }
+        oldHandler.closeConnection();
+      }
+    }
+    sessions.clear();
+    sessions.add(handler);
+    log.debug("User {} đã map với một kết nối socket mới", userId);
   }
 
   @Override

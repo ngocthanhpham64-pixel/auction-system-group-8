@@ -199,6 +199,7 @@ public class AdminUserService {
         parseEnum(SessionStatus.class, rs.getString("session_status"), SessionStatus.UPCOMING),
         rs.getBigDecimal("current_price"),
         toInstant(rs.getTimestamp("end_time")),
+        rs.getInt("seller_id"),
         rs.getString("seller_username"),
         Collections.emptyMap(),
         Collections.emptyList(),

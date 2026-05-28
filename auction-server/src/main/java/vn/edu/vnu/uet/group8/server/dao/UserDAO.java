@@ -545,6 +545,88 @@ public class UserDAO {
     }
   }
 
+  public void settleAuctionPayment(Connection conn, String winnerTxId, String refundTxId, String sellerTxId, int winnerId,
+    int sellerId, int sessionId, BigDecimal heldAmount, BigDecimal currentPrice) throws SQLException {
+    String buyerSql = """
+        UPDATE users
+        SET frozen_balance = frozen_balance - ?,
+            balance = balance + ?
+        WHERE user_id      = ?
+          AND is_deleted   = false
+          AND frozen_balance >= ?
+        """;
+      
+    String sellerSql = """
+        UPDATE users
+        SET balance = balance + ?
+        WHERE user_id      = ?
+          AND is_deleted   = false
+        """;
+    
+    // 1. Cập nhật ví Buyer
+    BigDecimal refundAmount = heldAmount.subtract(currentPrice);
+    try (PreparedStatement psBuyer = conn.prepareStatement(buyerSql)) {
+      psBuyer.setBigDecimal(1, heldAmount);
+      psBuyer.setBigDecimal(2, refundAmount);
+      psBuyer.setInt(3, winnerId);
+      psBuyer.setBigDecimal(4, heldAmount);
+      int affectedRows = psBuyer.executeUpdate();
+      if (affectedRows == 0) {
+        throw new InsufficientBalanceException(
+            "Giao dịch thất bại: Tài khoản không hợp lệ hoặc số dư đóng băng không đủ (ID: " + winnerId + ")");
+      }
+    }
+
+    // 2. Ghi log Buyer trả tiền
+    transactionDAO.insertTransaction(
+      conn, 
+      winnerTxId, 
+      winnerId, 
+      currentPrice.negate(), 
+      TransactionType.BID_WIN, 
+      TransactionStatus.SUCCESS,
+      "Thanh toán sản phẩm đấu giá", 
+      sessionId
+    );
+
+    // 3. Ghi log Buyer nhận tiền hoàn (nếu có)
+    if (refundAmount.compareTo(BigDecimal.ZERO) > 0) {
+      transactionDAO.insertTransaction(
+        conn,
+        refundTxId,
+        winnerId,
+        refundAmount,
+        TransactionType.BID_REFUND,
+        TransactionStatus.SUCCESS,
+        "Hoàn tiền thừa ủy nhiệm đấu giá",
+        sessionId
+      );
+    }
+    
+    // 4. Cập nhật ví Seller
+    try (PreparedStatement psSeller = conn.prepareStatement(sellerSql)) {
+      psSeller.setBigDecimal(1, currentPrice);
+      psSeller.setInt(2, sellerId);
+      int affectedRows = psSeller.executeUpdate();
+      if (affectedRows == 0) {
+        throw new SQLException("Lỗi không thể chuyển tiền cho seller");
+      }
+    }
+
+    // 5. Ghi log Seller nhận tiền
+    transactionDAO.insertTransaction(
+      conn,
+      sellerTxId,
+      sellerId,
+      currentPrice,
+      TransactionType.SALE,
+      TransactionStatus.SUCCESS,
+      "Nhận tiền bán sản phẩm",
+      sessionId
+    );
+  }
+
+  // Giữ lại hàm cũ phòng khi còn chỗ dùng (hoặc có thể đánh dấu @Deprecated)
   public void settleAuctionPayment(String winnerTxId, String sellerTxId, int winnerId,
     int sellerId, int sessionId, BigDecimal amount, 
     TransactionType transactionType) throws SQLException {

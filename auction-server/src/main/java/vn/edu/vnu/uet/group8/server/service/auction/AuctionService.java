@@ -63,9 +63,13 @@ public class AuctionService {
   private final ConcurrentHashMap<Integer, ReentrantLock> sessionLocks =
       new ConcurrentHashMap<>();
 
+  public ConcurrentHashMap<Integer, ReentrantLock> getSessionLocks() {
+      return sessionLocks;
+  }
+
   private final AuctionSessionDAO sessionDAO;
   private final BidValidator      validator;
-  private final BidProcessor      processor;
+  private final HybridBidExecutor executor;
   private final AntiSnipingService antiSniping;
   private final AuctionEventBus   eventBus;
   private final BidTransactionDAO bidTransactionDAO;
@@ -74,14 +78,14 @@ public class AuctionService {
   public AuctionService(
       AuctionSessionDAO sessionDAO,
       BidValidator validator,
-      BidProcessor processor,
+      HybridBidExecutor executor,
       AntiSnipingService antiSniping,
       AuctionEventBus eventBus,
       BidTransactionDAO bidTransactionDAO,
       AutoBidService autoBidService) {
     this.sessionDAO  = sessionDAO;
     this.validator   = validator;
-    this.processor   = processor;
+    this.executor    = executor;
     this.antiSniping = antiSniping;
     this.eventBus    = eventBus;
     this.bidTransactionDAO = bidTransactionDAO;
@@ -106,7 +110,7 @@ public class AuctionService {
    * @throws ItemNotFoundException nếu phiên không tồn tại
    * @throws SQLException      nếu lỗi DB
    */
-  public void placeBid(int bidderId, int itemId, BigDecimal bidAmount)
+  public BidResult placeBid(int bidderId, int itemId, BigDecimal bidAmount)
       throws SQLException {
 
     logger.info(
@@ -120,32 +124,18 @@ public class AuctionService {
             "Không có phiên đấu giá nào đang hoạt động cho sản phẩm #" + itemId));
     int sessionId = session.getId();
 
-    // Lấy lock của phiên này, computeIfAbsent đảm bảo thread-safe khi tạo lock mới
-    ReentrantLock lock = sessionLocks
-        .computeIfAbsent(sessionId, id -> new ReentrantLock());
-
     BidResult bidResult;
     AntiSnipingResult snipingResult;
 
-    lock.lock();
-    try {
-      // Bước 2 (trong lock): Validate toàn bộ điều kiện
-      // Trả BidContext chứa entity đã load — tránh load lại
-      BidContext context = validator.validate(
-          bidderId, sessionId, bidAmount);
+    // Bước 2: Validate các điều kiện cơ bản (sẽ validate kĩ hơn trong BidProcessor với row lock)
+    BidContext context = validator.validate(
+        bidderId, sessionId, bidAmount, false);
 
-      // Bước 3 (trong lock): Xử lý DB atomic — update giá + xử lý tiền
-      bidResult = processor.process(context);
+    // Bước 3: Xử lý DB atomic với thuật toán O(1) in-memory và row lock (Thủ công -> isAuto = false)
+    bidResult = executor.execute(context, false);
 
-      // Bước 4 (trong lock): Anti-sniping — gia hạn nếu bid trong cửa sổ cuối
-      // Việc này phải nằm trong lock để tránh race condition với AuctionClosingService.
-      // Đảm bảo việc đặt giá và gia hạn là một khối atomic.
-      snipingResult = antiSniping.checkAndExtend(context.getAuctionSession());
-
-    } finally {
-      // LUÔN unlock — dù validate hay process ném exception
-      lock.unlock();
-    }
+    // Bước 5: Anti-sniping — gia hạn nếu bid trong cửa sổ cuối
+    snipingResult = antiSniping.checkAndExtend(context.getAuctionSession());
 
     // Bước 5 (ngoài lock): Publish event — subscriber tự lo broadcast
     // Service không biết ai lắng nghe hay gửi như thế nào
@@ -158,6 +148,8 @@ public class AuctionService {
         bidderId,
         bidResult.getNewPrice(),
         snipingResult.isExtended());
+
+    return bidResult;
   }
 
   // ════════════════════════════════════════════════════
@@ -291,13 +283,8 @@ public class AuctionService {
    *
    */
   public List<BidRecord> getItemBidHistory(int itemId) throws SQLException {
-    AuctionSession session = sessionDAO.findActiveSessionByItemId(itemId)
-        .orElse(sessionDAO.findUpcomingByItemId(itemId).orElse(null));
+    AuctionSession session = sessionDAO.findByItemId(itemId).get(0);
         
-    if (session == null) {
-      return java.util.Collections.emptyList();
-    }
-
     List<BidHistoryEntry> history = bidTransactionDAO.findHistoryByItem(session.getId());
     
     return history.stream().map(h -> BidRecord.builder()
@@ -306,6 +293,7 @@ public class AuctionService {
         .userId(h.bidderId())
         .displayName(h.bidderUsername())
         .amount(h.bidAmount())
+        .status(h.status())
         .placedAt(h.bidTime())
         .build())
         .collect(Collectors.toList());
@@ -353,32 +341,53 @@ public class AuctionService {
             "Không tìm thấy phiên đấu giá với id=" + sessionId));
   }
 
+  public boolean hasActiveAutoBid(int userId, int itemId) throws SQLException {
+      AuctionSession session = sessionDAO.findActiveSessionByItemId(itemId).orElse(null);
+      if (session == null) return false;
+      return autoBidService.hasActiveAutoBid(userId, session.getId());
+  }
+
+  public void cancelAutoBid(int userId, int itemId) throws SQLException {
+      AuctionSession session = sessionDAO.findActiveSessionByItemId(itemId).orElse(null);
+      if (session == null) return;
+      ReentrantLock lock = sessionLocks.computeIfAbsent(session.getId(), id -> new ReentrantLock());
+      lock.lock();
+      try {
+          autoBidService.cancelAutoBid(userId, session.getId());
+      } finally {
+          lock.unlock();
+      }
+  }
+
   /**
    * Kích hoạt cấu hình Proxy Auto-Bid.
+   * Gộp chung logic với placeBid vì bản chất thao tác Manual Bid
+   * cũng được coi là một Autobid dùng 1 lần trong thuật toán O(1).
    */
-  public void placeAutoBid(int userId, int itemId, BigDecimal maxPrice) throws SQLException {
+  public BidResult placeAutoBid(int userId, int itemId, BigDecimal maxPrice) throws SQLException {
+    logger.info("Nhận auto-bid config: userId={}, itemId={}, maxPrice={}", userId, itemId, maxPrice);
+
     AuctionSession session = sessionDAO.findActiveSessionByItemId(itemId)
         .orElseThrow(() -> new AuctionException("Không có phiên đấu giá nào đang hoạt động cho sản phẩm #" + itemId));
     int sessionId = session.getId();
 
-    ReentrantLock lock = sessionLocks.computeIfAbsent(sessionId, id -> new ReentrantLock());
-    BidResult autoBidResult = null;
-    AntiSnipingResult snipingResult = null;
+    BidResult bidResult;
+    AntiSnipingResult snipingResult;
 
-    lock.lock();
-    try {
-      if (session.getStatus() != SessionStatus.ACTIVE || session.isExpired()) {
-        throw new AuctionException("Phiên đấu giá đã kết thúc hoặc không hợp lệ");
-      }
-      
-      autoBidService.configureAutoBid(userId, sessionId, maxPrice);
-      autoBidResult = autoBidService.resolveAutoBids(session);
-      if (autoBidResult != null) snipingResult = antiSniping.checkAndExtend(session);
-    } finally {
-      lock.unlock();
-    }
+    // Cờ isSystemDefense = false vì đây là User chủ động đặt cấu hình
+    BidContext context = validator.validate(
+        userId, sessionId, maxPrice, false);
 
-    if (autoBidResult != null) publishBidPlacedEvent(autoBidResult, snipingResult);
+    // Xử lý DB atomic với thuật toán O(1) in-memory (Tự động -> isAuto = true)
+    bidResult = executor.execute(context, true);
+
+    // Anti-sniping
+    snipingResult = antiSniping.checkAndExtend(context.getAuctionSession());
+
+    // Publish event
+    publishBidPlacedEvent(bidResult, snipingResult);
+
+    return bidResult;
   }
 
   /**

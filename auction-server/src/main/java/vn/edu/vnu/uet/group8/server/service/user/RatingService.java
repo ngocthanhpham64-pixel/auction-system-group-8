@@ -22,7 +22,7 @@ public class RatingService {
     this.commentDAO = commentDAO;
   }
 
-  public void rateSeller(int raterId, String raterUsername, int sellerId, int score, String comment) throws SQLException {
+  public void rateSeller(int raterId, String raterUsername, int sellerId, int itemId, int score, String comment) throws SQLException {
     if (raterId == sellerId) {
       throw new ValidationException("Bạn không thể tự đánh giá chính mình.");
     }
@@ -32,10 +32,10 @@ public class RatingService {
     if (!ratingDAO.hasBoughtFrom(raterId, sellerId)) {
       throw new ValidationException("Bạn chỉ có thể đánh giá người bán sau khi thắng ít nhất một phiên đấu giá của họ.");
     }
-    if (ratingDAO.hasRated(raterId, sellerId)) {
-      throw new ValidationException("Bạn đã đánh giá người bán này rồi.");
+    if (ratingDAO.hasRated(raterId, itemId)) {
+      throw new ValidationException("Bạn đã đánh giá người bán này cho sản phẩm này rồi.");
     }
-    ratingDAO.insertRating(raterId, raterUsername, sellerId, score, comment);
+    ratingDAO.insertRating(raterId, raterUsername, sellerId, itemId, score, comment);
     userDAO.updateSellerRating(sellerId); // Cập nhật ngay điểm trung bình (AVG) vào bảng Users
   }
 

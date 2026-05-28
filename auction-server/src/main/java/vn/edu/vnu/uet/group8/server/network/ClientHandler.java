@@ -43,6 +43,13 @@ public class ClientHandler implements Runnable {
     return this.userId;
   }
 
+  public void associateUser(int userId) {
+    if (this.userId == null || this.userId != userId) {
+      this.userId = userId;
+      broadcastChannel.registerUser(userId, this);
+    }
+  }
+
   @Override
   public void run() {
     try {
@@ -67,7 +74,7 @@ public class ClientHandler implements Runnable {
     while (!socket.isClosed()) {
       try {
         int length = in.readInt();
-        if (length <= 0 || length > 16 * 1024 * 1024) {
+        if (length <= 0 || length > 64 * 1024 * 1024) {
           throw new IOException("Độ dài gói tin request không hợp lệ hoặc quá lớn: " + length);
         }
         byte[] bytes = new byte[length];
@@ -90,7 +97,7 @@ public class ClientHandler implements Runnable {
           continue;
         }
 
-        ServerResponse response = dispatcher.dispatch(request);
+        ServerResponse response = dispatcher.dispatch(request, this);
         
         // Tự động map Socket này với User nếu đây là một yêu cầu đăng nhập thành công
         if (response.isSuccess() && "LOGIN".equals(response.getAction())) {
@@ -114,6 +121,9 @@ public class ClientHandler implements Runnable {
       } catch (IOException e) {
         log.warn("[{}] Mất kết nối: {}", clientAddr, e.getMessage());
         break;
+      } catch (Throwable t) {
+        log.error("[{}] Lỗi hệ thống nghiêm trọng trong readLoop", clientAddr, t);
+        break;
       }
     }
   }
@@ -132,8 +142,22 @@ public class ClientHandler implements Runnable {
     }
   }
 
+  public String getClientAddr() {
+    return this.clientAddr;
+  }
+
+  public void closeConnection() {
+    try {
+      if (socket != null && !socket.isClosed()) {
+        socket.close();
+      }
+    } catch (IOException e) {
+      log.error("[{}] Lỗi đóng socket từ closeConnection: {}", clientAddr, e.getMessage());
+    }
+  }
+
   private void cleanup() {
-    broadcastChannel.removeClient(this);   // ✅ giữ nguyên
+    broadcastChannel.removeClient(this);
     try {
       if (in != null) in.close();
       if (out != null) out.close();

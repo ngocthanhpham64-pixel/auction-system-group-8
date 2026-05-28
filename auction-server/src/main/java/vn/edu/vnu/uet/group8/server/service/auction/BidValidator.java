@@ -70,7 +70,7 @@ public class BidValidator {
    * @throws AuctionException      nếu item không ở trạng thái hợp lệ
    * @throws SQLException          nếu lỗi DB
    */
-  public BidContext validate(int bidderId, int sessionId, BigDecimal bidAmount)
+  public BidContext validate(int bidderId, int sessionId, BigDecimal bidAmount, boolean isSystemDefense)
       throws SQLException {
 
     logger.debug("Bắt đầu validate bid: bidderId={}, sessionId={}, amount={}",
@@ -91,12 +91,12 @@ public class BidValidator {
     validateDomainRules(bidder, item, bidAmount);
 
     // -- Bước 4: State checks -- phụ thuộc giá trị hiện tại
-    validateStateChecks(bidder, as, bidAmount);
+    validateStateChecks(bidder, as, bidAmount, isSystemDefense);
 
     logger.debug("Validate bid thành công: bidderId={}, sessionId={}", bidderId, sessionId);
 
     // Trả context để BidProcessor dùng lại -- không load lại từ DB
-    return new BidContext(bidder, item, as, bidAmount);
+    return new BidContext(bidder, item, as, bidAmount, false);
   }
 
   // -- Private: load và validate item ----------------------------------------
@@ -159,21 +159,23 @@ public class BidValidator {
 
   // -- Private: state checks -- phụ thuộc giá trị hiện tại của DB -----------
 
-  private void validateStateChecks(User bidder, AuctionSession as, BigDecimal bidAmount) {
+  private void validateStateChecks(User bidder, AuctionSession as, BigDecimal bidAmount, boolean isSystemDefense) {
 
     if (!(bidder instanceof UserMember member)) {
       throw new ValidationException("Không thể đấu giá");
     }
 
-    // Kiểm tra bước giá tối thiểu
+    // Kiểm tra bước giá tối thiểu (Fast-Fail validation)
     BigDecimal minNextBid;
     if (as.getBidCount() == 0) {
       minNextBid = as.getStartingPrice();
     } else {
       minNextBid = calculateMinNextBid(as.getCurrentPrice());
     }
-    
-    if (bidAmount.compareTo(minNextBid) < 0) {
+
+    // Đối với System Defense (Leader phòng thủ), giá phòng thủ có thể không đủ 1 bước giá so với currentPrice
+    // vì nó bị giới hạn bởi Max_Challenger. Tuy nhiên, luồng Manual/Autobid mới thì bắt buộc phải >= minNextBid.
+    if (!isSystemDefense && bidAmount.compareTo(minNextBid) < 0) {
       throw new ValidationException(
           String.format(
               "Giá đặt tối thiểu là %s VND (hiện tại: %s VND, bước tối thiểu: %s VND)",
@@ -181,9 +183,8 @@ public class BidValidator {
               minNextBid.subtract(as.getCurrentPrice())));
     }
 
-    // Kiểm tra số dư ví >= bidAmount
-    // Dùng compareTo vì BigDecimal -- không dùng < hay >
-    if (member.getBalance().compareTo(bidAmount) < 0) {
+    // Kiểm tra số dư ví >= bidAmount (Chỉ kiểm tra khi user chủ động đặt giá)
+    if (!isSystemDefense && member.getBalance().compareTo(bidAmount) < 0) {
       throw new ValidationException(
           String.format(
               "Số dư không đủ. Hiện có: %s VND, cần: %s VND",

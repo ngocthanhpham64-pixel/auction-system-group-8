@@ -14,6 +14,7 @@ import vn.edu.vnu.uet.group8.common.dto.request.BidRequest;
 import vn.edu.vnu.uet.group8.common.dto.response.ServerResponse;
 import vn.edu.vnu.uet.group8.server.network.RequestParser;
 import vn.edu.vnu.uet.group8.server.service.auction.AuctionService;
+import vn.edu.vnu.uet.group8.server.service.auction.BidResult;
 
 /**
  * Controller cho domain Bid: BID_PLACE, BID_AUTO, BID_HISTORY.
@@ -45,13 +46,20 @@ public class BidController {
       }
 
       // Bidder lấy từ session — không tin client
-      auctionService.placeBid(
+      // auctionService.placeBid currently returns void, we need to change it to return BidResult
+      // Wait, let's check if placeBid returns void in AuctionService.java. Yes it does.
+      // We will change it to return BidResult in AuctionService.java next.
+      BidResult result = auctionService.placeBid(
           authenticatedUserId,
-          payload.getItemId(),     // service map sang sessionId qua DAO
+          payload.getItemId(),
           payload.getAmount());
 
       log.info("User {} bid {} cho item {}",
           authenticatedUserId, payload.getAmount(), payload.getItemId());
+
+      if (result.getBidderId() != authenticatedUserId) {
+          return ServerResponse.replyError("BID_PLACE", requestId, "Giá không đủ mạnh. Bạn đã bị vượt giá ngay lập tức bởi hệ thống phòng thủ!");
+      }
 
       return ServerResponse.reply("BID_PLACE", requestId)
           .success(true)
@@ -65,9 +73,6 @@ public class BidController {
     }
   }
 
-  /**
-   * BID_AUTO — proxy bidding.
-   */
   public ServerResponse handleAutoBid(JsonObject request, String requestId,
                                       int authenticatedUserId) {
     try {
@@ -76,11 +81,41 @@ public class BidController {
         return ServerResponse.replyError("BID_AUTO", requestId, "Thiếu payload");
       }
 
-      auctionService.placeAutoBid(authenticatedUserId, payload.getItemId(), payload.getMaxPrice());
-      return ServerResponse.reply("BID_AUTO", requestId).success(true).message("Thiết lập giá tự động thành công").build();
+      if (payload.getMaxPrice() != null && payload.getMaxPrice().compareTo(java.math.BigDecimal.ZERO) <= 0) {
+          auctionService.cancelAutoBid(authenticatedUserId, payload.getItemId());
+          return ServerResponse.reply("BID_AUTO", requestId).success(true).message("Đã hủy tính năng Auto-bid").build();
+      }
+
+      BidResult result = auctionService.placeAutoBid(authenticatedUserId, payload.getItemId(), payload.getMaxPrice());
+      
+      if (result.getBidderId() != authenticatedUserId) {
+          return ServerResponse.replyError("BID_AUTO", requestId, "Giá không đủ mạnh. Bạn đã bị vượt giá ngay lập tức bởi hệ thống phòng thủ!");
+      } else {
+          return ServerResponse.reply("BID_AUTO", requestId).success(true).message("Thiết lập giá tự động thành công").build();
+      }
     } catch (Exception e) {
       log.warn("BID_AUTO thất bại userId={}: {}", authenticatedUserId, e.getMessage());
       return ServerResponse.replyError("BID_AUTO", requestId, "Lỗi: " + e.getMessage());
+    }
+  }
+
+  public ServerResponse handleGetAutoBidStatus(JsonObject request, String requestId, int authenticatedUserId) {
+    try {
+      JsonObject payload = request.has("payload") && request.get("payload").isJsonObject()
+          ? request.getAsJsonObject("payload") : request;
+
+      int itemId = RequestParser.requireInt(payload, "itemId");
+      boolean isActive = auctionService.hasActiveAutoBid(authenticatedUserId, itemId);
+      
+      JsonObject data = new JsonObject();
+      data.addProperty("isActive", isActive);
+      
+      return ServerResponse.reply("GET_AUTO_BID_STATUS", requestId)
+                              .success(true)
+                              .data(data)
+                              .build();
+    } catch (Exception e) {
+      return ServerResponse.replyError("GET_AUTO_BID_STATUS", requestId, "Lỗi server: " + e.getMessage());
     }
   }
 

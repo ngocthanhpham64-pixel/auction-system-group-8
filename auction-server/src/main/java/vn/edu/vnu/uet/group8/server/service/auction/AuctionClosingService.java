@@ -9,13 +9,17 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.locks.ReentrantLock;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import vn.edu.vnu.uet.group8.common.entity.AuctionSession;
 import vn.edu.vnu.uet.group8.common.entity.Item;
+import vn.edu.vnu.uet.group8.common.enums.EventType;
 import vn.edu.vnu.uet.group8.common.enums.SessionStatus;
+import vn.edu.vnu.uet.group8.common.enums.ItemStatus;
 import vn.edu.vnu.uet.group8.server.dao.AuctionSessionDAO;
 import vn.edu.vnu.uet.group8.server.dao.BidTransactionDAO;
 import vn.edu.vnu.uet.group8.server.dao.BidTransactionDAO.LeaderInfo;
@@ -23,6 +27,12 @@ import vn.edu.vnu.uet.group8.server.dao.ItemDAO;
 import vn.edu.vnu.uet.group8.server.dao.UserDAO;
 import vn.edu.vnu.uet.group8.server.service.auction.event.AuctionEndedEvent;
 import vn.edu.vnu.uet.group8.server.service.user.BalanceService;
+
+import vn.edu.vnu.uet.group8.server.dao.AutoBidDAO;
+import vn.edu.vnu.uet.group8.common.entity.AutoBidConfig;
+import vn.edu.vnu.uet.group8.server.dao.DatabaseConnection;
+import java.sql.Connection;
+import java.util.UUID;
 
 /**
  * Scheduler tự động đóng các phiên đấu giá đã hết giờ.
@@ -58,6 +68,7 @@ public class AuctionClosingService {
   private final ItemDAO itemDAO;
   private final UserDAO userDAO;
   private final BidTransactionDAO bidDAO;
+  private final AutoBidDAO autoBidDAO;
   private final BalanceService balanceService;
   private final AuctionEventBus eventBus;
 
@@ -72,20 +83,25 @@ public class AuctionClosingService {
   private final AtomicBoolean isRunning = new AtomicBoolean(false);
 
   private ScheduledFuture<?> scheduledTask;
+  private final ConcurrentHashMap<Integer, ReentrantLock> sessionLocks;
 
   public AuctionClosingService(
       AuctionSessionDAO sessionDAO,
       ItemDAO itemDAO,
       UserDAO userDAO,
       BidTransactionDAO bidDAO,
+      AutoBidDAO autoBidDAO,
       BalanceService balanceService,
-      AuctionEventBus eventBus) {
+      AuctionEventBus eventBus,
+      ConcurrentHashMap<Integer, ReentrantLock> sessionLocks) {
     this.sessionDAO  = sessionDAO;
     this.itemDAO     = itemDAO;
     this.userDAO     = userDAO;
     this.bidDAO      = bidDAO;
+    this.autoBidDAO  = autoBidDAO;
     this.balanceService = balanceService;
     this.eventBus = eventBus;
+    this.sessionLocks = sessionLocks;
   }
 
   // ════════════════════════════════════════════════════
@@ -140,17 +156,24 @@ public class AuctionClosingService {
     try {
       List<AuctionSession> expiredSessions =
           sessionDAO.findExpiredActive();
+          
+      List<AuctionSession> upcomingSessions =
+          sessionDAO.findUpcomingToStart();
 
-      if (expiredSessions.isEmpty()) {
-        logger.debug("Không có phiên hết giờ cần đóng");
+      if (expiredSessions.isEmpty() && upcomingSessions.isEmpty()) {
+        logger.debug("Không có phiên hết giờ cần đóng hoặc phiên mới cần mở");
         return;
       }
 
-      logger.info("Tìm thấy {} phiên hết giờ cần đóng", expiredSessions.size());
+      logger.info("Tìm thấy {} phiên hết giờ cần đóng, {} phiên cần mở", expiredSessions.size(), upcomingSessions.size());
 
       for (AuctionSession session : expiredSessions) {
         // Xử lý độc lập — lỗi một phiên không dừng các phiên khác
         closeSessionSafely(session);
+      }
+      
+      for (AuctionSession session : upcomingSessions) {
+        openSessionSafely(session);
       }
 
     } catch (SQLException e) {
@@ -165,150 +188,141 @@ public class AuctionClosingService {
    * một phiên không ảnh hưởng các phiên còn lại.
    */
   private void closeSessionSafely(AuctionSession session) {
+    ReentrantLock lock = sessionLocks.computeIfAbsent(session.getId(), id -> new ReentrantLock());
+    lock.lock();
     try {
       closeSession(session);
     } catch (Exception e) {
       logger.error(
           "Không thể đóng session sessionId={}, itemId={}: {}",
           session.getId(), session.getItemId(), e.getMessage());
+    } finally {
+      lock.unlock();
     }
   }
 
-  /**
-   * Đóng một phiên đấu giá cụ thể.
-   *
-   * <p>Tìm người dẫn đầu → quyết định SOLD hay ENDED_NO_BID
-   * → cập nhật DB → broadcast.
-   */
+  private void openSessionSafely(AuctionSession session) {
+    ReentrantLock lock = sessionLocks.computeIfAbsent(session.getId(), id -> new ReentrantLock());
+    lock.lock();
+    try {
+      openSession(session);
+    } catch (Exception e) {
+      logger.error(
+          "Không thể mở session sessionId={}, itemId={}: {}",
+          session.getId(), session.getItemId(), e.getMessage());
+    } finally {
+      lock.unlock();
+    }
+  }
+  
+  private void openSession(AuctionSession session) throws SQLException {
+      int sessionId = session.getId();
+      int itemId = session.getItemId();
+      logger.info("Mở session sessionId={}, itemId={}", sessionId, itemId);
+      
+      boolean transitioned = session.transitionStatus(SessionStatus.UPCOMING, SessionStatus.ACTIVE);
+      if (!transitioned) {
+          logger.warn("Không thể chuyển session {} sang ACTIVE — trạng thái hiện tại: {}", sessionId, session.getStatus());
+          return;
+      }
+      sessionDAO.updateStatus(sessionId, SessionStatus.ACTIVE);
+      itemDAO.updateStatus(itemId, ItemStatus.LISTED);
+      
+      vn.edu.vnu.uet.group8.server.service.auction.event.AuctionOpenedEvent event = 
+          new vn.edu.vnu.uet.group8.server.service.auction.event.AuctionOpenedEvent(
+              itemId, sessionId, session.getStartingPrice(), session.getEndTime()
+          );
+      eventBus.publish(event);
+  }
+
   private void closeSession(AuctionSession session) throws SQLException {
     int sessionId = session.getId();
     int itemId    = session.getItemId();
 
     logger.info("Đóng session sessionId={}, itemId={}", sessionId, itemId);
 
-    // Tìm người đang dẫn đầu
-    Optional<LeaderInfo> leaderOpt =
-        bidDAO.findCurrentLeader(itemId);
+    try (Connection conn = DatabaseConnection.getInstance().getConnection()) {
+      conn.setAutoCommit(false);
+      try {
+        // 1. Lock DB Row
+        AuctionSession lockedSession = sessionDAO.lockSessionForUpdate(conn, sessionId)
+            .orElseThrow(() -> new SQLException("Phiên không tồn tại hoặc đã xóa: " + sessionId));
 
-    // Load Item để lấy title cho broadcast
-    Optional<Item> itemOpt = itemDAO.findById(itemId);
-    String itemTitle = itemOpt
-        .map(Item::getTitle)
-        .orElse("Sản phẩm #" + itemId);
+        if (lockedSession.getStatus() != SessionStatus.ACTIVE) {
+            logger.warn("Session {} không ở trạng thái ACTIVE, bỏ qua", sessionId);
+            return;
+        }
 
-    if (leaderOpt.isPresent()) {
-      closeSold(session, leaderOpt.get(), itemTitle);
-    } else {
-      closeNoBid(session, itemTitle);
-    }
-  }
+        Integer winnerId = lockedSession.getHighestBidderId();
+        String itemTitle = itemDAO.findById(itemId).map(Item::getTitle).orElse("Sản phẩm #" + itemId);
 
-  // ════════════════════════════════════════════════════
-  // XỬ LÝ KHI CÓ NGƯỜI THẮNG
-  // ════════════════════════════════════════════════════
+        if (winnerId != null) {
+            // SOLD
+            BigDecimal finalPrice = lockedSession.getCurrentPrice();
+            
+            // Tìm Held Amount (Bảo chứng)
+            BigDecimal heldAmount = finalPrice; // Mặc định ít nhất là giá chốt (nếu họ đang giữ đỉnh bằng lệnh thủ công)
+            List<AutoBidConfig> configs = autoBidDAO.findActiveBySession(conn, sessionId);
+            for (AutoBidConfig c : configs) {
+                if (c.getUserId() == winnerId && c.getMaxPrice().compareTo(finalPrice) > 0) {
+                    heldAmount = c.getMaxPrice();
+                    break;
+                }
+            }
 
-  /**
-   * Xử lý phiên kết thúc có người thắng.
-   *
-   * <p>Thứ tự:
-   * <ol>
-   *   <li>Chuyển session → SOLD
-   *   <li>Chuyển tiền (currentPrice) từ người mua sang seller
-   *   <li>Broadcast AUCTION_ENDED (SOLD)
-   * </ol>
-   *
-   * <p>Tiền đã được trừ từ winner lúc đặt giá — giờ
-   * chỉ cần cộng vào ví seller.
-   */
-  private void closeSold(
-      AuctionSession session,
-      LeaderInfo leader,
-      String itemTitle) throws SQLException {
+            // Cập nhật trạng thái
+            boolean transitioned = lockedSession.transitionStatus(SessionStatus.ACTIVE, SessionStatus.SOLD);
+            if (!transitioned) {
+                throw new SQLException("Không thể chuyển sang SOLD");
+            }
+            sessionDAO.updateStatus(conn, sessionId, SessionStatus.SOLD);
+            itemDAO.updateStatus(conn, itemId, ItemStatus.SOLD);
 
-    int sessionId  = session.getId();
-    int itemId     = session.getItemId();
-    int winnerId   = leader.bidderId();
-    BigDecimal finalPrice = session.getCurrentPrice();
+            // Xử lý ví tiền
+            int sellerId = itemDAO.findById(itemId).map(Item::getSellerId)
+                .orElseThrow(() -> new SQLException("Không tìm thấy item"));
+            
+            String winnerTxId = UUID.randomUUID().toString();
+            String refundTxId = UUID.randomUUID().toString();
+            String sellerTxId = UUID.randomUUID().toString();
 
-    // Bước 1: Chuyển trạng thái session → SOLD
-    boolean transitioned =
-        session.transitionStatus(SessionStatus.ACTIVE, SessionStatus.SOLD);
+            userDAO.settleAuctionPayment(conn, winnerTxId, refundTxId, sellerTxId, winnerId, sellerId, sessionId, heldAmount, finalPrice);
 
-    if (!transitioned) {
-      logger.warn(
-          "Không thể chuyển session {} sang SOLD — trạng thái hiện tại: {}",
-          sessionId, session.getStatus());
-      return;
-    }
+            conn.commit();
 
-    sessionDAO.updateStatus(sessionId, SessionStatus.SOLD);
+            // Broadcast Event
+            String winnerUsername = userDAO.findById(winnerId).map(vn.edu.vnu.uet.group8.common.entity.User::getUsername).orElse("user#" + winnerId);
+            logger.info("Session SOLD: sessionId={}, itemId={}, winner={}, price={}, heldAmount={}", sessionId, itemId, winnerUsername, finalPrice, heldAmount);
+            try {
+                eventBus.publish(AuctionEndedEvent.sold(itemId, itemTitle, finalPrice, winnerId, winnerUsername, sellerId));
+            } catch (Exception e) {
+                logger.error("Lỗi khi publish AuctionEndedEvent (SOLD): {}", e.getMessage());
+            }
 
-    // Bước 2: Chuyển tiền cho seller
-    // Tiền của winner đã bị trừ lúc placeBid()
-    // Giờ cộng vào ví seller — DAO lo atomic
-    int sellerId = itemDAO.findById(itemId)
-        .map(Item::getSellerId)
-        .orElseThrow(() -> new SQLException(
-            "Không tìm thấy item itemId=" + itemId));
+        } else {
+            // ENDED_NO_BID
+            boolean transitioned = lockedSession.transitionStatus(SessionStatus.ACTIVE, SessionStatus.ENDED_NO_BID);
+            if (!transitioned) {
+                throw new SQLException("Không thể chuyển sang ENDED_NO_BID");
+            }
+            sessionDAO.updateStatus(conn, sessionId, SessionStatus.ENDED_NO_BID);
+            itemDAO.updateStatus(conn, itemId, ItemStatus.UNSOLD);
 
-    balanceService.settleAuction(sellerId, winnerId, finalPrice, sessionId);
+            conn.commit();
 
-    // Bước 3: Lấy username của winner để broadcast
-    String winnerUsername = userDAO.findById(winnerId)
-        .map(u -> u.getUsername())
-        .orElse("user#" + winnerId);
-
-    logger.info(
-        "Session SOLD: sessionId={}, itemId={}, winner={}, price={}",
-        sessionId, itemId, winnerUsername, finalPrice);
-
-    // Bước 4: Broadcast — SAU KHI đã commit DB
-    try {
-      eventBus.publish(AuctionEndedEvent.sold(
-          itemId, itemTitle, finalPrice, winnerId, winnerUsername));
-    } catch (Exception e) {
-      logger.error("Lỗi khi publish AuctionEndedEvent (SOLD): {}", e.getMessage());
-    }
-  }
-
-  // ════════════════════════════════════════════════════
-  // XỬ LÝ KHI KHÔNG CÓ BID
-  // ════════════════════════════════════════════════════
-
-  /**
-   * Xử lý phiên kết thúc không có bid nào.
-   *
-   * <p>Không cần xử lý tiền vì không ai đặt giá.
-   * Chỉ cần chuyển trạng thái và broadcast.
-   */
-  private void closeNoBid(
-      AuctionSession session,
-      String itemTitle) throws SQLException {
-
-    int sessionId = session.getId();
-    int itemId    = session.getItemId();
-
-    boolean transitioned =
-        session.transitionStatus(
-            SessionStatus.ACTIVE, SessionStatus.ENDED_NO_BID);
-
-    if (!transitioned) {
-      logger.warn(
-          "Không thể chuyển session {} sang ENDED_NO_BID — trạng thái: {}",
-          sessionId, session.getStatus());
-      return;
-    }
-
-    sessionDAO.updateStatus(sessionId, SessionStatus.ENDED_NO_BID);
-
-    logger.info(
-        "Session ENDED_NO_BID: sessionId={}, itemId={}",
-        sessionId, itemId);
-
-    try {
-      eventBus.publish(AuctionEndedEvent.noBid(itemId, itemTitle));
-    } catch (Exception e) {
-      logger.error("Lỗi khi publish AuctionEndedEvent (NO_BID): {}", e.getMessage());
+            // Broadcast Event
+            int sellerId = itemDAO.findById(itemId).map(Item::getSellerId).orElse(0);
+            logger.info("Session ENDED_NO_BID: sessionId={}, itemId={}", sessionId, itemId);
+            try {
+                eventBus.publish(AuctionEndedEvent.noBid(itemId, itemTitle, sellerId));
+            } catch (Exception e) {
+                logger.error("Lỗi khi publish AuctionEndedEvent (NO_BID): {}", e.getMessage());
+            }
+        }
+      } catch (Exception e) {
+          conn.rollback();
+          throw new SQLException("Lỗi trong transaction đóng phiên", e);
+      }
     }
   }
 }

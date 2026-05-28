@@ -5,7 +5,6 @@ import java.sql.SQLException;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
-import java.util.Map;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -91,7 +90,8 @@ public class ItemWriteService {
       // Map<String, String> specs,
       List<String> imageUrls,
       BigDecimal startPrice,
-      Integer durationHours) throws SQLException {
+      Integer durationHours,
+      Long startTime) throws SQLException {
 
     // -- Kiểm tra seller tồn tại và đang ACTIVE
     User seller = userDAO.findById(sellerId)
@@ -142,11 +142,18 @@ public class ItemWriteService {
     // -- Tạo phiên đấu giá nếu đang Publish
     if (isPublishing) {
       Instant now = Instant.now();
-      Instant endTime = now.plus(durationHours, ChronoUnit.HOURS);
+      Instant startInstant = (startTime != null) ? Instant.ofEpochMilli(startTime) : now;
+      if (startInstant.isBefore(now)) {
+        startInstant = now;
+      }
+      Instant endTime = startInstant.plus(durationHours, ChronoUnit.MINUTES);
 
-      AuctionSession session = new AuctionSession.Builder(item.getId(), startPrice, now, endTime).build();
-      // Mở phiên lập tức
-      session.transitionStatus(SessionStatus.UPCOMING, SessionStatus.ACTIVE);
+      AuctionSession session = new AuctionSession.Builder(item.getId(), startPrice, startInstant, endTime).build();
+      
+      // Mở phiên ngay nếu thời gian bắt đầu đã đến, nếu chưa thì để UPCOMING
+      if (!startInstant.isAfter(now)) {
+          session.transitionStatus(SessionStatus.UPCOMING, SessionStatus.ACTIVE);
+      }
 
       sessionDAO.insert(session);
       logger.info("Đã tạo và mở phiên đấu giá cho item {}", item.getId());
