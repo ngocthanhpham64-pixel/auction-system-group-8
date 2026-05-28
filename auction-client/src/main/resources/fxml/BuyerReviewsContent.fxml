@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ScrollPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Region?>
+<?import javafx.scene.layout.StackPane?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.text.Font?>
+
+<ScrollPane fitToHeight="true" fitToWidth="true" prefHeight="350.0" prefWidth="450.0" style="-fx-background-color: transparent; -fx-background: transparent; -fx-bar-policy: never;" xmlns="http://javafx.com/javafx/26" xmlns:fx="http://javafx.com/fxml/1" fx:controller="vn.edu.vnu.uet.group8.client.controller.BuyerReviewsController">
+   <padding>
+      <Insets bottom="12.0" left="16.0" right="16.0" top="12.0" />
+   </padding>
+   <content>
+      <VBox fx:id="vboxBuyerReviewsList" spacing="12.0" style="-fx-background-color: transparent;">
+         <children>
+            
+            <HBox alignment="TOP_LEFT" spacing="12.0" styleClass="glass-card" style="-fx-padding: 14px;">
+               <children>
+                  <StackPane minHeight="40.0" minWidth="40.0" prefHeight="40.0" prefWidth="40.0" style="-fx-background-color: #3b82f6; -fx-background-radius: 40px;" HBox.hgrow="NEVER">
+                     <children>
+                        <Label style="-fx-text-fill: #ffffff; -fx-font-weight: bold; -fx-font-size: 14px;" text="H" />
+                     </children>
+                  </StackPane>
+                  
+                  <VBox spacing="4.0" HBox.hgrow="ALWAYS">
+                     <children>
+                        <HBox alignment="CENTER_LEFT">
+                           <children>
+                              <Label styleClass="text-heading" style="-fx-font-weight: bold; -fx-font-size: 13px;" text="hoang_nguyen99" />
+                              <Region HBox.hgrow="ALWAYS" />
+                              <Label styleClass="text-sub" style="-fx-font-size: 11px;" text="Hôm nay" />
+                           </children>
+                        </HBox>
+                        <Label style="-fx-text-fill: #eab308; -fx-font-size: 11px; -fx-font-weight: bold;" text="⭐⭐⭐⭐⭐" />
+                        <Label styleClass="text-sub" style="-fx-font-size: 12px; -fx-wrap-text: true;" text="Sản phẩm đấu giá cực kỳ chất lượng, chủ phòng đóng gói hàng cẩn thận, bo viền xịn sò rất đáng tiền." wrapText="true" />
+                     </children>
+                  </VBox>
+               </children>
+            </HBox>
+            
+            <HBox alignment="TOP_LEFT" spacing="12.0" styleClass="glass-card" style="-fx-padding: 14px;">
+               <children>
+                  <StackPane minHeight="40.0" minWidth="40.0" prefHeight="40.0" prefWidth="40.0" style="-fx-background-color: #ec4899; -fx-background-radius: 40px;" HBox.hgrow="NEVER">
+                     <children>
+                        <Label style="-fx-text-fill: #ffffff; -fx-font-weight: bold; -fx-font-size: 14px;" text="A" />
+                     </children>
+                  </StackPane>
+                  
+                  <VBox spacing="4.0" HBox.hgrow="ALWAYS">
+                     <children>
+                        <HBox alignment="CENTER_LEFT">
+                           <children>
+                              <Label styleClass="text-heading" style="-fx-font-weight: bold; -fx-font-size: 13px;" text="anh_tuan_uet" />
+                              <Region HBox.hgrow="ALWAYS" />
+                              <Label styleClass="text-sub" style="-fx-font-size: 11px;" text="12/05/2026" />
+                           </children>
+                        </HBox>
+                        <Label style="-fx-text-fill: #eab308; -fx-font-size: 11px; -fx-font-weight: bold;" text="⭐⭐⭐⭐" />
+                        <Label styleClass="text-sub" style="-fx-font-size: 12px; -fx-wrap-text: true;" text="Hàng nhận được chạy ổn áp mượt mà, tuy nhiên giao hàng hơi chậm hơn dự kiến 1 ngày so với thông báo." wrapText="true" />
+                     </children>
+                  </VBox>
+               </children>
+            </HBox>
+            
+         </children>
+      </VBox>
+   </content>
+</ScrollPane>

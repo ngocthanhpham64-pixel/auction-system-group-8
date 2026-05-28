@@ -1,0 +1,128 @@
+/* =========================================================
+   LOGIN SCREEN - PREMIUM MINIMALIST (NÂNG CẤP BỞI AUCTIVA)
+   ========================================================= */
+
+/* Nền tổng thể với gradient xanh đậm sang trọng (Giữ nguyên bản sắc) */
+.login-root {
+    -fx-background-color: linear-gradient(to bottom right, #1E3A6E, #152951); /* Đậm hơn một chút để Card nổi bật hơn */
+}
+
+/* Card đăng nhập: Lơ lửng, mềm mại và cao cấp */
+.login-card {
+    -fx-background-color: white;
+    -fx-background-radius: 24; /* Bo góc to hơn, chuẩn app hiện đại */
+    -fx-border-radius: 24;
+    /* Bóng đổ đa tầng: Bóng to mờ nhạt tạo độ lơ lửng cực sâu */
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.25), 60, 0, 0, 15);
+}
+
+/* ─── Ô NHẬP LIỆU (INPUT FIELDS) ─── */
+.form-input {
+    -fx-background-color: #f8fafc; /* Nền xám siêu nhạt, bỏ viền cứng */
+    -fx-border-color: transparent;
+    -fx-border-radius: 12; /* Bo góc mềm mại */
+    -fx-background-radius: 12;
+    -fx-padding: 14 16; /* Tăng padding cho thoáng đãng */
+    -fx-font-size: 13px;
+    -fx-text-fill: #1e293b;
+    -fx-transition: all 0.2s ease;
+}
+
+.form-input:focused {
+    -fx-background-color: white; /* Sáng bừng lên khi click vào */
+    -fx-border-color: #F97316;
+    /* Glow cam phát sáng nhẹ nhàng */
+    -fx-effect: dropshadow(gaussian, rgba(249, 115, 22, 0.2), 8, 0, 0, 0);
+}
+
+/* Label form */
+.form-label {
+    -fx-text-fill: #64748b; /* Màu xám slate sang trọng thay vì xám đen cục mịch */
+    -fx-font-weight: bold;
+    -fx-font-size: 12px;
+}
+
+/* ─── NÚT CHÍNH (PRIMARY BUTTON) ─── */
+.btn-primary {
+    /* Đổ màu Gradient tràn đầy năng lượng */
+    -fx-background-color: linear-gradient(to right, #F97316, #ea580c);
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+    -fx-background-radius: 12;
+    -fx-border-radius: 12;
+    -fx-padding: 12;
+    -fx-cursor: hand;
+    -fx-font-size: 14px;
+    -fx-effect: dropshadow(gaussian, rgba(249, 115, 22, 0.35), 10, 0, 0, 4);
+    -fx-transition: all 0.2s ease;
+}
+
+.btn-primary:hover {
+    -fx-background-color: linear-gradient(to right, #fdba74, #f97316); /* Rực sáng lên khi lướt chuột */
+    -fx-effect: dropshadow(gaussian, rgba(249, 115, 22, 0.5), 15, 0, 0, 6);
+}
+
+.btn-primary:pressed {
+    -fx-background-color: #c2410c; /* Cam cháy khi ấn mạnh */
+    -fx-effect: innershadow(gaussian, rgba(0, 0, 0, 0.3), 5, 0, 0, 2); /* Nút lún xuống chân thực */
+}
+
+/* ─── LINK & TEXT PHỤ ─── */
+.text-link {
+    -fx-text-fill: #F97316;
+    -fx-font-size: 12px;
+    -fx-font-weight: bold;
+    -fx-cursor: hand;
+}
+
+.text-link:hover {
+    -fx-underline: true;
+}
+
+.text-muted {
+    -fx-text-fill: #94a3b8;
+    -fx-font-size: 13px;
+}
+
+.text-danger {
+    -fx-text-fill: #ef4444; /* Đỏ tươi tắn chuẩn UI hiện đại */
+    -fx-font-size: 12px;
+}
+
+/* ─── LOGO (Tinh chỉnh màu sắc) ─── */
+.logo-title-lg {
+    -fx-font-size: 26px; /* To hơn một chút để quyền lực hơn */
+    -fx-font-weight: bold;
+    -fx-text-fill: #0f172a; /* Đen nhám hiện đại thay vì xanh rợ */
+}
+
+.logo-subtitle-muted {
+    -fx-font-size: 10px;
+    -fx-text-fill: #F97316; /* Cam thương hiệu */
+    -fx-font-weight: bold;
+}
+
+/* ─── TAB BAR (Đăng nhập / Đăng ký) ─── */
+.tab-container {
+    -fx-background-color: #f1f5f9; /* Xám xanh cực nhạt */
+    -fx-background-radius: 12;
+    -fx-padding: 4;
+}
+
+.tab-button {
+    -fx-background-color: transparent;
+    -fx-text-fill: #64748b;
+    -fx-background-radius: 8;
+    -fx-cursor: hand;
+    -fx-font-weight: bold;
+    -fx-padding: 8 0;
+}
+
+.tab-button-active {
+    -fx-background-color: white;
+    -fx-text-fill: #0f172a;
+    -fx-font-weight: bold;
+    -fx-background-radius: 8;
+    /* Bóng đổ siêu tinh tế */
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.05), 6, 0, 0, 2);
+}

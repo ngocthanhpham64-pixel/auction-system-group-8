@@ -1,73 +1,110 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<?import javafx.scene.layout.*?>
-<?import javafx.scene.control.*?>
-<?import javafx.scene.image.*?>
-<?import javafx.geometry.Insets?>
-<?import java.net.URL?>
 
-<StackPane xmlns:fx="http://javafx.com/fxml/1"
-           fx:controller="vn.edu.vnu.uet.group8.client.controller.LoginController"
-           styleClass="app-bg-light">
+<?import java.net.URL?>
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.CheckBox?>
+<?import javafx.scene.control.Hyperlink?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.PasswordField?>
+<?import javafx.scene.control.ScrollPane?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.image.Image?>
+<?import javafx.scene.image.ImageView?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.StackPane?>
+<?import javafx.scene.layout.VBox?>
+
+<StackPane styleClass="login-root" xmlns:fx="http://javafx.com/fxml/1" xmlns="http://javafx.com/javafx/26" fx:controller="vn.edu.vnu.uet.group8.client.controller.LoginController">
 
     <stylesheets>
-        <URL value="@../css/tokens.css"/>
-        <URL value="@../css/components.css"/>
-        <URL value="@../css/layout.css"/>
+        <URL value="@../css/tokens.css" />
+        <URL value="@../css/components.css" />
+        <URL value="@../css/layout.css" />
+        <URL value="@../css/login.css" />
     </stylesheets>
 
     <VBox alignment="CENTER" spacing="0">
-        <VBox styleClass="card" maxWidth="360" spacing="0"
-              style="-fx-background-radius: 16; -fx-border-radius: 16; -fx-padding: 0; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.08), 24, 0, 0, 4);">
-            <padding><Insets top="40" bottom="40" left="36" right="36"/></padding>
+        <!-- Card chính -->
+        <VBox fx:id="card" maxWidth="420" spacing="0" styleClass="login-card">
+            <padding><Insets bottom="25" left="25" right="25" top="25" /></padding>
 
             <!-- Logo -->
-            <HBox alignment="CENTER" spacing="10" style="-fx-padding: 0 0 20 0;">
-                <ImageView fitWidth="60" fitHeight="60" preserveRatio="true">
-                    <image>
-                        <Image url="@../image/logo.png"/>
-                    </image>
+            <HBox alignment="CENTER" spacing="10" style="-fx-padding: 0 0 15 0;">
+                <ImageView fitHeight="50" fitWidth="50" preserveRatio="true">
+                    <image><Image url="@../image/logo.png" /></image>
                 </ImageView>
                 <VBox alignment="CENTER_LEFT">
-                    <Label text="AUCTIVA" styleClass="logo-title-lg"/>
-                    <Label text="LIVE ONLINE AUCTIONS" styleClass="logo-subtitle-muted"/>
+                    <Label styleClass="logo-title-lg" text="AUCTIVA" />
+                    <Label styleClass="logo-subtitle-muted" text="ĐẤU GIÁ TRỰC TUYẾN" />
                 </VBox>
             </HBox>
 
-            <!-- Title -->
-            <Label text="Chào mừng trở lại!" maxWidth="Infinity" alignment="CENTER" styleClass="h1"/>
-            <Label text="Đăng nhập để tiếp tục đấu giá" maxWidth="Infinity" alignment="CENTER"
-                   styleClass="text-muted" style="-fx-padding: 4 0 20 0;"/>
+            <!-- Tiêu đề -->
+            <Label fx:id="lblTitle" alignment="CENTER" maxWidth="Infinity" style="-fx-font-size: 22px; -fx-font-weight: bold; -fx-text-fill: #1a1a1a;" text="Chào mừng trở lại!" />
+            <Label fx:id="lblSubtitle" alignment="CENTER" maxWidth="Infinity" style="-fx-font-size: 12px; -fx-text-fill: #888; -fx-padding: 2 0 20 0;" text="Đăng nhập để tiếp tục đấu giá" />
 
             <!-- Tabs -->
-            <HBox style="-fx-background-color: #F5F5F5; -fx-background-radius: 10; -fx-padding: 4;" spacing="4">
-                <Button fx:id="btnTabLogin" text="Đăng nhập" maxWidth="Infinity"
-                        onAction="#onTabLogin" HBox.hgrow="ALWAYS"
-                        style="-fx-background-color: white; -fx-text-fill: #1a1a1a; -fx-font-weight: bold; -fx-background-radius: 8; -fx-cursor: hand; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.1), 4, 0, 0, 1);"/>
-                <Button fx:id="btnTabRegister" text="Đăng ký" maxWidth="Infinity"
-                        onAction="#onTabRegister" HBox.hgrow="ALWAYS"
-                        style="-fx-background-color: transparent; -fx-text-fill: #888; -fx-background-radius: 8; -fx-cursor: hand;"/>
+            <HBox fx:id="tabBar" spacing="4" styleClass="tab-container">
+                <Button fx:id="btnTabLogin" maxWidth="Infinity" onAction="#onTabLogin" styleClass="tab-button, tab-button-active" text="Đăng nhập" HBox.hgrow="ALWAYS" />
+                <Button fx:id="btnTabRegister" maxWidth="Infinity" onAction="#onTabRegister" styleClass="tab-button" text="Đăng ký" HBox.hgrow="ALWAYS" />
             </HBox>
 
-            <!-- Form -->
-            <VBox spacing="4" style="-fx-padding: 20 0 0 0;">
-                <Label text="Email" styleClass="form-label"/>
-                <TextField fx:id="tfEmail" promptText="example@email.com" styleClass="form-input"/>
+            <!-- ScrollPane chứa form -->
+            <ScrollPane fx:id="formScroll" fitToWidth="true" style="-fx-background-color: transparent; -fx-padding: 15 0 0 0; -fx-min-height: 260; -fx-max-height: 420;">
+                <StackPane fx:id="formArea" style="-fx-background-color: white;">
+                    <!-- Form Login -->
+                    <VBox fx:id="formLogin" spacing="6">
+                        <Label style="-fx-font-size: 11px;" styleClass="form-label" text="Email" />
+                        <TextField fx:id="tfEmail" promptText="example@email.com" styleClass="form-input" />
 
-                <Label text="Mật khẩu" styleClass="form-label" style="-fx-padding: 6 0 0 0;"/>
-                <PasswordField fx:id="pfPassword" promptText="••••••••" styleClass="form-input"/>
+                        <Label style="-fx-font-size: 11px;" styleClass="form-label" text="Mật khẩu" />
+                        <PasswordField fx:id="pfPassword" promptText="••••••••" styleClass="form-input" />
 
-                <Label text="Quên mật khẩu?" alignment="CENTER_RIGHT" maxWidth="Infinity"
-                       styleClass="text-link" style="-fx-padding: 2 0 10 0;"
-                       onMouseClicked="#onForgotPassword"/>
+                        <Label alignment="CENTER_RIGHT" maxWidth="Infinity" onMouseClicked="#onForgotPassword" style="-fx-padding: 2 0 5 0; -fx-font-size: 11px;" styleClass="text-link" text="Quên mật khẩu?" />
 
-                <Button fx:id="btnSubmit" text="Đăng nhập" maxWidth="Infinity"
-                        onAction="#onLogin"
-                        style="-fx-background-color: #F97316; -fx-text-fill: white; -fx-font-size: 14px; -fx-font-weight: bold; -fx-background-radius: 10; -fx-cursor: hand; -fx-padding: 12 0;"/>
+                        <Button fx:id="btnLoginSubmit" maxWidth="Infinity" onAction="#onLogin" style="-fx-padding: 12 0; -fx-font-size: 13px;" styleClass="btn-primary" text="Đăng nhập" />
 
-                <Label fx:id="lblError" maxWidth="Infinity" alignment="CENTER"
-                       styleClass="text-danger" style="-fx-font-size: 12px;" visible="false"/>
-            </VBox>
+                        <Label fx:id="lblLoginError" alignment="CENTER" managed="false" maxWidth="Infinity" styleClass="text-danger" visible="false" />
+                    </VBox>
 
+                    <!-- Form Register (ẩn) -->
+                    <VBox fx:id="formRegister" managed="false" spacing="4" visible="false">
+                        <Label style="-fx-font-size: 11px;" styleClass="form-label" text="Tên đăng nhập" />
+                        <TextField fx:id="tfRegUsername" promptText="username123" styleClass="form-input" />
+
+                        <Label style="-fx-font-size: 11px;" styleClass="form-label" text="Họ và tên" />
+                        <TextField fx:id="tfRegFullName" promptText="Nguyễn Văn A" styleClass="form-input" />
+
+                        <Label style="-fx-font-size: 11px;" styleClass="form-label" text="Email" />
+                        <TextField fx:id="tfRegEmail" promptText="example@email.com" styleClass="form-input" />
+
+                        <Label style="-fx-font-size: 11px;" styleClass="form-label" text="Số điện thoại" />
+                        <TextField fx:id="tfRegPhone" promptText="0901234567" styleClass="form-input" />
+
+                        <Label style="-fx-font-size: 11px;" styleClass="form-label" text="Mật khẩu" />
+                        <PasswordField fx:id="pfRegPassword" promptText="Tối thiểu 8 ký tự" styleClass="form-input" />
+
+                        <Label style="-fx-font-size: 11px;" styleClass="form-label" text="Xác nhận mật khẩu" />
+                        <PasswordField fx:id="pfRegConfirm" promptText="Nhập lại mật khẩu" styleClass="form-input" />
+
+                        <HBox alignment="CENTER_LEFT" spacing="6" style="-fx-padding: 4 0 4 0;">
+                            <CheckBox fx:id="cbRegTerms" />
+                            <Label style="-fx-text-fill: #888; -fx-font-size: 11px;" text="Tôi đồng ý với" />
+                            <Hyperlink onAction="#onShowTerms" style="-fx-font-size: 11px;" styleClass="text-link" text="Điều khoản sử dụng" />
+                        </HBox>
+
+                        <Label fx:id="lblRegError" alignment="CENTER" managed="false" maxWidth="Infinity" styleClass="text-danger" visible="false" />
+
+                        <Button fx:id="btnRegSubmit" maxWidth="Infinity" onAction="#onRegister" style="-fx-padding: 12 0; -fx-font-size: 13px;" styleClass="btn-primary" text="Đăng ký" />
+
+                        <HBox alignment="CENTER" spacing="4" style="-fx-padding: 4 0 0 0;">
+                            <Label style="-fx-text-fill: #888; -fx-font-size: 11px;" text="Đã có tài khoản?" />
+                            <Hyperlink onAction="#onTabLogin" style="-fx-font-size: 11px;" styleClass="text-link" text="Đăng nhập ngay" />
+                        </HBox>
+                    </VBox>
+                </StackPane>
+            </ScrollPane>
         </VBox>
     </VBox>
 </StackPane>

@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.collections.FXCollections?>
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.ComboBox?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.TextArea?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Region?>
+<?import javafx.scene.layout.StackPane?>
+<?import javafx.scene.layout.VBox?>
+<?import java.lang.String?>
+<?import java.net.URL?>
+
+<VBox spacing="18.0" prefWidth="440.0" style="-fx-background-color: transparent;" xmlns="http://javafx.com/javafx/26" xmlns:fx="http://javafx.com/fxml/1" fx:controller="vn.edu.vnu.uet.group8.client.controller.ReviewController">
+   <stylesheets>
+      <URL value="@../css/tokens.css" />
+      <URL value="@../css/components.css" />
+      <URL value="@../css/layout.css" />
+   </stylesheets>
+   <padding>
+      <Insets bottom="16.0" left="16.0" right="16.0" top="16.0" />
+   </padding>
+   <children>
+      <!-- Header Section -->
+      <VBox spacing="4.0">
+         <children>
+            <Label style="-fx-font-size: 20px; -fx-font-weight: bold; -fx-text-fill: #f97316;" text="⭐ Đánh giá người bán" />
+            <Label styleClass="text-sub" text="Chia sẻ trải nghiệm của bạn về giao dịch này" />
+         </children>
+      </VBox>
+
+      <!-- Seller Info -->
+      <VBox spacing="6.0">
+         <children>
+            <Label styleClass="form-label" text="Người bán được đánh giá:" />
+            <HBox alignment="CENTER_LEFT" spacing="10.0">
+               <StackPane minHeight="40.0" minWidth="40.0" prefHeight="40.0" prefWidth="40.0" style="-fx-background-color: #f97316; -fx-background-radius: 20px;">
+                  <children>
+                     <Label fx:id="lblSellerAvatarInitials" style="-fx-text-fill: white; -fx-font-weight: bold; -fx-font-size: 16px;" text="?" />
+                  </children>
+               </StackPane>
+               <Label fx:id="lblSellerName" styleClass="text-heading" style="-fx-font-size: 16px; -fx-font-weight: bold;" text="Tên người bán mặc định" />
+            </HBox>
+         </children>
+      </VBox>
+      
+      <!-- Rating Input -->
+      <VBox spacing="6.0">
+         <children>
+            <Label styleClass="form-label" text="Mức độ hài lòng của bạn:" />
+            <HBox alignment="CENTER_LEFT" spacing="10.0">
+               <ComboBox fx:id="cbScore" prefWidth="180.0" promptText="Chọn điểm đánh giá" styleClass="form-input">
+               <items>
+                  <FXCollections fx:factory="observableArrayList">
+                     <String fx:value="1 - Rất kém" />
+                     <String fx:value="2 - Kém" />
+                     <String fx:value="3 - Trung bình" />
+                     <String fx:value="4 - Tốt" />
+                     <String fx:value="5 - Tuyệt vời" />
+                  </FXCollections>
+               </items>
+            </ComboBox>
+               <Label fx:id="lblStars" style="-fx-text-fill: #eab308; -fx-font-size: 18px; -fx-font-weight: bold;" text="☆☆☆☆☆" />
+            </HBox>
+         </children>
+      </VBox>
+      
+      <!-- Review Content -->
+      <VBox spacing="6.0">
+         <children>
+            <Label styleClass="form-label" text="Nội dung đánh giá (không bắt buộc):" />
+            <TextArea fx:id="txtComment" prefHeight="100.0" promptText="Nhập chi tiết trải nghiệm giao dịch của bạn với người bán này..." styleClass="form-input" wrapText="true" />
+         </children>
+      </VBox>
+      
+      <!-- Submit Button -->
+      <HBox alignment="CENTER_RIGHT" style="-fx-padding: 4 0 0 0;">
+         <children>
+            <Button fx:id="btnSubmit" maxWidth="1.7976931348623157E308" onAction="#onSubmit" prefHeight="45.0" style="-fx-background-color: #10b981; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 10px; -fx-font-size: 14px; -fx-cursor: hand;" text="GỬI ĐÁNH GIÁ" />
+         </children>
+      </HBox>
+   </children>
+</VBox>
