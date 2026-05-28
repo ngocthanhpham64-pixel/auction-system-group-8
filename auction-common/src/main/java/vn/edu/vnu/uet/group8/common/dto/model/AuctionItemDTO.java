@@ -23,6 +23,7 @@ public class AuctionItemDTO {
 
   // ── Định danh ────────────────────────────────────────
   private int itemId; // int, không phải String
+  private Integer sessionId; // ID của phiên đấu giá (có thể null nếu chưa lên sàn)
 
   // ── Thông tin hiển thị ───────────────────────────────
   private String title;
@@ -36,8 +37,7 @@ public class AuctionItemDTO {
   private Instant createdAt;
 
   // ── Người bán ─────────────────────────────────────────
-  // sellerUsername thay vì sellerId — Client chỉ cần hiển thị tên,
-  // không cần biết ID nội bộ của server
+  private int sellerId;
   private String sellerUsername;
   private BigDecimal sellerRating;
   private int totalItemsSold;
@@ -65,7 +65,7 @@ public class AuctionItemDTO {
    * @param bidCount       Số lượt bid hiện tại
    */
   public static AuctionItemDTO from(AuctionSession ac, Item item,
-      String sellerUsername,
+      int sellerId, String sellerUsername,
       int bidCount) {
     AuctionItemDTO dto = new AuctionItemDTO();
     dto.itemId = item.getId();
@@ -75,6 +75,7 @@ public class AuctionItemDTO {
     dto.condition = item.getCondition();
 
     if (ac != null) {
+      dto.sessionId = ac.getId();
       dto.status = ac.getStatus();
       dto.endTime = ac.getEndTime();
       dto.currentPrice = ac.getCurrentPrice();
@@ -82,6 +83,7 @@ public class AuctionItemDTO {
       dto.status = SessionStatus.UPCOMING;
     }
 
+    dto.sellerId = sellerId;
     dto.sellerUsername = sellerUsername;
     dto.bidCount = bidCount;
     dto.createdAt = item.getCreatedAt();
@@ -91,22 +93,22 @@ public class AuctionItemDTO {
   }
 
   public static AuctionItemDTO from(AuctionSession ac, Item item,
-      String sellerUsername,
+      int sellerId, String sellerUsername,
       int bidCount, BigDecimal sellerRating, int totalItemsSold) {
-    AuctionItemDTO dto = from(ac, item, sellerUsername, bidCount);
+    AuctionItemDTO dto = from(ac, item, sellerId, sellerUsername, bidCount);
     dto.sellerRating = sellerRating;
     dto.totalItemsSold = totalItemsSold;
     return dto;
   }
 
-  public static AuctionItemDTO from(AuctionSession as, Item item, String sellerUsername) {
-    return from(as, item, sellerUsername, 0);
+  public static AuctionItemDTO from(AuctionSession as, Item item, int sellerId, String sellerUsername) {
+    return from(as, item, sellerId, sellerUsername, 0);
   }
 
   public static AuctionItemDTO of(int itemId, String title, String description,
       ItemCategory category, ItemCondition condition,
       SessionStatus status, BigDecimal currentPrice,
-      Instant endTime, String sellerUsername,
+      Instant endTime, int sellerId, String sellerUsername,
       Map<String, String> specs, List<String> imageUrls,
       int bidCount, Instant createdAt) {
     AuctionItemDTO dto = new AuctionItemDTO();
@@ -118,6 +120,7 @@ public class AuctionItemDTO {
     dto.status = status;
     dto.currentPrice = currentPrice;
     dto.endTime = endTime;
+    dto.sellerId = sellerId;
     dto.sellerUsername = sellerUsername;
     // dto.specs = specs;
     dto.imageUrls = imageUrls;
@@ -135,6 +138,10 @@ public class AuctionItemDTO {
     return itemId;
   }
 
+  public Integer getSessionId() {
+    return sessionId;
+  }
+
   public String getTitle() {
     return title;
   }
@@ -149,6 +156,10 @@ public class AuctionItemDTO {
 
   public ItemCondition getCondition() {
     return condition;
+  }
+
+  public int getSellerId() {
+    return sellerId;
   }
 
   public String getSellerUsername() {
@@ -185,6 +196,14 @@ public class AuctionItemDTO {
 
   public void setCurrentPrice(BigDecimal currentPrice) {
     this.currentPrice = currentPrice;
+  }
+
+  public void setSessionId(Integer sessionId) {
+    this.sessionId = sessionId;
+  }
+
+  public void setEndTime(Instant endTime) {
+    this.endTime = endTime;
   }
 
   public List<String> getImageUrls() {

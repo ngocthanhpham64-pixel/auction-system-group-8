@@ -255,10 +255,6 @@ public final class UserMember extends User {
       this.sellerRating = null;
       return this;
     }
-    public Builder sellerRating(BigDecimal sellerRating) {
-      this.sellerRating = sellerRating;
-      return this;
-    }
 
     @Override
     public UserMember build() {

@@ -5,7 +5,7 @@ package vn.edu.vnu.uet.group8.common.enums;
  */
 public enum ItemCondition {
   NEW("Mới 100%"),
-  LIKE_NEW("Như mới (99%)"),
+  LIKENEW("Như mới (99%)"),
   USED("Đã qua sử dụng"), // "Tot (90%)", "Kha (70%)", "Cu (50%)" sẽ map về đây
   USED_AS_IS("Đã qua sử dụng, không bảo hành"),
   REFURBISHED("Đã qua sửa chữa"),

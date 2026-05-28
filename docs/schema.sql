@@ -6,11 +6,10 @@
 
 -- Tạo database nếu chưa có
 CREATE DATABASE IF NOT EXISTS auction_db
-    CHARACTER SET utf8mb4        -- hỗ trợ tiếng Việt + emoji
+    CHARACTER SET utf8mb4
     COLLATE utf8mb4_unicode_ci;
 
 USE auction_db;
-
 
 -- ================================================================
 -- BẢNG 1: users
@@ -124,6 +123,9 @@ CREATE TABLE IF NOT EXISTS item (
     -- Ví dụ: {"brand":"Apple","storage":"512GB","warranty":"12"}
     -- NULL được phép: category OTHER có thể không có specs
     specs           JSON            NULL,
+
+    -- Chứa mảng các đường dẫn ảnh (URL/Path)
+    image_urls      JSON            NULL,
 
     created_at      DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
     is_deleted      BOOLEAN         NOT NULL DEFAULT FALSE,
@@ -257,13 +259,14 @@ CREATE TABLE IF NOT EXISTS ratings (
     rating_id       INT             NOT NULL AUTO_INCREMENT,
     seller_id       INT             NOT NULL,
     buyer_id        INT             NOT NULL,
+    buyer_username  VARCHAR(50)     NOT NULL,
     item_id         INT             NOT NULL,
     score           DECIMAL(3,1)    NOT NULL,
     comment         TEXT            NULL,
     created_at      DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     PRIMARY KEY (rating_id),
-    CONSTRAINT uq_buyer_item UNIQUE (buyer_id, item_id),
+    CONSTRAINT uq_rater_item UNIQUE (buyer_id, item_id),
     CONSTRAINT fk_rating_seller
         FOREIGN KEY (seller_id) REFERENCES users (user_id)
         ON DELETE RESTRICT
@@ -275,9 +278,7 @@ CREATE TABLE IF NOT EXISTS ratings (
     CONSTRAINT fk_rating_item
         FOREIGN KEY (item_id) REFERENCES item (item_id)
         ON DELETE RESTRICT
-        ON UPDATE CASCADE,
-    CONSTRAINT chk_rating_logic
-        CHECK (score BETWEEN 0.0 AND 5.0 AND seller_id != buyer_id)
+        ON UPDATE CASCADE
 ) ENGINE=InnoDB 
   DEFAULT CHARSET=utf8mb4 
   COLLATE=utf8mb4_unicode_ci;
@@ -290,6 +291,7 @@ CREATE TABLE IF NOT EXISTS bid_transaction (
     session_id      INT             NOT NULL,
     bidder_id       INT             NOT NULL,
     bid_amount      DECIMAL(15,2)   NOT NULL,
+    status          VARCHAR(20)     NOT NULL DEFAULT 'LEADER',
     created_at      DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     PRIMARY KEY (bid_id),
@@ -305,3 +307,58 @@ CREATE TABLE IF NOT EXISTS bid_transaction (
 ) ENGINE=InnoDB 
   DEFAULT CHARSET=utf8mb4 
   COLLATE=utf8mb4_unicode_ci;
+
+-- ================================================================
+-- BẢNG 7: favorites (Sản phẩm yêu thích)
+-- ================================================================
+
+CREATE TABLE IF NOT EXISTS favorites (
+    user_id         INT             NOT NULL,
+    item_id         INT             NOT NULL,
+    created_at      DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    PRIMARY KEY (user_id, item_id),
+    CONSTRAINT fk_fav_user FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE,
+    CONSTRAINT fk_fav_item FOREIGN KEY (item_id) REFERENCES item(item_id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ================================================================
+-- BẢNG 8: notifications (Thông báo hệ thống)
+-- ================================================================
+
+CREATE TABLE IF NOT EXISTS notifications (
+    notification_id INT             NOT NULL AUTO_INCREMENT,
+    user_id         INT             NOT NULL,
+    title           VARCHAR(200)    NOT NULL,
+    message         TEXT            NOT NULL,
+    type            VARCHAR(50)     NOT NULL, 
+    is_read         BOOLEAN         NOT NULL DEFAULT FALSE,
+    created_at      DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    is_deleted      BOOLEAN         NOT NULL DEFAULT FALSE,
+
+    PRIMARY KEY (notification_id),
+    CONSTRAINT fk_notif_user FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE,
+    INDEX idx_notif_user (user_id, created_at DESC)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ================================================================
+-- BẢNG 9: auto_bid_config (Cấu hình đặt giá tự động)
+-- ================================================================
+CREATE TABLE IF NOT EXISTS auto_bid_config (
+    config_id       INT             NOT NULL AUTO_INCREMENT,
+    session_id      INT             NOT NULL,
+    user_id         INT             NOT NULL,
+    max_price       DECIMAL(15,2)   NOT NULL,
+    is_active       BOOLEAN         NOT NULL DEFAULT TRUE,
+    created_at      DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    PRIMARY KEY (config_id),
+    CONSTRAINT fk_autobid_session 
+        FOREIGN KEY (session_id) 
+        REFERENCES auction_session (session_id) 
+        ON DELETE CASCADE,
+    CONSTRAINT fk_autobid_user 
+        FOREIGN KEY (user_id) 
+        REFERENCES users (user_id) 
+        ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

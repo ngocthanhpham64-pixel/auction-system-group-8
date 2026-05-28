@@ -10,30 +10,26 @@ public class CreateItemRequest {
   public String description;
   public BigDecimal startPrice;
   public BigDecimal bidStep;
-  public int durationHours;
+  public int durationMinutes;
+  public Long startTime; // Unix timestamp in milliseconds
   // public Map<String, String> specs;  // brand, model, year, material, origin
   public List<String> imageUrls;
-  public boolean hasCert;
-  public String certBody;
-  public String certId;
 
   public CreateItemRequest(String name, String category, String condition,
                               String description, BigDecimal startPrice,
-                              BigDecimal bidStep, int durationHours,
+                              BigDecimal bidStep, int durationMinutes,
+                              Long startTime,
                               // Map<String, String> specs,
-                              List<String> imageUrls,
-                              boolean hasCert, String certBody, String certId) {
+                              List<String> imageUrls) {
     this.name = name;
     this.category = category;
     this.condition = condition;
     this.description = description;
     this.startPrice = startPrice;
     this.bidStep = bidStep;
-    this.durationHours = durationHours;
+    this.durationMinutes = durationMinutes;
+    this.startTime = startTime;
     // this.specs = specs;
     this.imageUrls = imageUrls;
-    this.hasCert = hasCert;
-    this.certBody = certBody;
-    this.certId = certId;
   }
 }

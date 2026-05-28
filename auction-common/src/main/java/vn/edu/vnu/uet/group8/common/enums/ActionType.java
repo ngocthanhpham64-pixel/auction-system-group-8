@@ -44,7 +44,8 @@ public enum ActionType {
     @SerializedName("user_get_seller_reviews") USER_GET_SELLER_REVIEWS,
     @SerializedName("item_comment") ITEM_COMMENT,
     @SerializedName("user_get_seller_comments") USER_GET_SELLER_COMMENTS,
-    @SerializedName("user_purchase_history") USER_PURCHASE_HISTORY;
+    @SerializedName("user_purchase_history") USER_PURCHASE_HISTORY,
+    @SerializedName("get_auto_bid_status") GET_AUTO_BID_STATUS;
 
     // @SerializedName("chat_send_message") CHAT_SEND_MESSAGE; // Chat (nếu triển khai)
 }

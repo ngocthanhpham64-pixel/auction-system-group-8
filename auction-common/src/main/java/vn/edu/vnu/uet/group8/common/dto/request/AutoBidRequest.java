@@ -86,9 +86,6 @@ public final class AutoBidRequest {
             if (maxPrice == null) {
                 throw new IllegalArgumentException("maxPrice không được null");
             }
-            if (maxPrice.compareTo(BigDecimal.ZERO) <= 0) {
-                throw new IllegalArgumentException("maxPrice phải lớn hơn 0");
-            }
             if (stepAmount != null && stepAmount.compareTo(BigDecimal.ZERO) <= 0) {
                 throw new IllegalArgumentException("stepAmount nếu có phải > 0");
             }
