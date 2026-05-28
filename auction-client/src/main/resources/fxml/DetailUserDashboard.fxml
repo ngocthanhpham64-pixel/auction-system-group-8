@@ -1,0 +1,182 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.effect.DropShadow?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Region?>
+<?import javafx.scene.layout.StackPane?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.paint.Color?>
+<?import javafx.scene.text.Font?>
+<?import javafx.scene.image.ImageView?>
+
+<VBox minWidth="1050.0" spacing="20.0" style="-fx-background-color: transparent;" 
+      xmlns="http://javafx.com/javafx/26" 
+      xmlns:fx="http://javafx.com/fxml/1" 
+      fx:controller="vn.edu.vnu.uet.group8.client.controller.ProfileEditController">
+    <children>
+        
+        <HBox alignment="BOTTOM_LEFT">
+            <children>
+                <Label styleClass="text-heading" text="Hồ sơ của tôi">
+                    <font>
+                        <Font name="System Bold" size="28.0" />
+                    </font>
+                </Label>
+                <Region HBox.hgrow="ALWAYS" />
+                <Button fx:id="btnEditProfile" mnemonicParsing="false" onAction="#onEditProfileClick" style="-fx-background-color: transparent; -fx-text-fill: #0ea5e9; -fx-font-size: 14px; -fx-font-weight: bold; -fx-cursor: hand;" text="Chỉnh sửa thông tin" />
+            </children>
+        </HBox>
+        
+        <VBox styleClass="glass-card">
+            <children>
+                
+                <HBox alignment="CENTER_LEFT" style="-fx-padding: 20 24 20 24; -fx-border-color: #e2e8f0; -fx-border-width: 0 0 1px 0;">
+                    <children>
+                        <Label prefWidth="300.0" styleClass="text-sub" style="-fx-font-size: 14px;" text="Ảnh đại diện" />
+                        <HBox alignment="CENTER_LEFT" spacing="16.0" HBox.hgrow="ALWAYS">
+                            <children>
+                                <StackPane fx:id="paneAvatarView" onMouseClicked="#onAvatarClick" prefHeight="50.0" prefWidth="50.0" style="-fx-background-color: #f97316; -fx-background-radius: 25px; -fx-cursor: hand;">
+                                    <children>
+                                        <Label fx:id="lblAvatarInitials" style="-fx-text-fill: white; -fx-font-weight: bold; -fx-font-size: 20px; -fx-cursor: hand;" text="N" />
+                                        <ImageView fx:id="imgAvatar" fitHeight="50.0" fitWidth="50.0" pickOnBounds="true" preserveRatio="true" />
+                                    </children>
+                                </StackPane>
+                                <Label style="-fx-text-fill: #94a3b8; -fx-font-size: 12px; -fx-font-style: italic;" text="(Bấm vào vòng tròn để thay đổi ảnh)" />
+                            </children>
+                        </HBox>
+                    </children>
+                </HBox>
+                
+                <HBox alignment="CENTER_LEFT" style="-fx-padding: 20 24 20 24; -fx-border-color: #e2e8f0; -fx-border-width: 0 0 1px 0;">
+                    <children>
+                        <Label prefWidth="300.0" styleClass="text-sub" style="-fx-font-size: 14px;" text="Họ và tên" />
+                        <StackPane alignment="CENTER_LEFT" HBox.hgrow="ALWAYS">
+                            <children>
+                                <Label fx:id="lblFullName" styleClass="text-heading" style="-fx-font-size: 14px; -fx-font-weight: bold;" text="Nguyễn Văn A" />
+                                <TextField fx:id="txtFullName" managed="false" promptText="Tối đa 50 ký tự" styleClass="form-input" style="-fx-font-size: 14px; -fx-padding: 8px;" visible="false" />
+                            </children>
+                        </StackPane>
+                    </children>
+                </HBox>
+                
+                <HBox alignment="CENTER_LEFT" style="-fx-padding: 20 24 20 24; -fx-border-color: #e2e8f0; -fx-border-width: 0 0 1px 0;">
+                    <children>
+                        <Label prefWidth="300.0" styleClass="text-sub" style="-fx-font-size: 14px;" text="Số điện thoại" />
+                        <StackPane alignment="CENTER_LEFT" HBox.hgrow="ALWAYS">
+                            <children>
+                                <Label fx:id="lblPhone" styleClass="text-heading" style="-fx-font-size: 14px; -fx-font-weight: bold;" text="0987654321" />
+                                <TextField fx:id="txtPhone" managed="false" promptText="Nhập định dạng 10 chữ số" styleClass="form-input" style="-fx-font-size: 14px; -fx-padding: 8px;" visible="false" />
+                            </children>
+                        </StackPane>
+                    </children>
+                </HBox>
+                
+                <HBox alignment="CENTER_LEFT" style="-fx-padding: 20 24 20 24; -fx-border-color: #e2e8f0; -fx-border-width: 0 0 1px 0;">
+                    <children>
+                        <Label prefWidth="300.0" styleClass="text-sub" style="-fx-font-size: 14px;" text="Địa chỉ liên hệ" />
+                        <StackPane alignment="CENTER_LEFT" HBox.hgrow="ALWAYS">
+                            <children>
+                                <Label fx:id="lblAddress" styleClass="text-heading" style="-fx-font-size: 14px; -fx-font-weight: bold;" text="Hà Nội, Việt Nam" />
+                                <TextField fx:id="txtAddress" managed="false" promptText="Không bắt buộc" styleClass="form-input" style="-fx-font-size: 14px; -fx-padding: 8px;" visible="false" />
+                            </children>
+                        </StackPane>
+                    </children>
+                </HBox>
+                
+                <HBox alignment="CENTER_LEFT" style="-fx-padding: 20 24 20 24; -fx-border-color: #e2e8f0; -fx-border-width: 0 0 1px 0;">
+                    <children>
+                        <Label prefWidth="300.0" styleClass="text-sub" style="-fx-font-size: 14px;" text="Tên đăng nhập (Username)" />
+                        <Label fx:id="lblUsername" styleClass="text-heading" style="-fx-font-size: 14px; -fx-font-weight: bold;" text="nguyenvana_99" />
+                    </children>
+                </HBox>
+                
+                <HBox alignment="CENTER_LEFT" style="-fx-padding: 20 24 20 24;">
+                    <children>
+                        <Label prefWidth="300.0" styleClass="text-sub" style="-fx-font-size: 14px;" text="Địa chỉ Email" />
+                        <Label fx:id="lblEmail" styleClass="text-heading" style="-fx-font-size: 14px; -fx-font-weight: bold;" text="nguyenvana@gmail.com" />
+                    </children>
+                </HBox>
+                
+            </children>
+            <effect>
+                <DropShadow blurType="GAUSSIAN" offsetY="5.0" radius="15.0">
+                    <color>
+                        <Color opacity="0.06" />
+                    </color>
+                </DropShadow>
+            </effect>
+        </VBox>
+        
+        <VBox styleClass="glass-card">
+            <children>
+                <HBox alignment="CENTER_LEFT" style="-fx-padding: 16 24 16 24; -fx-border-color: #e2e8f0; -fx-border-width: 0 0 1px 0;">
+                    <children>
+                        <Label styleClass="text-heading" style="-fx-font-size: 15px; -fx-font-weight: bold;" text="Thống kê hệ thống" />
+                    </children>
+                </HBox>
+                <HBox alignment="CENTER_LEFT" style="-fx-padding: 16 24 16 24; -fx-border-color: #e2e8f0; -fx-border-width: 0 0 1px 0;">
+                    <children>
+                        <Label prefWidth="300.0" styleClass="text-sub" style="-fx-font-size: 14px;" text="ID Hệ thống" />
+                        <Label fx:id="lblUserId" styleClass="text-sub" style="-fx-font-size: 14px; -fx-font-family: monospace;" text="#USR-9921" />
+                    </children>
+                </HBox>
+                <HBox alignment="CENTER_LEFT" style="-fx-padding: 16 24 16 24; -fx-border-color: #e2e8f0; -fx-border-width: 0 0 1px 0;">
+                    <children>
+                        <Label prefWidth="300.0" styleClass="text-sub" style="-fx-font-size: 14px;" text="Số dư ví hiện tại" />
+                        <Label fx:id="lblBalance" style="-fx-font-size: 14px; -fx-font-weight: bold; -fx-text-fill: #10b981;" text="0 đ" />
+                    </children>
+                </HBox>
+                <HBox alignment="CENTER_LEFT" style="-fx-padding: 16 24 16 24; -fx-border-color: #e2e8f0; -fx-border-width: 0 0 1px 0;">
+                    <children>
+                        <Label prefWidth="300.0" styleClass="text-sub" style="-fx-font-size: 14px;" text="Điểm uy tín (Seller Rating)" />
+                        <Label fx:id="lblSellerRating" style="-fx-font-size: 14px; -fx-font-weight: bold; -fx-text-fill: #eab308;" text="0.0 ★" />
+                    </children>
+                </HBox>
+                <HBox alignment="CENTER_LEFT" style="-fx-padding: 16 24 16 24; -fx-border-color: #e2e8f0; -fx-border-width: 0 0 1px 0;">
+                    <children>
+                        <Label prefWidth="300.0" styleClass="text-sub" style="-fx-font-size: 14px;" text="Tổng lượt trả giá (Bids)" />
+                        <Label fx:id="lblTotalBidsPlaced" styleClass="text-heading" style="-fx-font-size: 14px; -fx-font-weight: bold;" text="0 lượt" />
+                    </children>
+                </HBox>
+                <HBox alignment="CENTER_LEFT" style="-fx-padding: 16 24 16 24; -fx-border-color: #e2e8f0; -fx-border-width: 0 0 1px 0;">
+                    <children>
+                        <Label prefWidth="300.0" styleClass="text-sub" style="-fx-font-size: 14px;" text="Sản phẩm đã bán" />
+                        <Label fx:id="lblTotalItemsSold" styleClass="text-heading" style="-fx-font-size: 14px; -fx-font-weight: bold;" text="0 sản phẩm" />
+                    </children>
+                </HBox>
+                <HBox alignment="CENTER_LEFT" style="-fx-padding: 16 24 16 24; -fx-border-color: #e2e8f0; -fx-border-width: 0 0 1px 0;">
+                    <children>
+                        <Label prefWidth="300.0" styleClass="text-sub" style="-fx-font-size: 14px;" text="Ngày tạo tài khoản" />
+                        <Label fx:id="lblCreatedAt" styleClass="text-heading" style="-fx-font-size: 14px; -fx-font-weight: bold;" text="Đang tải..." />
+                    </children>
+                </HBox>
+                <HBox alignment="CENTER_LEFT" style="-fx-padding: 16 24 16 24;">
+                    <children>
+                        <Label prefWidth="300.0" styleClass="text-sub" style="-fx-font-size: 14px;" text="Đăng nhập lần cuối" />
+                        <Label fx:id="lblLastLogin" styleClass="text-heading" style="-fx-font-size: 14px; -fx-font-weight: bold;" text="Đang tải..." />
+                    </children>
+                </HBox>
+            </children>
+            <effect>
+                <DropShadow blurType="GAUSSIAN" offsetY="5.0" radius="15.0">
+                    <color>
+                        <Color opacity="0.06" />
+                    </color>
+                </DropShadow>
+            </effect>
+        </VBox>
+        
+        <HBox alignment="CENTER_LEFT" style="-fx-padding: 10 0 0 0;">
+            <children>
+                <Button fx:id="btnBack" mnemonicParsing="false" onAction="#onBackClick" styleClass="form-input" style="-fx-font-size: 15px; -fx-font-weight: bold; -fx-padding: 10 24 10 24; -fx-cursor: hand;" text="← Trở lại" />
+                <Region HBox.hgrow="ALWAYS" />
+                <Button fx:id="btnSaveProfile" disable="true" mnemonicParsing="false" onAction="#onSaveProfileClick" style="-fx-background-color: #16a34a; -fx-text-fill: white; -fx-font-size: 15px; -fx-font-weight: bold; -fx-padding: 10 24 10 24; -fx-background-radius: 8px; -fx-cursor: hand;" text="Xác nhận hoàn tất" />
+            </children>
+        </HBox>
+        
+    </children>
+</VBox>

@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ScrollPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Region?>
+<?import javafx.scene.layout.StackPane?>
+<?import javafx.scene.layout.VBox?>
+
+<ScrollPane fitToHeight="true" fitToWidth="true" prefHeight="350.0" prefWidth="450.0" style="-fx-background-color: transparent; -fx-background: transparent; -fx-bar-policy: never;" xmlns="http://javafx.com/javafx/26" xmlns:fx="http://javafx.com/fxml/1" fx:controller="vn.edu.vnu.uet.group8.client.controller.PurchaseHistoryController">
+   <padding>
+      <Insets bottom="15.0" left="20.0" right="20.0" top="15.0" />
+   </padding>
+   <content>
+      <VBox fx:id="vboxPurchaseHistory" spacing="14.0" style="-fx-background-color: transparent;">
+         <children>
+            
+            <HBox alignment="CENTER_LEFT" spacing="15.0" styleClass="glass-card" style="-fx-padding: 14px;">
+               <children>
+                  <StackPane minHeight="48.0" minWidth="48.0" style="-fx-background-color: #f0fdf4; -fx-background-radius: 12px;">
+                     <children>
+                        <Label style="-fx-font-size: 18px;" text="👑" />
+                     </children>
+                  </StackPane>
+                  <VBox spacing="2.0" HBox.hgrow="ALWAYS">
+                     <children>
+                        <Label styleClass="text-heading" style="-fx-font-weight: bold; -fx-font-size: 13px;" text="Đồng hồ cổ Omega Constellation" />
+                        <Label styleClass="text-sub" style="-fx-font-size: 11px;" text="Giá của bạn giữ: 15.000.000 đ • Đang diễn ra" />
+                     </children>
+                  </VBox>
+                  <Region HBox.hgrow="NEVER" minWidth="10.0" />
+                  <Label alignment="CENTER_RIGHT" style="-fx-font-size: 12px; -fx-font-weight: bold; -fx-text-fill: #10b981;" text="Dẫn đầu" />
+               </children>
+            </HBox>
+
+            <HBox alignment="CENTER_LEFT" spacing="15.0" styleClass="glass-card" style="-fx-padding: 14px;">
+               <children>
+                  <StackPane minHeight="48.0" minWidth="48.0" style="-fx-background-color: #fef2f2; -fx-background-radius: 12px;">
+                     <children>
+                        <Label style="-fx-font-size: 18px;" text="⚠️" />
+                     </children>
+                  </StackPane>
+                  <VBox spacing="2.0" HBox.hgrow="ALWAYS">
+                     <children>
+                        <Label styleClass="text-heading" style="-fx-font-weight: bold; -fx-font-size: 13px;" text="Tượng gỗ Trắc Thần Tài" />
+                        <Label styleClass="text-sub" style="-fx-font-size: 11px;" text="Giá sàn: 4.800.000 đ • Bạn đặt: 4.200.000 đ" />
+                     </children>
+                  </VBox>
+                  <Region HBox.hgrow="NEVER" minWidth="10.0" />
+                  <Label alignment="CENTER_RIGHT" style="-fx-font-size: 12px; -fx-font-weight: bold; -fx-text-fill: #ef4444;" text="Bị đè giá" />
+               </children>
+            </HBox>
+
+            <HBox alignment="CENTER_LEFT" spacing="15.0" styleClass="glass-card" style="-fx-padding: 14px;">
+               <children>
+                  <StackPane minHeight="48.0" minWidth="48.0" style="-fx-background-color: #f0fdf4; -fx-background-radius: 12px;">
+                     <children>
+                        <Label style="-fx-font-size: 18px;" text="🎉" />
+                     </children>
+                  </StackPane>
+                  <VBox spacing="2.0" HBox.hgrow="ALWAYS">
+                     <children>
+                        <Label styleClass="text-heading" style="-fx-font-weight: bold; -fx-font-size: 13px;" text="Bút máy Montblanc Meisterstuck" />
+                        <Label styleClass="text-sub" style="-fx-font-size: 11px;" text="Khớp lệnh BID_WIN • 12/05/2026" />
+                     </children>
+                  </VBox>
+                  <Region HBox.hgrow="NEVER" minWidth="10.0" />
+                  <Label alignment="CENTER_RIGHT" style="-fx-font-size: 12px; -fx-font-weight: bold; -fx-text-fill: #16a34a;" text="Đã mua" />
+               </children>
+            </HBox>
+            
+         </children>
+      </VBox>
+   </content>
+</ScrollPane>

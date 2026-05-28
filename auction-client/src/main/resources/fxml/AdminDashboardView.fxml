@@ -1,0 +1,166 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.chart.*?>
+<?import javafx.geometry.Insets?>
+<?import java.net.URL?>
+
+<VBox xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="vn.edu.vnu.uet.group8.client.controller.AdminDashboardController"
+      styleClass="app-background" spacing="20">
+
+    <!-- FIX: Thêm stylesheet — đây là root cause chính khiến chart mất màu -->
+    <stylesheets>
+        <URL value="@../css/components.css" />
+    </stylesheets>
+
+    <padding>
+        <Insets top="28" right="28" bottom="28" left="28"/>
+    </padding>
+
+    <!-- Header -->
+    <HBox alignment="CENTER_LEFT">
+        <VBox spacing="4">
+            <Label text="Tổng quan hệ thống"
+                   style="-fx-font-size: 24px; -fx-font-weight: 800; -fx-text-fill: #0F172A;"/>
+            <Label text="Báo cáo phân tích dữ liệu và hiệu suất sàn giao dịch Auctiva"
+                   style="-fx-text-fill: #64748B; -fx-font-size: 13px;"/>
+        </VBox>
+        <Region HBox.hgrow="ALWAYS"/>
+        <Button text="Làm mới dữ liệu" onAction="#refreshData"
+                style="-fx-background-color: white; -fx-border-color: #E2E8F0;
+                       -fx-border-radius: 8; -fx-background-radius: 8;
+                       -fx-padding: 8 18; -fx-font-weight: 600;
+                       -fx-text-fill: #475569; -fx-cursor: hand;
+                       -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.04), 4, 0, 0, 1);"/>
+    </HBox>
+
+    <!-- Stat cards -->
+    <HBox spacing="14">
+        <!-- Phiên hoạt động -->
+        <VBox style="-fx-background-color: white; -fx-padding: 20; -fx-background-radius: 14;
+                     -fx-border-color: #F1F5F9; -fx-border-radius: 14; -fx-border-width: 1;
+                     -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.04), 8, 0, 0, 2);"
+              HBox.hgrow="ALWAYS">
+            <HBox alignment="CENTER_LEFT" spacing="14">
+                <Label text="🔨"
+                       style="-fx-font-size: 20px; -fx-background-color: #FFF7ED;
+                              -fx-padding: 10; -fx-background-radius: 10;"/>
+                <VBox spacing="3">
+                    <Label text="Phiên hoạt động"
+                           style="-fx-text-fill: #64748B; -fx-font-size: 12px; -fx-font-weight: 600;"/>
+                    <Label fx:id="lblActiveAuctions" text="..."
+                           style="-fx-font-size: 26px; -fx-font-weight: 800; -fx-text-fill: #0F172A;"/>
+                </VBox>
+            </HBox>
+        </VBox>
+
+        <!-- Tổng thành viên -->
+        <VBox style="-fx-background-color: white; -fx-padding: 20; -fx-background-radius: 14;
+                     -fx-border-color: #F1F5F9; -fx-border-radius: 14; -fx-border-width: 1;
+                     -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.04), 8, 0, 0, 2);"
+              HBox.hgrow="ALWAYS">
+            <HBox alignment="CENTER_LEFT" spacing="14">
+                <Label text="👥"
+                       style="-fx-font-size: 20px; -fx-background-color: #EFF6FF;
+                              -fx-padding: 10; -fx-background-radius: 10;"/>
+                <VBox spacing="3">
+                    <Label text="Tổng thành viên"
+                           style="-fx-text-fill: #64748B; -fx-font-size: 12px; -fx-font-weight: 600;"/>
+                    <Label fx:id="lblTotalUsers" text="..."
+                           style="-fx-font-size: 26px; -fx-font-weight: 800; -fx-text-fill: #0F172A;"/>
+                </VBox>
+            </HBox>
+        </VBox>
+
+        <!-- Tổng doanh thu -->
+        <VBox style="-fx-background-color: white; -fx-padding: 20; -fx-background-radius: 14;
+                     -fx-border-color: #F1F5F9; -fx-border-radius: 14; -fx-border-width: 1;
+                     -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.04), 8, 0, 0, 2);"
+              HBox.hgrow="ALWAYS">
+            <HBox alignment="CENTER_LEFT" spacing="14">
+                <Label text="💰"
+                       style="-fx-font-size: 20px; -fx-background-color: #F0FDF4;
+                              -fx-padding: 10; -fx-background-radius: 10;"/>
+                <VBox spacing="3">
+                    <Label text="Tổng doanh thu"
+                           style="-fx-text-fill: #64748B; -fx-font-size: 12px; -fx-font-weight: 600;"/>
+                    <Label fx:id="lblRevenue" text="... đ"
+                           style="-fx-font-size: 22px; -fx-font-weight: 800; -fx-text-fill: #16A34A;"/>
+                </VBox>
+            </HBox>
+        </VBox>
+
+        <!-- Tổng lượt đặt giá -->
+        <VBox style="-fx-background-color: white; -fx-padding: 20; -fx-background-radius: 14;
+                     -fx-border-color: #F1F5F9; -fx-border-radius: 14; -fx-border-width: 1;
+                     -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.04), 8, 0, 0, 2);"
+              HBox.hgrow="ALWAYS">
+            <HBox alignment="CENTER_LEFT" spacing="14">
+                <Label text="📈"
+                       style="-fx-font-size: 20px; -fx-background-color: #FAF5FF;
+                              -fx-padding: 10; -fx-background-radius: 10;"/>
+                <VBox spacing="3">
+                    <Label text="Tổng lượt đặt giá"
+                           style="-fx-text-fill: #64748B; -fx-font-size: 12px; -fx-font-weight: 600;"/>
+                    <Label fx:id="lblTotalBids" text="..."
+                           style="-fx-font-size: 26px; -fx-font-weight: 800; -fx-text-fill: #0F172A;"/>
+                </VBox>
+            </HBox>
+        </VBox>
+    </HBox>
+
+    <!-- Charts row -->
+    <HBox spacing="16" VBox.vgrow="ALWAYS">
+
+        <!-- Area Chart -->
+        <VBox style="-fx-background-color: white; -fx-padding: 20; -fx-background-radius: 14;
+                     -fx-border-color: #F1F5F9; -fx-border-radius: 14; -fx-border-width: 1;
+                     -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.04), 8, 0, 0, 2);"
+              HBox.hgrow="ALWAYS" spacing="0">
+            <Label text="Phân tích xu hướng giao dịch (7 ngày qua)"
+                   style="-fx-font-size: 14px; -fx-font-weight: 700; -fx-text-fill: #1E293B;
+                          -fx-padding: 0 0 14 0;"/>
+            <!-- FIX: animated=true, ẩn legend label mặc định của axis -->
+            <AreaChart fx:id="revenueChart"
+                       legendSide="TOP"
+                       createSymbols="true"
+                       animated="true"
+                       style="-fx-font-size: 11px; -fx-padding: 0;"
+                       VBox.vgrow="ALWAYS">
+                <xAxis>
+                    <!-- FIX: CategoryAxis không cần config nhiều, đủ rồi -->
+                    <CategoryAxis side="BOTTOM"
+                                  tickLabelGap="4"
+                                  style="-fx-tick-label-font-size: 11px;"/>
+                </xAxis>
+                <yAxis>
+                    <!-- FIX: Tắt auto-ranging, đặt bound hợp lý, tickUnit rõ ràng -->
+                    <NumberAxis side="LEFT"
+                                fx:id="yAxis"
+                                autoRanging="true"
+                                forceZeroInRange="true"
+                                tickUnit="50"
+                                minorTickVisible="false"
+                                style="-fx-tick-label-font-size: 11px;"/>
+                </yAxis>
+            </AreaChart>
+        </VBox>
+
+        <!-- Pie Chart -->
+        <VBox style="-fx-background-color: white; -fx-padding: 20; -fx-background-radius: 14;
+                     -fx-border-color: #F1F5F9; -fx-border-radius: 14; -fx-border-width: 1;
+                     -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.04), 8, 0, 0, 2);
+                     -fx-min-width: 310; -fx-pref-width: 320;"
+              spacing="0">
+            <Label text="Tỷ lệ trạng thái phiên"
+                   style="-fx-font-size: 14px; -fx-font-weight: 700; -fx-text-fill: #1E293B;
+                          -fx-padding: 0 0 14 0;"/>
+            <PieChart fx:id="statusPieChart"
+                      legendSide="BOTTOM"
+                      labelsVisible="false"
+                      animated="true"
+                      VBox.vgrow="ALWAYS"/>
+        </VBox>
+    </HBox>
+</VBox>

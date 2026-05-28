@@ -1,5 +1,17 @@
 package vn.edu.vnu.uet.group8.client.controller;
 
+import java.io.File;
+import java.math.BigDecimal;
+import java.net.URL;
+import java.nio.file.Files;
+import java.util.ArrayList;
+import java.util.Base64;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.ResourceBundle;
+import java.util.logging.Logger;
+
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.control.Button;
@@ -9,17 +21,12 @@ import javafx.scene.control.Label;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.VBox;
-
+import javafx.stage.FileChooser;
 import vn.edu.vnu.uet.group8.client.service.SellerService;
 import vn.edu.vnu.uet.group8.client.util.AlertUtil;
 import vn.edu.vnu.uet.group8.client.util.SceneManager;
-
-import java.math.BigDecimal;
-import java.net.URL;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.ResourceBundle;
-import java.util.logging.Logger;
+import vn.edu.vnu.uet.group8.common.enums.ItemCategory;
+import vn.edu.vnu.uet.group8.common.enums.ItemCondition;
 
 /**
  * CreateItemController — form dang san pham moi.
@@ -38,35 +45,38 @@ import java.util.logging.Logger;
  */
 public class CreateItemController implements Initializable {
 
-    private static final Logger LOGGER = Logger.getLogger(CreateItemController.class.getName());
+    protected static final Logger LOGGER = Logger.getLogger(CreateItemController.class.getName());
 
-    private static final BigDecimal MIN_START_PRICE = new BigDecimal("100000");
-    private static final BigDecimal MAX_START_PRICE = new BigDecimal("100000000000");  // 100 ty
-    private static final int MIN_DURATION = 1;
-    private static final int MAX_DURATION = 168;
+    protected static final BigDecimal MIN_START_PRICE = new BigDecimal("100000");
+    protected static final BigDecimal MAX_START_PRICE = new BigDecimal("100000000000");  // 100 ty
+    protected static final int MIN_DURATION = 1;
+    protected static final int MAX_DURATION = 168;
 
-    @FXML private TextField tfName;
-    @FXML private ComboBox<String> cbCategory;
-    @FXML private ComboBox<String> cbCondition;
-    @FXML private TextArea taDescription;
+    @FXML TextField tfName;
+    @FXML ComboBox<String> cbCategory;
+    @FXML ComboBox<String> cbCondition;
+    @FXML TextArea taDescription;
 
-    @FXML private TextField tfBrand;
-    @FXML private TextField tfModel;
-    @FXML private TextField tfYear;
-    @FXML private TextField tfMaterial;
-    @FXML private TextField tfOrigin;
+    @FXML TextField tfBrand;
+    @FXML TextField tfModel;
+    @FXML TextField tfYear;
+    @FXML TextField tfMaterial;
+    @FXML TextField tfOrigin;
 
-    @FXML private TextField tfStartPrice;
-    @FXML private TextField tfBidStep;
-    @FXML private TextField tfDurationHours;
+    @FXML TextField tfStartPrice;
+    @FXML TextField tfBidStep;
+    @FXML TextField tfDurationHours;
 
-    @FXML private CheckBox cbHasCert;
-    @FXML private VBox paneCertFields;
-    @FXML private TextField tfCertBody;
-    @FXML private TextField tfCertId;
+    @FXML CheckBox cbHasCert;
+    @FXML VBox paneCertFields;
+    @FXML TextField tfCertBody;
+    @FXML TextField tfCertId;
 
-    @FXML private Label lblError;
-    @FXML private Button btnSubmit;
+    @FXML Label lblError;
+    @FXML Button btnSubmit;
+
+    // Lưu trữ các chuỗi Base64 của ảnh được tải lên
+    protected final List<String> base64Images = new ArrayList<>();
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
@@ -76,23 +86,23 @@ public class CreateItemController implements Initializable {
         setupPriceFormatting();
     }
 
-    private void initComboBoxes() {
+    void initComboBoxes() {
         if (cbCategory != null) {
             cbCategory.getItems().setAll(
-                    "Dong ho cao cap", "Dien tu", "Trang suc", "Nghe thuat",
-                    "Xe co", "Sach quy", "Do co", "Thoi trang", "Khac"
+                    ItemCategory.WATCHES.getLabel(), ItemCategory.ELECTRONICS.getLabel(), ItemCategory.JEWELRY.getLabel(), ItemCategory.ART.getLabel(),
+                    ItemCategory.VEHICLES.getLabel(), ItemCategory.BOOKS.getLabel(), ItemCategory.ANTIQUES.getLabel(), ItemCategory.FASHION.getLabel(), ItemCategory.OTHER.getLabel()
             );
         }
         if (cbCondition != null) {
             cbCondition.getItems().setAll(
-                    "Moi 100%", "Nhu moi (99%)", "Tot (90%)", "Kha (70%)", "Cu (50%)"
+                    ItemCondition.NEW.getLabel(), ItemCondition.LIKE_NEW.getLabel(), ItemCondition.USED.getLabel()
             );
             cbCondition.getSelectionModel().selectFirst();
         }
     }
 
     /** Format gia VND khi user nhap (1000000 -> 1,000,000). */
-    private void setupPriceFormatting() {
+    void setupPriceFormatting() {
         if (tfStartPrice != null) {
             tfStartPrice.focusedProperty().addListener((obs, oldVal, newVal) -> {
                 if (!newVal) formatPriceField(tfStartPrice);
@@ -105,7 +115,7 @@ public class CreateItemController implements Initializable {
         }
     }
 
-    private void formatPriceField(TextField field) {
+    void formatPriceField(TextField field) {
         String input = field.getText().replaceAll("[^\\d]", "");
         if (input.isEmpty()) return;
         try {
@@ -115,7 +125,7 @@ public class CreateItemController implements Initializable {
     }
 
     @FXML
-    private void onToggleCert() {
+    void onToggleCert() {
         if (cbHasCert != null && paneCertFields != null) {
             boolean show = cbHasCert.isSelected();
             paneCertFields.setVisible(show);
@@ -123,25 +133,45 @@ public class CreateItemController implements Initializable {
         }
     }
 
-    private void hideCertPane() {
+    void hideCertPane() {
         if (paneCertFields != null) {
             paneCertFields.setVisible(false);
             paneCertFields.setManaged(false);
         }
     }
 
+    // Gắn hàm này vào một nút "Thêm ảnh" (vd: btnAddImage) trên giao diện FXML
+    @FXML
+    void onChooseImage() {
+        FileChooser fileChooser = new FileChooser();
+        fileChooser.setTitle("Chọn hình ảnh sản phẩm");
+        fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("Image Files", "*.png", "*.jpg", "*.jpeg"));
+        
+        File selectedFile = fileChooser.showOpenDialog(null);
+        if (selectedFile != null) {
+            try {
+                byte[] fileContent = Files.readAllBytes(selectedFile.toPath());
+                String encodedString = Base64.getEncoder().encodeToString(fileContent);
+                base64Images.add(encodedString);
+                AlertUtil.showInfo("Đã thêm 1 ảnh (" + selectedFile.getName() + ")");
+            } catch (Exception e) {
+                showError("Lỗi đọc file ảnh");
+            }
+        }
+    }
+
     // ===== SUBMIT =====
 
     @FXML
-    private void onSubmit() {
+    void onSubmit() {
         // Lay input
         String name = safeText(tfName);
-        String category = cbCategory != null ? cbCategory.getValue() : null;
-        String condition = cbCondition != null ? cbCondition.getValue() : null;
+        String categoryLabel = cbCategory != null ? cbCategory.getValue() : null;
+        String conditionLabel = cbCondition != null ? cbCondition.getValue() : null;
         String description = taDescription != null ? taDescription.getText().trim() : "";
 
         // Validate
-        String error = validateRequired(name, category, condition, description);
+        String error = validateRequired(name, categoryLabel, conditionLabel, description);
         if (error != null) {
             showError(error);
             return;
@@ -174,14 +204,24 @@ public class CreateItemController implements Initializable {
             }
         }
 
+        // Chuyển đổi label tiếng Việt sang tên Enum tiếng Anh
+        String categoryEnumName = getCategoryNameFromLabel(categoryLabel);
+        String conditionEnumName = getConditionNameFromLabel(conditionLabel);
+
         // Build specs
         Map<String, String> specs = collectSpecs();
+        
+        if (hasCert) {
+            specs.put("isVerified", "true");
+            specs.put("certBody", certBody);
+            specs.put("certId", certId);
+        }
 
         // Build request
         SellerService.CreateItemRequest request = new SellerService.CreateItemRequest(
-                name, category, condition, description,
+                name, categoryEnumName, conditionEnumName, description,
                 startPrice, bidStep, duration,
-                specs, hasCert, certBody, certId
+                specs, base64Images, hasCert, certBody, certId
         );
 
         // Confirm
@@ -211,8 +251,8 @@ public class CreateItemController implements Initializable {
         );
     }
 
-    private String validateRequired(String name, String category, String condition, String description) {
-        if (name.isEmpty()) return "Vui long nhap ten san pham";
+    protected String validateRequired(String name, String category, String condition, String description) {
+        if (name.isEmpty()) return "Vui long nhap ten san pham"; // 'category' and 'condition' are now labels
         if (name.length() < 5 || name.length() > 100) return "Ten 5-100 ky tu";
         if (category == null) return "Vui long chon danh muc";
         if (condition == null) return "Vui long chon tinh trang";
@@ -222,7 +262,7 @@ public class CreateItemController implements Initializable {
         return null;
     }
 
-    private String validateNumbers(BigDecimal startPrice, BigDecimal bidStep, int duration) {
+    protected String validateNumbers(BigDecimal startPrice, BigDecimal bidStep, int duration) {
         if (startPrice.compareTo(MIN_START_PRICE) < 0) {
             return "Gia khoi diem toi thieu " + formatVnd(MIN_START_PRICE);
         }
@@ -241,7 +281,7 @@ public class CreateItemController implements Initializable {
         return null;
     }
 
-    private Map<String, String> collectSpecs() {
+    protected Map<String, String> collectSpecs() {
         Map<String, String> specs = new HashMap<>();
         addSpec(specs, "brand", tfBrand);
         addSpec(specs, "model", tfModel);
@@ -251,7 +291,7 @@ public class CreateItemController implements Initializable {
         return specs;
     }
 
-    private void addSpec(Map<String, String> specs, String key, TextField field) {
+    void addSpec(Map<String, String> specs, String key, TextField field) {
         if (field == null) return;
         String value = field.getText();
         if (value != null && !value.isBlank()) {
@@ -260,17 +300,17 @@ public class CreateItemController implements Initializable {
     }
 
     @FXML
-    private void onSaveDraft() {
+    void onSaveDraft() {
         // TODO: BE bo sung endpoint luu draft (status=DRAFT)
         AlertUtil.showInfo("Tinh nang luu nhap dang phat trien");
     }
 
     @FXML
-    private void onBack() {
+    void onBack() {
         navigateToDashboard();
     }
 
-    private void navigateToDashboard() {
+    void navigateToDashboard() {
         MainController main = MainController.getInstance();
         if (main != null) {
             main.loadView("SellerDashboardView.fxml");
@@ -279,7 +319,7 @@ public class CreateItemController implements Initializable {
         }
     }
 
-    private void setLoadingState(boolean loading) {
+    void setLoadingState(boolean loading) {
         if (btnSubmit != null) {
             btnSubmit.setDisable(loading);
             btnSubmit.setText(loading ? "Dang gui..." : "Dang ban ngay");
@@ -288,13 +328,13 @@ public class CreateItemController implements Initializable {
 
     // ===== HELPERS =====
 
-    private String safeText(TextField field) {
+    protected String safeText(TextField field) {
         if (field == null) return "";
         String text = field.getText();
         return text != null ? text.trim() : "";
     }
 
-    private BigDecimal parseAmount(TextField field) {
+    protected BigDecimal parseAmount(TextField field) {
         if (field == null) return null;
         String input = field.getText().replaceAll("[^\\d]", "");
         if (input.isEmpty()) return null;
@@ -305,7 +345,7 @@ public class CreateItemController implements Initializable {
         }
     }
 
-    private Integer parseInt(TextField field) {
+    protected Integer parseInt(TextField field) {
         if (field == null) return null;
         String input = field.getText().trim();
         if (input.isEmpty()) return null;
@@ -316,20 +356,53 @@ public class CreateItemController implements Initializable {
         }
     }
 
-    private String formatVnd(BigDecimal amount) {
+    protected String formatVnd(BigDecimal amount) {
         return amount == null ? "0 d" : String.format("%,.0f d", amount);
     }
 
-    private void showError(String msg) {
+    void showError(String msg) {
         if (lblError == null) return;
         lblError.setText(msg);
         lblError.setVisible(true);
         lblError.setManaged(true);
     }
 
-    private void hideError() {
+    void hideError() {
         if (lblError == null) return;
         lblError.setVisible(false);
         lblError.setManaged(false);
+    }
+
+    /**
+     * Chuyển đổi nhãn danh mục tiếng Việt sang tên Enum tiếng Anh.
+     */
+    protected String getCategoryNameFromLabel(String label) {
+        if (label == null) return ItemCategory.OTHER.name();
+        for (ItemCategory category : ItemCategory.values()) {
+            if (category.getLabel().equalsIgnoreCase(label)) {
+                return category.name();
+            }
+        }
+        // Fallback hoặc ném lỗi nếu không tìm thấy
+        LOGGER.warning("Unknown category label: " + label);
+        return ItemCategory.OTHER.name(); // Mặc định là OTHER
+    }
+
+    /**
+     * Chuyển đổi nhãn tình trạng tiếng Việt sang tên Enum tiếng Anh.
+     */
+    protected String getConditionNameFromLabel(String label) {
+        if (label == null) return ItemCondition.USED.name();
+        for (ItemCondition condition : ItemCondition.values()) {
+            if (condition.getLabel().equalsIgnoreCase(label)) {
+                return condition.name();
+            }
+        }
+        // Do các nhãn "Tốt (90%)", "Khá (70%)", "Cũ (50%)" đều map về USED
+        if (label.equals("Tot (90%)") || label.equals("Kha (70%)") || label.equals("Cu (50%)")) {
+            return ItemCondition.USED.name();
+        }
+        LOGGER.warning("Unknown condition label: " + label);
+        return ItemCondition.USED.name(); // Mặc định là USED
     }
 }

@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ScrollPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Region?>
+<?import javafx.scene.layout.StackPane?>
+<?import javafx.scene.layout.VBox?>
+
+<StackPane prefHeight="350.0" prefWidth="460.0" style="-fx-background-color: transparent;" xmlns="http://javafx.com/javafx/26" xmlns:fx="http://javafx.com/fxml/1" fx:controller="vn.edu.vnu.uet.group8.client.controller.TransactionHistoryController">
+   <padding>
+      <Insets bottom="10.0" left="16.0" right="16.0" top="10.0" />
+   </padding>
+   <children>
+      <ScrollPane fx:id="scrollPaneList" fitToHeight="true" fitToWidth="true" managed="true" style="-fx-background-color: transparent; -fx-background: transparent; -fx-bar-policy: never;" visible="true">
+         <content>
+            <VBox fx:id="vboxContainer" spacing="12.0" style="-fx-background-color: transparent;">
+               <children>
+                  
+                  <HBox alignment="CENTER_LEFT" spacing="15.0" styleClass="glass-card" style="-fx-padding: 12px;">
+                     <children>
+                        <StackPane minHeight="45.0" minWidth="45.0" style="-fx-background-color: #f0fdf4; -fx-background-radius: 10px;">
+                           <children>
+                              <Label style="-fx-font-size: 18px;" text="📥" />
+                           </children>
+                        </StackPane>
+                        <VBox prefHeight="45.0" prefWidth="259.0" spacing="2.0" HBox.hgrow="ALWAYS">
+                           <children>
+                              <Label styleClass="text-heading" style="-fx-font-weight: bold; -fx-font-size: 13px;" text="username" />
+                              <Label alignment="CENTER_RIGHT" style="-fx-font-size: 14px; -fx-font-weight: bold; -fx-text-fill: #10b981;" text="Review" />
+                           </children>
+                        </VBox>
+                        <Region minWidth="10.0" prefHeight="45.0" prefWidth="27.0" HBox.hgrow="NEVER" />
+                        <VBox prefHeight="0.0" prefWidth="71.0">
+                           <children>
+                              <Label alignment="CENTER_RIGHT" prefHeight="17.0" prefWidth="58.0" text="Time" textAlignment="CENTER" />
+                           </children>
+                        </VBox>
+                     </children>
+                  </HBox>
+
+               </children>
+            </VBox>
+         </content>
+      </ScrollPane>
+
+      <VBox fx:id="vboxEmptyState" alignment="CENTER" managed="false" spacing="12.0" style="-fx-background-color: transparent;" visible="false">
+         <children>
+            <Label style="-fx-font-size: 40px;" text="📭" />
+            <Label styleClass="text-sub" style="-fx-font-size: 14px; -fx-font-weight: bold;" text="Chưa có dữ liệu lịch sử hiển thị" />
+            <Label styleClass="text-sub" style="-fx-font-size: 11px; -fx-text-align: center;" text="Mọi biến động số dư tài khoản sẽ được liệt kê tại đây" />
+         </children>
+      </VBox>
+   </children>
+</StackPane>

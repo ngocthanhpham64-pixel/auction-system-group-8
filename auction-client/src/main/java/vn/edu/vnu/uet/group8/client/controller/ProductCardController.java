@@ -1,5 +1,7 @@
 package vn.edu.vnu.uet.group8.client.controller;
 
+import javafx.animation.KeyFrame;
+import javafx.animation.Timeline;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.control.Label;
@@ -7,6 +9,7 @@ import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
+import javafx.util.Duration;
 
 import vn.edu.vnu.uet.group8.client.model.ClientModel;
 import vn.edu.vnu.uet.group8.client.service.AuctionService;
@@ -15,37 +18,30 @@ import vn.edu.vnu.uet.group8.client.util.SceneManager;
 
 import java.math.BigDecimal;
 import java.net.URL;
+import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.ResourceBundle;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-/**
- * ProductCardController — card san pham trong Explore / Favorite.
- *
- * Tinh nang:
- *  - setItem(): set data tu controller cha
- *  - showCertifiedBadge() (#4): hien badge khi item.isVerified()
- *  - showPartnerBadge() (#3): hien badge khi seller la partner
- *  - Click card: load chi tiet -> navigate sang AuctionDetail trong MainLayout
- *  - Load image error -> dung placeholder
- *
- * Pattern: card tai su dung - controller cha load FXML va goi setItem()
- */
 public class ProductCardController implements Initializable {
 
-    private static final Logger LOGGER = Logger.getLogger(ProductCardController.class.getName());
+    protected static final Logger LOGGER = Logger.getLogger(ProductCardController.class.getName());
 
-    @FXML private VBox root;
-    @FXML private StackPane imageContainer;
-    @FXML private ImageView productImage;
-    @FXML private Label productName;
-    @FXML private Label currentPrice;
+    @FXML VBox root;
+    @FXML StackPane imageContainer;
+    @FXML ImageView productImage;
+    @FXML Label productName;
+    @FXML Label currentPrice;
+    @FXML Label lblTimer;
+    @FXML Label lblBidCount;
 
-    // Badge optional - co the khong co trong FXML
-    @FXML private Label lblCertBadge;
-    @FXML private Label lblPartnerBadge;
+    @FXML Label lblCertBadge;
+    @FXML Label lblPartnerBadge;
 
-    private int itemId;
+    protected int itemId;
+    protected Timeline timerTimeline;
+    protected LocalDateTime endTime;
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
@@ -54,128 +50,115 @@ public class ProductCardController implements Initializable {
         setupClickHandler();
     }
 
-    /** Bat su kien click vao card (root VBox) -> navigate detail. */
-    private void setupClickHandler() {
+    void setupClickHandler() {
         if (root != null) {
             root.setOnMouseClicked(e -> onCardClick());
-            root.setStyle(root.getStyle() + " -fx-cursor: hand;");
         }
     }
 
-    // ===== PUBLIC API - GOI TU CONTROLLER CHA =====
+    public void setItem(String id, String name, BigDecimal price, String imageUrl) {
+        setItem(id, name, price, imageUrl, LocalDateTime.now().plusHours(2)); // Default 2h if no endtime
+    }
 
     /**
-     * Set du lieu cho card.
+     * Set data and start countdown.
      */
-    public void setItem(String id, String name, BigDecimal price, String imageUrl) {
-        // Parse id an toan
+    public void setItem(String id, String name, BigDecimal price, String imageUrl, LocalDateTime endTime) {
         try {
             this.itemId = (id != null) ? Integer.parseInt(id) : 0;
         } catch (NumberFormatException e) {
             this.itemId = 0;
-            LOGGER.warning("Invalid itemId: " + id);
         }
 
-        if (productName != null) {
-            productName.setText(name != null ? name : "Khong co ten");
-        }
-
-        if (currentPrice != null) {
-            currentPrice.setText(formatPrice(price));
-        }
-
+        if (productName != null) productName.setText(name != null ? name : "Unknown");
+        if (currentPrice != null) currentPrice.setText(formatPrice(price));
+        
+        this.endTime = endTime;
+        startCountdown();
         loadImage(imageUrl);
     }
 
-    /** Load image an toan - fallback neu URL invalid. */
-    private void loadImage(String imageUrl) {
-        if (productImage == null) return;
-        if (imageUrl == null || imageUrl.isBlank()) return;
+    void startCountdown() {
+        if (timerTimeline != null) timerTimeline.stop();
+        if (endTime == null) return;
 
-        try {
-            // Lazy load (background=true)
-            Image img = new Image(imageUrl, true);
-            productImage.setImage(img);
-
-            // Listen error
-            img.errorProperty().addListener((obs, oldVal, hasError) -> {
-                if (hasError) {
-                    LOGGER.fine(() -> "Khong load duoc anh: " + imageUrl);
-                }
-            });
-        } catch (Exception e) {
-            LOGGER.log(Level.FINE, "Exception loading image: " + imageUrl, e);
-        }
+        timerTimeline = new Timeline(new KeyFrame(Duration.seconds(1), e -> updateTimerLabel()));
+        timerTimeline.setCycleCount(Timeline.INDEFINITE);
+        timerTimeline.play();
+        updateTimerLabel();
     }
 
-    /** Tinh nang #4 - Badge "Da kiem dinh" */
-    public void showCertifiedBadge() {
-        showBadge(lblCertBadge, "✓ Da kiem dinh", "badge-certified");
-    }
+    void updateTimerLabel() {
+        if (lblTimer == null || endTime == null) return;
 
-    /** Tinh nang #3 - Badge doi tac */
-    public void showPartnerBadge(String text) {
-        if (text == null) return;
-        String styleClass = text.contains("Gold") || text.contains("VIP")
-                ? "badge-partner-gold"
-                : "badge-partner";
-        showBadge(lblPartnerBadge, text, styleClass);
-    }
-
-    private void showBadge(Label badge, String text, String styleClass) {
-        if (badge == null) return;
-        badge.setText(text);
-        if (!badge.getStyleClass().contains(styleClass)) {
-            badge.getStyleClass().add(styleClass);
-        }
-        badge.setVisible(true);
-        badge.setManaged(true);
-    }
-
-    private void hideBadge(Label badge) {
-        if (badge == null) return;
-        badge.setVisible(false);
-        badge.setManaged(false);
-    }
-
-    // ===== CLICK HANDLER =====
-
-    /**
-     * Click vao card -> load chi tiet item + chuyen sang AuctionDetail.
-     * Uu tien dung MainController.loadView() de giu sidebar.
-     */
-    private void onCardClick() {
-        if (itemId <= 0) {
-            LOGGER.warning("Invalid itemId for navigation");
+        long seconds = ChronoUnit.SECONDS.between(LocalDateTime.now(), endTime);
+        if (seconds <= 0) {
+            lblTimer.setText("Kết thúc");
+            lblTimer.setStyle("-fx-text-fill: #ef4444;");
+            timerTimeline.stop();
             return;
         }
 
-        LOGGER.fine(() -> "Click card: itemId=" + itemId);
+        long h = seconds / 3600;
+        long m = (seconds % 3600) / 60;
+        long s = seconds % 60;
+        lblTimer.setText(String.format("%02d:%02d:%02d", h, m, s));
+    }
 
+    void loadImage(String imageUrl) {
+        if (productImage == null) return;
+        if (imageUrl == null || imageUrl.isBlank()) {
+             // Optional: Set default image
+             return;
+        }
+
+        try {
+            Image img = new Image(imageUrl, true);
+            productImage.setImage(img);
+            
+            // Fix: Tránh méo ảnh bằng cách căn giữa trong container
+            productImage.setPreserveRatio(true);
+            
+            img.errorProperty().addListener((obs, oldVal, hasError) -> {
+                if (hasError) LOGGER.fine("Error loading image: " + imageUrl);
+            });
+        } catch (Exception e) {
+            LOGGER.log(Level.FINE, "Image exception: " + imageUrl, e);
+        }
+    }
+
+    public void setBidCount(int count) {
+        if (lblBidCount != null) {
+            lblBidCount.setText(count + " bids");
+        }
+    }
+
+    @FXML
+    void onCardClick() {
+        if (itemId <= 0) return;
         AuctionService.loadDetail(itemId, item -> {
-            if (item == null) {
-                AlertUtil.showWarning("Khong tai duoc chi tiet san pham");
-                return;
-            }
+            if (item == null) return;
             ClientModel.getInstance().setCurrentAuctionItem(item);
             navigateToDetail();
         });
     }
 
-    private void navigateToDetail() {
+    void navigateToDetail() {
         MainController main = MainController.getInstance();
         if (main != null) {
             main.loadView(SceneManager.VIEW_AUCTION_DETAIL);
-        } else {
-            // Fallback: full scene switch
-            SceneManager.switchTo(SceneManager.VIEW_AUCTION_DETAIL);
         }
     }
 
-    // ===== HELPER =====
+    void hideBadge(Label badge) {
+        if (badge != null) {
+            badge.setVisible(false);
+            badge.setManaged(false);
+        }
+    }
 
-    private String formatPrice(BigDecimal price) {
-        if (price == null) return "--";
-        return String.format("%,.0f d", price);
+    protected String formatPrice(BigDecimal price) {
+        if (price == null) return "0đ";
+        return String.format("%,.0fđ", price);
     }
 }

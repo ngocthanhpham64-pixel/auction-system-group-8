@@ -1,171 +1,85 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<?import javafx.scene.layout.*?>
-<?import javafx.scene.control.*?>
+
 <?import javafx.geometry.Insets?>
-<?import java.net.URL?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.effect.DropShadow?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Region?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.paint.Color?>
+<?import javafx.scene.text.Font?>
 
-<VBox xmlns:fx="http://javafx.com/fxml/1"
-      fx:controller="vn.edu.vnu.uet.group8.client.controller.SettingsController"
-      styleClass="app-bg"
-      spacing="0">
-
-    <stylesheets>
-        <URL value="@../css/tokens.css"/>
-        <URL value="@../css/components.css"/>
-        <URL value="@../css/layout.css"/>
-    </stylesheets>
-
-    <ScrollPane fitToWidth="true" VBox.vgrow="ALWAYS" styleClass="scrollpane-clean">
-        <content>
-            <VBox spacing="12" style="-fx-padding: 20;">
-
-                <!-- TIÊU ĐỀ -->
-                <VBox spacing="2">
-                    <Label text="⚙️ Cài đặt" styleClass="h2"/>
-                    <Label text="Quản lý thông tin tài khoản và tùy chọn ứng dụng" styleClass="label-info"/>
-                </VBox>
-
-                <!-- THÔNG TIN CÁ NHÂN -->
-                <VBox styleClass="card" style="-fx-padding: 16;" spacing="0">
-                    <HBox alignment="CENTER_LEFT" spacing="8" style="-fx-padding: 0 0 12 0;">
-                        <Label text="👤" style="-fx-font-size: 18px;"/>
-                        <Label text="Thông tin cá nhân" styleClass="section-title"/>
-                    </HBox>
-
-                    <HBox alignment="CENTER_LEFT" style="-fx-padding: 10 0; -fx-border-color: #F0F0F0; -fx-border-width: 0 0 1 0;">
-                        <Label text="Họ và tên" styleClass="label-info" style="-fx-min-width: 130;"/>
-                        <Label fx:id="lblFullName" text="Nguyễn Văn A" styleClass="label-value" HBox.hgrow="ALWAYS"/>
-                        <Button text="Chỉnh sửa" onAction="#onEditFullName" styleClass="btn-edit"/>
-                    </HBox>
-
-                    <HBox alignment="CENTER_LEFT" style="-fx-padding: 10 0; -fx-border-color: #F0F0F0; -fx-border-width: 0 0 1 0;">
-                        <Label text="Ngày sinh" styleClass="label-info" style="-fx-min-width: 130;"/>
-                        <Label fx:id="lblBirthday" text="15/03/1995" styleClass="label-value" HBox.hgrow="ALWAYS"/>
-                        <Button text="Chỉnh sửa" onAction="#onEditBirthday" styleClass="btn-edit"/>
-                    </HBox>
-
-                    <HBox alignment="CENTER_LEFT" style="-fx-padding: 10 0;">
-                        <Label text="Địa chỉ" styleClass="label-info" style="-fx-min-width: 130;"/>
-                        <Label fx:id="lblAddress" text="Hà Nội, Việt Nam" styleClass="label-value" HBox.hgrow="ALWAYS"/>
-                        <Button text="Chỉnh sửa" onAction="#onEditAddress" styleClass="btn-edit"/>
-                    </HBox>
-                </VBox>
-
-                <!-- BẢO MẬT -->
-                <VBox styleClass="card" style="-fx-padding: 16;" spacing="0">
-                    <HBox alignment="CENTER_LEFT" spacing="8" style="-fx-padding: 0 0 12 0;">
-                        <Label text="🔐" style="-fx-font-size: 18px;"/>
-                        <Label text="Bảo mật và đăng nhập" styleClass="section-title"/>
-                    </HBox>
-
-                    <HBox alignment="CENTER_LEFT" style="-fx-padding: 10 0; -fx-border-color: #F0F0F0; -fx-border-width: 0 0 1 0;">
-                        <Label text="Email" styleClass="label-info" style="-fx-min-width: 130;"/>
-                        <Label fx:id="lblEmail" text="nguyenvana@email.com" styleClass="label-value" HBox.hgrow="ALWAYS"/>
-                        <Button text="Đổi email" onAction="#onChangeEmail" styleClass="btn-edit"/>
-                    </HBox>
-
-                    <HBox alignment="CENTER_LEFT" style="-fx-padding: 10 0; -fx-border-color: #F0F0F0; -fx-border-width: 0 0 1 0;">
-                        <Label text="Số điện thoại" styleClass="label-info" style="-fx-min-width: 130;"/>
-                        <Label fx:id="lblPhone" text="+84 901 234 567" styleClass="label-value" HBox.hgrow="ALWAYS"/>
-                        <Button text="Đổi SĐT" onAction="#onChangePhone" styleClass="btn-edit"/>
-                    </HBox>
-
-                    <HBox alignment="CENTER_LEFT" style="-fx-padding: 10 0; -fx-border-color: #F0F0F0; -fx-border-width: 0 0 1 0;">
-                        <Label text="Mật khẩu" styleClass="label-info" style="-fx-min-width: 130;"/>
-                        <Label text="••••••••••" styleClass="label-value" HBox.hgrow="ALWAYS"/>
-                        <Button text="Đổi mật khẩu" onAction="#onChangePassword" styleClass="btn-edit"/>
-                    </HBox>
-
-                    <HBox alignment="CENTER_LEFT" style="-fx-padding: 10 0;">
-                        <Label text="Xác thực 2 lớp" styleClass="label-info" style="-fx-min-width: 130;"/>
-                        <Label fx:id="lbl2FA" text="✓ Đã bật" styleClass="text-success" style="-fx-font-size: 12px;" HBox.hgrow="ALWAYS"/>
-                        <Button text="Quản lý" onAction="#onManage2FA" styleClass="btn-edit"/>
-                    </HBox>
-                </VBox>
-
-                <!-- THANH TOÁN -->
-                <VBox styleClass="card" style="-fx-padding: 16;" spacing="0">
-                    <HBox alignment="CENTER_LEFT" spacing="8" style="-fx-padding: 0 0 12 0;">
-                        <Label text="💳" style="-fx-font-size: 18px;"/>
-                        <Label text="Thanh toán" styleClass="section-title"/>
-                    </HBox>
-
-                    <HBox alignment="CENTER_LEFT" style="-fx-padding: 10 0; -fx-border-color: #F0F0F0; -fx-border-width: 0 0 1 0;">
-                        <Label text="Phương thức thanh toán" styleClass="label-info" style="-fx-min-width: 170;"/>
-                        <Label fx:id="lblPaymentMethod" text="VietcomBank ****6411" styleClass="label-value" HBox.hgrow="ALWAYS"/>
-                        <Button text="Quản lý" onAction="#onManagePayment" styleClass="btn-edit"/>
-                    </HBox>
-
-                    <HBox alignment="CENTER_LEFT" style="-fx-padding: 10 0;">
-                        <Label text="Hạn mức đặt cọc" styleClass="label-info" style="-fx-min-width: 170;"/>
-                        <Label fx:id="lblDepositLimit" text="100.000.000 đ / phiên" styleClass="label-value" HBox.hgrow="ALWAYS"/>
-                        <Button text="Chỉnh sửa" onAction="#onEditDepositLimit" styleClass="btn-edit"/>
-                    </HBox>
-                </VBox>
-
-                <!-- THÔNG BÁO -->
-                <VBox styleClass="card" style="-fx-padding: 16;" spacing="0">
-                    <HBox alignment="CENTER_LEFT" spacing="8" style="-fx-padding: 0 0 12 0;">
-                        <Label text="🔔" style="-fx-font-size: 18px;"/>
-                        <Label text="Thông báo" styleClass="section-title"/>
-                    </HBox>
-
-                    <HBox alignment="CENTER_LEFT" style="-fx-padding: 10 0; -fx-border-color: #F0F0F0; -fx-border-width: 0 0 1 0;">
-                        <Label text="Thông báo đẩy" styleClass="label-value" HBox.hgrow="ALWAYS"/>
-                        <CheckBox fx:id="cbPushNoti" selected="true" onAction="#onTogglePush"/>
-                    </HBox>
-
-                    <HBox alignment="CENTER_LEFT" style="-fx-padding: 10 0; -fx-border-color: #F0F0F0; -fx-border-width: 0 0 1 0;">
-                        <Label text="Email khi bị vượt giá" styleClass="label-value" HBox.hgrow="ALWAYS"/>
-                        <CheckBox fx:id="cbEmailOutbid" selected="true" onAction="#onToggleEmailOutbid"/>
-                    </HBox>
-
-                    <HBox alignment="CENTER_LEFT" style="-fx-padding: 10 0; -fx-border-color: #F0F0F0; -fx-border-width: 0 0 1 0;">
-                        <Label text="Email khi sắp kết thúc phiên" styleClass="label-value" HBox.hgrow="ALWAYS"/>
-                        <CheckBox fx:id="cbEmailEnding" selected="true" onAction="#onToggleEmailEnding"/>
-                    </HBox>
-
-                    <HBox alignment="CENTER_LEFT" style="-fx-padding: 10 0;">
-                        <Label text="Email khuyến mãi và ưu đãi" styleClass="label-value" HBox.hgrow="ALWAYS"/>
-                        <CheckBox fx:id="cbEmailPromo" onAction="#onToggleEmailPromo"/>
-                    </HBox>
-                </VBox>
-
-                <!-- GIAO DIỆN -->
-                <VBox styleClass="card" style="-fx-padding: 16;" spacing="0">
-                    <HBox alignment="CENTER_LEFT" spacing="8" style="-fx-padding: 0 0 12 0;">
-                        <Label text="🎨" style="-fx-font-size: 18px;"/>
-                        <Label text="Giao diện và ngôn ngữ" styleClass="section-title"/>
-                    </HBox>
-
-                    <HBox alignment="CENTER_LEFT" style="-fx-padding: 10 0; -fx-border-color: #F0F0F0; -fx-border-width: 0 0 1 0;">
-                        <Label text="Ngôn ngữ" styleClass="label-value" HBox.hgrow="ALWAYS"/>
-                        <ComboBox fx:id="cbLanguage" onAction="#onChangeLanguage" style="-fx-font-size: 11px;"/>
-                    </HBox>
-
-                    <HBox alignment="CENTER_LEFT" style="-fx-padding: 10 0;">
-                        <Label text="Chế độ tối" styleClass="label-value" HBox.hgrow="ALWAYS"/>
-                        <CheckBox fx:id="cbDarkMode" onAction="#onToggleDarkMode"/>
-                    </HBox>
-                </VBox>
-
-                <!-- VÙNG NGUY HIỂM -->
-                <VBox styleClass="card-danger" spacing="0">
-                    <HBox alignment="CENTER_LEFT" spacing="8" style="-fx-padding: 0 0 12 0;">
-                        <Label text="⚠️" style="-fx-font-size: 18px;"/>
-                        <Label text="Vùng nguy hiểm" styleClass="section-title text-danger"/>
-                    </HBox>
-
-                    <HBox alignment="CENTER_LEFT" style="-fx-padding: 10 0;">
-                        <VBox HBox.hgrow="ALWAYS" spacing="2">
-                            <Label text="Xóa tài khoản" styleClass="text-bold" style="-fx-font-size: 12px;"/>
-                            <Label text="Xóa vĩnh viễn tài khoản và toàn bộ dữ liệu" styleClass="text-faint"/>
+<VBox minWidth="1050.0" spacing="20.0" style="-fx-background-color: transparent;" 
+      xmlns="http://javafx.com/javafx/26" 
+      xmlns:fx="http://javafx.com/fxml/1" 
+      fx:controller="vn.edu.vnu.uet.group8.client.controller.SettingsController">
+    <children>
+        
+        <HBox alignment="BOTTOM_LEFT">
+            <children>
+                <Label styleClass="text-heading" text="Cài đặt hệ thống">
+                    <font>
+                        <Font name="System Bold" size="28.0" />
+                    </font>
+                </Label>
+            </children>
+        </HBox>
+        
+        <VBox styleClass="glass-card" style="-fx-background-radius: 16px; -fx-border-radius: 16px; -fx-border-width: 1.5px;">
+            <children>
+                
+                <HBox alignment="CENTER_LEFT" style="-fx-padding: 24 24 24 24; -fx-border-color: #e2e8f0; -fx-border-width: 0 0 1px 0;" styleClass="settings-row">
+                    <children>
+                        <VBox spacing="4.0">
+                            <children>
+                                <Label styleClass="text-heading" style="-fx-font-size: 16px; -fx-font-weight: bold;" text="Giao diện hiển thị" />
+                                <Label styleClass="text-sub" style="-fx-font-size: 13px;" text="Thay đổi màu sắc giao diện phù hợp với môi trường làm việc của bạn." />
+                            </children>
                         </VBox>
-                        <Button text="Xóa tài khoản" onAction="#onDeleteAccount" styleClass="btn-delete"/>
-                    </HBox>
-                </VBox>
-
-            </VBox>
-        </content>
-    </ScrollPane>
+                        
+                        <Region HBox.hgrow="ALWAYS" />
+                        
+                        <HBox alignment="CENTER" style="-fx-background-color: rgba(0, 0, 0, 0.05); -fx-background-radius: 30px; -fx-padding: 4px;" styleClass="toggle-container">
+                            <children>
+                                <Button fx:id="btnLightMode" mnemonicParsing="false" onAction="#onLightModeClick" 
+                                        style="-fx-background-radius: 20px; -fx-padding: 8px 16px; -fx-font-size: 13px; -fx-font-weight: bold; -fx-cursor: hand;" 
+                                        styleClass="toggle-btn-active" text="☀️ Sáng" />
+                                        
+                                <Button fx:id="btnDarkMode" mnemonicParsing="false" onAction="#onDarkModeClick" 
+                                        style="-fx-background-radius: 20px; -fx-padding: 8px 16px; -fx-font-size: 13px; -fx-font-weight: bold; -fx-cursor: hand;" 
+                                        styleClass="toggle-btn-inactive" text="🌙 Tối" />
+                            </children>
+                        </HBox>
+                    </children>
+                </HBox>
+                
+                <HBox alignment="CENTER_LEFT" style="-fx-padding: 24 24 24 24;">
+                    <children>
+                        <VBox spacing="4.0">
+                            <children>
+                                <Label styleClass="text-heading" style="-fx-font-size: 16px; -fx-font-weight: bold; -fx-opacity: 0.5;" text="Ngôn ngữ hệ thống (Language)" />
+                                <Label styleClass="text-sub" style="-fx-font-size: 13px; -fx-opacity: 0.5;" text="Tính năng đang được phát triển ở phiên bản tiếp theo." />
+                            </children>
+                        </VBox>
+                        <Region HBox.hgrow="ALWAYS" />
+                        <HBox alignment="CENTER" style="-fx-background-color: rgba(0, 0, 0, 0.03); -fx-background-radius: 30px; -fx-padding: 4px; -fx-opacity: 0.5;">
+                            <children>
+                                <Button disable="true" mnemonicParsing="false" style="-fx-background-color: transparent; -fx-text-fill: #94a3b8; -fx-padding: 8px 16px; -fx-font-size: 13px;" text="Tiếng Việt" />
+                                <Button disable="true" mnemonicParsing="false" style="-fx-background-color: transparent; -fx-text-fill: #94a3b8; -fx-padding: 8px 16px; -fx-font-size: 13px;" text="English" />
+                            </children>
+                        </HBox>
+                    </children>
+                </HBox>
+                
+            </children>
+            <effect>
+                <DropShadow blurType="GAUSSIAN" offsetY="5.0" radius="15.0">
+                    <color>
+                        <Color opacity="0.06" />
+                    </color>
+                </DropShadow>
+            </effect>
+        </VBox>
+    </children>
 </VBox>

@@ -1,5 +1,10 @@
 package vn.edu.vnu.uet.group8.client.controller;
 
+import java.net.URL;
+import java.util.List;
+import java.util.ResourceBundle;
+import java.util.logging.Logger;
+
 import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
@@ -8,16 +13,10 @@ import javafx.scene.control.Label;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
-
 import vn.edu.vnu.uet.group8.client.model.ClientModel;
 import vn.edu.vnu.uet.group8.client.service.NotificationService;
 import vn.edu.vnu.uet.group8.client.util.AlertUtil;
-import vn.edu.vnu.uet.group8.common.dto.NotificationDTO;
-
-import java.net.URL;
-import java.util.List;
-import java.util.ResourceBundle;
-import java.util.logging.Logger;
+import vn.edu.vnu.uet.group8.common.dto.model.NotificationDTO;
 
 /**
  * NotificationController — quan ly thong bao.
@@ -31,17 +30,17 @@ import java.util.logging.Logger;
  */
 public class NotificationController implements Initializable {
 
-    private static final Logger LOGGER = Logger.getLogger(NotificationController.class.getName());
+    protected static final Logger LOGGER = Logger.getLogger(NotificationController.class.getName());
 
-    @FXML private VBox notificationList;
-    @FXML private Label lblNewCount;
-    @FXML private Button btnTabAll;
-    @FXML private Button btnTabUnread;
-    @FXML private Button btnTabAuction;
-    @FXML private Button btnTabSystem;
+    @FXML VBox notificationList;
+    @FXML Label lblNewCount;
+    @FXML Button btnTabAll;
+    @FXML Button btnTabUnread;
+    @FXML Button btnTabAuction;
+    @FXML Button btnTabSystem;
 
-    private Button activeTab;
-    private String currentFilter = "all";
+    protected Button activeTab;
+    protected String currentFilter = "all";
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
@@ -51,7 +50,7 @@ public class NotificationController implements Initializable {
     }
 
     /** Binding voi ClientModel -> tu re-render khi co notif moi. */
-    private void bindNotifications() {
+    void bindNotifications() {
         ClientModel.getInstance().notificationsProperty().addListener((obs, oldList, newList) ->
                 Platform.runLater(this::renderFromModel)
         );
@@ -61,7 +60,7 @@ public class NotificationController implements Initializable {
         );
     }
 
-    private void loadNotifications() {
+    void loadNotifications() {
         NotificationService.loadAll(
                 list -> {
                     LOGGER.info(() -> "Tai " + list.size() + " thong bao");
@@ -74,12 +73,12 @@ public class NotificationController implements Initializable {
         );
     }
 
-    private void renderFromModel() {
+    void renderFromModel() {
         List<NotificationDTO> all = ClientModel.getInstance().getNotifications();
         render(all);
     }
 
-    private void render(List<NotificationDTO> all) {
+    void render(List<NotificationDTO> all) {
         if (notificationList == null) return;
         notificationList.getChildren().clear();
 
@@ -109,22 +108,30 @@ public class NotificationController implements Initializable {
         updateNewCount((int) unread);
     }
 
-    private void renderEmpty() {
+    void renderEmpty() {
+
+        if (notificationList == null) {
+            return;
+        }
+
         notificationList.getChildren().clear();
+
         Label empty = new Label("Chua co thong bao nao");
         empty.getStyleClass().add("label-info");
+
         notificationList.getChildren().add(empty);
+
         updateNewCount(0);
     }
 
-    private void updateNewCount(int count) {
+    void updateNewCount(int count) {
         if (lblNewCount == null) return;
         lblNewCount.setText(count + " moi");
         lblNewCount.setVisible(count > 0);
         lblNewCount.setManaged(count > 0);
     }
 
-    private boolean matchFilter(NotificationDTO n) {
+    protected boolean matchFilter(NotificationDTO n) {
         return switch (currentFilter) {
             case "unread"  -> !n.isRead();
             case "auction" -> "AUCTION".equalsIgnoreCase(n.getType());
@@ -134,7 +141,7 @@ public class NotificationController implements Initializable {
     }
 
     /** Build 1 row notification voi title + actions. */
-    private HBox buildItem(NotificationDTO n) {
+    protected HBox buildItem(NotificationDTO n) {
         HBox row = new HBox(10);
         row.getStyleClass().add(n.isRead() ? "card-soft" : "card-unread");
         row.setStyle("-fx-padding: 12; -fx-background-radius: 8;");
@@ -150,18 +157,25 @@ public class NotificationController implements Initializable {
         btnRead.setDisable(n.isRead());
         btnRead.setOnAction(e -> markAsRead(n.getId()));
 
-        row.getChildren().addAll(info, btnRead);
+        Button btnDelete = new Button("Xóa");
+        btnDelete.getStyleClass().add("btn-danger");
+        btnDelete.setOnAction(e -> {
+            NotificationService.deleteNotification(n.getId(), 
+                () -> LOGGER.fine("Deleted notif " + n.getId()),
+                error -> AlertUtil.showError("Lỗi xóa thông báo: " + error));
+        });
+
+        row.getChildren().addAll(info, btnRead, btnDelete);
         return row;
     }
 
     // ===== ACTIONS =====
 
     /** Danh dau 1 notif la da doc. */
-    private void markAsRead(int notifId) {
+    void markAsRead(int notifId) {
         NotificationService.markRead(notifId,
                 () -> {
                     LOGGER.fine(() -> "Marked read: " + notifId);
-                    renderFromModel();  // ClientModel da update
                 },
                 error -> AlertUtil.showError("Loi: " + error)
         );
@@ -169,7 +183,7 @@ public class NotificationController implements Initializable {
 
     /** Danh dau TAT CA la da doc. */
     @FXML
-    private void onMarkAllRead() {
+    void onMarkAllRead() {
         List<NotificationDTO> unread = ClientModel.getInstance().getNotifications()
                 .stream().filter(n -> !n.isRead()).toList();
 
@@ -189,7 +203,7 @@ public class NotificationController implements Initializable {
     }
 
     @FXML
-    private void onClearRead() {
+    void onClearRead() {
         boolean ok = AlertUtil.showConfirm("Xac nhan",
                 "Xoa tat ca thong bao da doc?");
         if (!ok) return;
@@ -197,20 +211,19 @@ public class NotificationController implements Initializable {
     }
 
     @FXML
-    private void onDeleteNotification() {
-        // Method nay duoc FXML goi nhung khong co notif cu the
-        // Co the FXML co button generic - tam thoi placeholder
-        LOGGER.fine("onDeleteNotification triggered");
+    void onDeleteNotification() {
+        // Được gọi nếu có nút xóa tất cả (tùy chọn UI FXML)
+        AlertUtil.showInfo("Tính năng xóa hàng loạt đang phát triển");
     }
 
     @FXML
-    private void onViewDetail() {
+    void onViewDetail() {
         LOGGER.fine("onViewDetail triggered");
         AlertUtil.showInfo("Chi tiet thong bao se hien o day");
     }
 
     @FXML
-    private void onBidNow() {
+    void onBidNow() {
         // Tu thong bao -> nhay sang trang dau gia
         // Can context notif co itemId
         LOGGER.info("Dau gia ngay tu thong bao");
@@ -219,12 +232,12 @@ public class NotificationController implements Initializable {
 
     // ===== TABS =====
 
-    @FXML private void onTabAll()     { setTab("all", btnTabAll); }
-    @FXML private void onTabUnread()  { setTab("unread", btnTabUnread); }
-    @FXML private void onTabAuction() { setTab("auction", btnTabAuction); }
-    @FXML private void onTabSystem()  { setTab("system", btnTabSystem); }
+    @FXML void onTabAll()     { setTab("all", btnTabAll); }
+    @FXML void onTabUnread()  { setTab("unread", btnTabUnread); }
+    @FXML void onTabAuction() { setTab("auction", btnTabAuction); }
+    @FXML void onTabSystem()  { setTab("system", btnTabSystem); }
 
-    private void setTab(String filter, Button button) {
+    void setTab(String filter, Button button) {
         currentFilter = filter;
         if (activeTab != null) {
             activeTab.getStyleClass().remove("tag-active");

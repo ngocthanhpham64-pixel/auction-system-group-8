@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ScrollPane?>
+<?import javafx.scene.layout.StackPane?>
+<?import javafx.scene.layout.VBox?>
+
+<StackPane prefHeight="400.0" prefWidth="480.0" styleClass="glass-card" xmlns="http://javafx.com/javafx/26" xmlns:fx="http://javafx.com/fxml/1" fx:controller="vn.edu.vnu.uet.group8.client.controller.FavoriteController">
+   <padding>
+      <Insets bottom="10.0" left="16.0" right="16.0" top="10.0" />
+   </padding>
+   <children>
+      <ScrollPane fitToHeight="true" fitToWidth="true" style="-fx-background-color: transparent; -fx-background: transparent; -fx-bar-policy: never;">
+         <content>
+            <VBox fx:id="vboxFavoriteContainer" spacing="12.0" style="-fx-background-color: transparent;">
+               </VBox>
+         </content>
+      </ScrollPane>
+
+      <VBox fx:id="vboxNoFavorites" alignment="CENTER" managed="false" spacing="15.0" visible="false">
+         <children>
+            <Label style="-fx-font-size: 45px;" text="🖤" />
+            <Label style="-fx-text-fill: #94a3b8; -fx-font-size: 14px; -fx-font-weight: bold;" text="Danh sách yêu thích trống" />
+            <Label style="-fx-text-fill: #cbd5e1; -fx-font-size: 11px;" text="Hãy thả tim những sản phẩm bạn quan tâm để theo dõi nhé" />
+         </children>
+      </VBox>
+   </children>
+</StackPane>

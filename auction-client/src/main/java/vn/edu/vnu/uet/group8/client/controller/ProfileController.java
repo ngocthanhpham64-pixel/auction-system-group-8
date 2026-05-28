@@ -1,5 +1,11 @@
 package vn.edu.vnu.uet.group8.client.controller;
 
+import java.math.BigDecimal;
+import java.net.URL;
+import java.util.List;
+import java.util.ResourceBundle;
+import java.util.logging.Logger;
+
 import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
@@ -8,21 +14,14 @@ import javafx.scene.control.Label;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
-
 import vn.edu.vnu.uet.group8.client.model.ClientModel;
 import vn.edu.vnu.uet.group8.client.service.AuthService;
 import vn.edu.vnu.uet.group8.client.service.UserService;
 import vn.edu.vnu.uet.group8.client.util.AlertUtil;
 import vn.edu.vnu.uet.group8.client.util.SceneManager;
 import vn.edu.vnu.uet.group8.client.util.SessionManager;
-import vn.edu.vnu.uet.group8.common.dto.BidRecord;
-import vn.edu.vnu.uet.group8.common.dto.LoginResponse;
-
-import java.math.BigDecimal;
-import java.net.URL;
-import java.util.List;
-import java.util.ResourceBundle;
-import java.util.logging.Logger;
+import vn.edu.vnu.uet.group8.common.dto.model.UserBidHistoryDTO;
+import vn.edu.vnu.uet.group8.common.dto.model.UserProfileDTO;
 
 /**
  * ProfileController — trang ho so + lich su dau gia.
@@ -35,26 +34,26 @@ import java.util.logging.Logger;
  */
 public class ProfileController implements Initializable {
 
-    private static final Logger LOGGER = Logger.getLogger(ProfileController.class.getName());
+    protected static final Logger LOGGER = Logger.getLogger(ProfileController.class.getName());
 
-    @FXML private Label lblName;
-    @FXML private Label lblEmail;
-    @FXML private Label lblAvatar;
-    @FXML private Label lblJoinDate;
-    @FXML private Label lblBalance;
-    @FXML private Label lblRating;
-    @FXML private Label lblTotalBids;
-    @FXML private Label lblActiveBids;
-    @FXML private Label lblWonBids;
+    @FXML Label lblName;
+    @FXML Label lblEmail;
+    @FXML Label lblAvatar;
+    @FXML Label lblJoinDate;
+    @FXML Label lblBalance;
+    @FXML Label lblRating;
+    @FXML Label lblTotalBids;
+    @FXML Label lblActiveBids;
+    @FXML Label lblWonBids;
 
-    @FXML private VBox bidHistoryList;
-    @FXML private Button btnTabActive;
-    @FXML private Button btnTabWon;
-    @FXML private Button btnTabLost;
+    @FXML VBox bidHistoryList;
+    @FXML Button btnTabActive;
+    @FXML Button btnTabWon;
+    @FXML Button btnTabLost;
 
-    private Button activeTab;
-    private String currentFilter = "active";
-    private List<BidRecord> allBids = List.of();
+    protected Button activeTab;
+    protected String currentFilter = "active";
+    protected List<UserBidHistoryDTO> allBids = List.of();
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
@@ -65,7 +64,7 @@ public class ProfileController implements Initializable {
     }
 
     /** Load thong tin user. */
-    private void loadProfile() {
+    void loadProfile() {
         UserService.loadProfile(user -> {
             if (user != null) {
                 displayUser(user);
@@ -81,7 +80,7 @@ public class ProfileController implements Initializable {
         }
     }
 
-    private void displayUser(LoginResponse user) {
+    void displayUser(UserProfileDTO user) {
         if (user == null) return;
         if (lblName != null && user.getFullName() != null) {
             lblName.setText(user.getFullName());
@@ -89,10 +88,13 @@ public class ProfileController implements Initializable {
         if (lblEmail != null && user.getEmail() != null) {
             lblEmail.setText(user.getEmail());
         }
+        if (lblRating != null && user.getSellerRating() != null) {
+            lblRating.setText(String.format("%.1f Sao", user.getSellerRating()));
+        }
     }
 
     /** Binding balance. */
-    private void bindBalance() {
+    void bindBalance() {
         if (lblBalance == null) return;
         BigDecimal current = ClientModel.getInstance().getBalance();
         updateBalance(current);
@@ -101,13 +103,16 @@ public class ProfileController implements Initializable {
         );
     }
 
-    private void updateBalance(BigDecimal value) {
+    void updateBalance(BigDecimal value) {
+        if (lblBalance == null) {
+            return;
+        }
         BigDecimal v = value != null ? value : BigDecimal.ZERO;
         lblBalance.setText(String.format("%,.0f d", v));
     }
 
     /** Load bid history. */
-    private void loadBidHistory() {
+    void loadBidHistory() {
         UserService.loadMyBids(bids -> {
             allBids = bids != null ? bids : List.of();
             LOGGER.info(() -> "Tai " + allBids.size() + " bid records");
@@ -116,11 +121,11 @@ public class ProfileController implements Initializable {
         });
     }
 
-    private void renderBids() {
+    void renderBids() {
         if (bidHistoryList == null) return;
         bidHistoryList.getChildren().clear();
 
-        List<BidRecord> filtered = allBids.stream()
+        List<UserBidHistoryDTO> filtered = allBids.stream()
                 .filter(this::matchTab)
                 .toList();
 
@@ -131,23 +136,25 @@ public class ProfileController implements Initializable {
             return;
         }
 
-        for (BidRecord b : filtered) {
+        for (UserBidHistoryDTO b : filtered) {
             bidHistoryList.getChildren().add(buildBidRow(b));
         }
     }
 
-    private boolean matchTab(BidRecord b) {
-        // BidRecord chua co field status -> tam dung gia tri
-        // TODO: khi BE them status (ACTIVE/WON/LOST), filter chinh xac
+    protected boolean matchTab(UserBidHistoryDTO b) {
+        boolean isEnded = b.getSessionEndTime() != null && b.getSessionEndTime().isBefore(java.time.Instant.now());
+        boolean isWinner = b.getBidAmount() != null && b.getCurrentSessionPrice() != null 
+                           && b.getBidAmount().compareTo(b.getCurrentSessionPrice()) >= 0;
+                           
         return switch (currentFilter) {
-            case "active" -> true;   // tat ca tam coi la active
-            case "won"    -> false;
-            case "lost"   -> false;
+            case "active" -> !isEnded;
+            case "won"    -> isEnded && isWinner; 
+            case "lost"   -> isEnded && !isWinner;
             default       -> true;
         };
     }
 
-    private HBox buildBidRow(BidRecord b) {
+    protected HBox buildBidRow(UserBidHistoryDTO b) {
         HBox row = new HBox(12);
         row.getStyleClass().add("card-soft");
         row.setStyle("-fx-padding: 12; -fx-background-radius: 8;");
@@ -155,10 +162,10 @@ public class ProfileController implements Initializable {
         VBox info = new VBox(4);
         HBox.setHgrow(info, Priority.ALWAYS);
 
-        Label itemLabel = new Label("Item #" + getBidItemId(b));
+        Label itemLabel = new Label(b.getItemTitle() + " (#" + b.getItemId() + ")");
         itemLabel.getStyleClass().add("h3");
 
-        Label amount = new Label(String.format("%,.0f d", getBidAmount(b)));
+        Label amount = new Label(String.format("%,.0f đ", b.getBidAmount()));
         amount.setStyle("-fx-text-fill: #F97316; -fx-font-weight: bold;");
 
         info.getChildren().addAll(itemLabel, amount);
@@ -166,48 +173,30 @@ public class ProfileController implements Initializable {
         return row;
     }
 
-    /** Helper - dung reflection-safe access (BidRecord co the la record hoac class). */
-    private int getBidItemId(BidRecord b) {
-        try {
-            // Thu method itemId() (record style) truoc
-            return (int) BidRecord.class.getMethod("itemId").invoke(b);
-        } catch (Exception e) {
-            try {
-                return (int) BidRecord.class.getMethod("getItemId").invoke(b);
-            } catch (Exception e2) {
-                return 0;
-            }
-        }
-    }
-
-    private BigDecimal getBidAmount(BidRecord b) {
-        try {
-            return (BigDecimal) BidRecord.class.getMethod("amount").invoke(b);
-        } catch (Exception e) {
-            try {
-                return (BigDecimal) BidRecord.class.getMethod("getAmount").invoke(b);
-            } catch (Exception e2) {
-                return BigDecimal.ZERO;
-            }
-        }
-    }
-
-    private void updateStats() {
+    void updateStats() {
         if (lblTotalBids != null) {
             lblTotalBids.setText(String.valueOf(allBids.size()));
         }
         if (lblActiveBids != null) {
-            lblActiveBids.setText(String.valueOf(allBids.size()));  // tam = total
+            long active = allBids.stream()
+                .filter(b -> b.getSessionEndTime() == null || b.getSessionEndTime().isAfter(java.time.Instant.now()))
+                .count();
+            lblActiveBids.setText(String.valueOf(active));
         }
         if (lblWonBids != null) {
-            lblWonBids.setText("0");  // chua co field status
+            long won = allBids.stream()
+                .filter(b -> b.getSessionEndTime() != null && b.getSessionEndTime().isBefore(java.time.Instant.now()) 
+                          && b.getBidAmount() != null && b.getCurrentSessionPrice() != null 
+                          && b.getBidAmount().compareTo(b.getCurrentSessionPrice()) >= 0)
+                .count();
+            lblWonBids.setText(String.valueOf(won));
         }
     }
 
     // ===== ACTIONS =====
 
     @FXML
-    private void onDeposit() {
+    void onDeposit() {
         MainController main = MainController.getInstance();
         if (main != null) {
             main.loadView(SceneManager.VIEW_WALLET);
@@ -217,7 +206,7 @@ public class ProfileController implements Initializable {
     }
 
     @FXML
-    private void onSettings() {
+    void onSettings() {
         MainController main = MainController.getInstance();
         if (main != null) {
             main.loadView(SceneManager.VIEW_SETTINGS);
@@ -226,7 +215,7 @@ public class ProfileController implements Initializable {
         }
     }
     @FXML
-    private void onLogout() {
+    void onLogout() {
         boolean ok = AlertUtil.showConfirm("Dang xuat", "Ban co chac muon dang xuat?");
         if (!ok) return;
         LOGGER.info("Nguoi dung dang xuat tu Profile");
@@ -235,11 +224,11 @@ public class ProfileController implements Initializable {
 
     // ===== TABS =====
 
-    @FXML private void onTabActive() { setTab("active", btnTabActive); }
-    @FXML private void onTabWon()    { setTab("won", btnTabWon); }
-    @FXML private void onTabLost()   { setTab("lost", btnTabLost); }
+    @FXML void onTabActive() { setTab("active", btnTabActive); }
+    @FXML void onTabWon()    { setTab("won", btnTabWon); }
+    @FXML void onTabLost()   { setTab("lost", btnTabLost); }
 
-    private void setTab(String filter, Button button) {
+    void setTab(String filter, Button button) {
         currentFilter = filter;
         if (activeTab != null) {
             activeTab.getStyleClass().remove("tag-active");

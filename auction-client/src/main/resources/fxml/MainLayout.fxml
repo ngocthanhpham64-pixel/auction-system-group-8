@@ -1,107 +1,112 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<?import javafx.scene.layout.*?>
-<?import javafx.scene.control.*?>
-<?import javafx.scene.image.*?>
+
 <?import javafx.geometry.Insets?>
-<?import java.net.URL?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ScrollPane?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.effect.DropShadow?>
+<?import javafx.scene.image.Image?>
+<?import javafx.scene.image.ImageView?>
+<?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Region?>
+<?import javafx.scene.layout.StackPane?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.paint.Color?>
+<?import javafx.scene.text.Font?>
 
-<BorderPane xmlns:fx="http://javafx.com/fxml/1"
-            fx:controller="vn.edu.vnu.uet.group8.client.controller.MainController"
-            prefWidth="1280" prefHeight="800"
-            styleClass="app-bg">
+<StackPane maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" minHeight="700.0" minWidth="1024.0" styleClass="app-background" xmlns="http://javafx.com/javafx/26" xmlns:fx="http://javafx.com/fxml/1" fx:controller="vn.edu.vnu.uet.group8.client.controller.MainController">
 
-    <stylesheets>
-        <URL value="@../css/tokens.css"/>
-        <URL value="@../css/components.css"/>
-        <URL value="@../css/layout.css"/>
-    </stylesheets>
+    <BorderPane maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308">
 
-    <!-- HEADER -->
-    <top>
-        <HBox styleClass="app-header" alignment="CENTER_LEFT" spacing="14">
-            <padding><Insets top="10" bottom="10" left="16" right="16"/></padding>
+        <left>
+            <VBox fx:id="sidebar" maxHeight="1.7976931348623157E308" prefWidth="232.0" styleClass="sidebar-bg" BorderPane.alignment="CENTER">
+                <effect>
+                    <DropShadow blurType="GAUSSIAN" radius="18.0" spread="0.12">
+                        <color><Color opacity="0.35" /></color>
+                    </DropShadow>
+                </effect>
+                <BorderPane.margin><Insets top="72.0" /></BorderPane.margin>
+                <Region minHeight="20.0" prefHeight="20.0" />
 
-            <!-- Hamburger toggle -->
-            <Button fx:id="btnToggle" text="☰" onAction="#onToggleSidebar" styleClass="hamburger-btn"/>
-
-            <!-- Logo -->
-            <HBox alignment="CENTER_LEFT" spacing="10" onMouseClicked="#onLogoClick" style="-fx-cursor: hand;">
-                <ImageView fitWidth="36" fitHeight="36" preserveRatio="true">
-                    <image><Image url="@../image/logo.png"/></image>
-                </ImageView>
-                <VBox>
-                    <Label text="AUCTIVA" styleClass="logo-title"/>
-                    <Label text="LIVE ONLINE AUCTIONS" styleClass="logo-subtitle"/>
+                <VBox spacing="2.0">
+                    <padding><Insets bottom="8.0" left="22.0" right="22.0" top="8.0" /></padding>
+                    <Label style="-fx-text-fill: #94a3b8; -fx-font-size: 11px; -fx-font-weight: bold;" text="Phiên đang mở" />
+                    <Label fx:id="lblOngoingCount" style="-fx-text-fill: #ffffff; -fx-font-size: 24px; -fx-font-weight: bold;" text="0" />
                 </VBox>
-            </HBox>
 
-            <!-- Search -->
-            <TextField fx:id="tfSearch" promptText="Tìm kiếm sản phẩm đấu giá..."
-                       maxWidth="280" HBox.hgrow="ALWAYS" styleClass="search-input"/>
+                <Button fx:id="btnBidNow" mnemonicParsing="false" onAction="#onNavClick" prefHeight="40.0" prefWidth="188.0" style="-fx-background-color: linear-gradient(to bottom, #ff9233 0%, #f97316 50%, #ea580c 100%);                            -fx-text-fill: white; -fx-background-radius: 10px;                            -fx-font-weight: bold; -fx-font-size: 13px; -fx-cursor: hand;" text="Đấu giá ngay" userData="LIVE">
+                    <VBox.margin><Insets bottom="14.0" left="22.0" right="22.0" top="4.0" /></VBox.margin>
+                    <effect>
+                        <DropShadow blurType="GAUSSIAN" offsetY="3.0" radius="8.0">
+                            <color><Color red="0.9" green="0.45" blue="0.08" opacity="0.45" /></color>
+                        </DropShadow>
+                    </effect>
+                </Button>
 
-            <Region HBox.hgrow="ALWAYS"/>
+                <Button fx:id="btnHome" mnemonicParsing="false" onAction="#onNavClick" prefHeight="46.0" prefWidth="232.0" style="-fx-background-color: transparent; -fx-alignment: center-left; -fx-padding: 10 22 10 22; -fx-font-size: 14px; -fx-cursor: hand;" styleClass="nav-btn" text="🏠  Trang chủ" userData="HOME" />
+                <Button fx:id="btnExplore" mnemonicParsing="false" onAction="#onNavClick" prefHeight="46.0" prefWidth="232.0" style="-fx-background-color: transparent; -fx-alignment: center-left; -fx-padding: 10 22 10 22; -fx-font-size: 14px; -fx-cursor: hand;" styleClass="nav-btn" text="🔍  Khám phá" userData="EXPLORE" />
+                <Button fx:id="btnMyProducts" mnemonicParsing="false" onAction="#onNavClick" prefHeight="46.0" prefWidth="232.0" style="-fx-background-color: transparent; -fx-alignment: center-left; -fx-padding: 10 22 10 22; -fx-font-size: 14px; -fx-cursor: hand;" styleClass="nav-btn" text="📦  Sản phẩm của tôi" userData="SELLER" />
+                
+                <Button fx:id="btnAccount" mnemonicParsing="false" onAction="#onNavClick" prefHeight="46.0" prefWidth="232.0" style="-fx-background-color: transparent; -fx-alignment: center-left; -fx-padding: 10 22 10 22; -fx-font-size: 14px; -fx-cursor: hand;" styleClass="nav-btn" text="👤  Tài khoản của tôi" userData="PROFILE" />
+                
+                <Button fx:id="btnSettings" mnemonicParsing="false" onAction="#onNavClick" prefHeight="46.0" prefWidth="232.0" style="-fx-background-color: transparent; -fx-alignment: center-left; -fx-padding: 10 22 10 22; -fx-font-size: 14px; -fx-cursor: hand;" styleClass="nav-btn" text="⚙  Cài đặt" userData="SETTINGS" />
 
-            <!-- Đấu giá link -->
-            <Button fx:id="btnExplore" text="Đấu giá" onAction="#onExploreClick" styleClass="header-link"/>
+                <Region VBox.vgrow="ALWAYS" />
 
-            <!-- Trực tiếp link -->
-            <Button fx:id="btnLive" text="● Trực tiếp" onAction="#onLiveClick" styleClass="header-link-live"/>
+                <Button fx:id="btnLogout" mnemonicParsing="false" onAction="#onLogout" prefHeight="48.0" prefWidth="232.0" style="-fx-background-color: transparent; -fx-text-fill: #f87171;                                -fx-alignment: center-left; -fx-padding: 10 22 18 22;                                -fx-font-size: 14; -fx-cursor: hand;" text="↩️  Đăng xuất" />
+            </VBox>
+        </left>
 
-            <!-- Divider -->
-            <Region prefWidth="1" prefHeight="24" styleClass="divider-v"/>
+        <center>
+            <ScrollPane fitToHeight="false" fitToWidth="true" hbarPolicy="NEVER" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" style="-fx-background-color: transparent; -fx-background: transparent;" vbarPolicy="AS_NEEDED" VBox.vgrow="ALWAYS">
 
-            <!-- Yêu thích -->
-            <StackPane onMouseClicked="#onFavoriteClick" style="-fx-cursor: hand;">
-                <Label text="♥" style="-fx-font-size: 20px; -fx-text-fill: #666;"/>
-                <Label fx:id="lblFavCount" text="3" styleClass="badge-count" StackPane.alignment="TOP_RIGHT"/>
-            </StackPane>
+                <content>
+                    <VBox fx:id="vboxMainContentArea" maxWidth="1.7976931348623157E308" minWidth="820.0" style="-fx-padding: 80 36 36 36; -fx-background-color: transparent;">
+                        </VBox>
+                </content>
+            </ScrollPane>
+        </center>
+    </BorderPane>
 
-            <!-- Thông báo -->
-            <StackPane onMouseClicked="#onNotificationClick" style="-fx-cursor: hand;">
-                <Label text="🔔" style="-fx-font-size: 18px;"/>
-                <Label fx:id="lblNotiCount" text="5" styleClass="badge-count" StackPane.alignment="TOP_RIGHT"/>
-            </StackPane>
+    <HBox alignment="CENTER_LEFT" maxHeight="72.0" minHeight="72.0" prefHeight="72.0" styleClass="header-bg" StackPane.alignment="TOP_CENTER">
 
-            <!-- Avatar -->
-            <Label fx:id="lblAvatar" text="N" onMouseClicked="#onProfileClick" styleClass="avatar"/>
-
+        <HBox alignment="CENTER_LEFT" minWidth="232.0" prefWidth="232.0" style="-fx-padding: 0 0 0 24;">
+         <ImageView fitHeight="50.0" fitWidth="50.0">
+            <image>
+               <Image url="@../image/logo.png" />
+            </image>
+         </ImageView>
+         <Region prefHeight="70.0" prefWidth="28.0" />
+            <Label onMouseClicked="#onLogoClick" style="-fx-font-weight: bold;                        -fx-font-size: 26px;                        -fx-text-fill: linear-gradient(to bottom right, #f97316, #ea580c);                        -fx-cursor: hand;" text="Auctiva" />
         </HBox>
-    </top>
 
-    <!-- SIDEBAR -->
-    <left>
-        <VBox fx:id="sidebar" prefWidth="200" styleClass="app-sidebar">
-            <padding><Insets top="14" bottom="14" left="12" right="12"/></padding>
+        <HBox alignment="CENTER_LEFT" style="-fx-padding: 0 0 0 16;" HBox.hgrow="ALWAYS">
+            <TextField fx:id="tfSearch" maxWidth="480.0" prefHeight="38.0" prefWidth="280.0" promptText="Tìm kiếm sản phẩm, phiên đấu giá..." style="-fx-background-radius: 20px; -fx-border-radius: 20px; -fx-padding: 7 20; -fx-font-size: 13px;" styleClass="search-input" HBox.hgrow="ALWAYS" />
+        </HBox>
 
-            <Button fx:id="btnHome" text="🏠   Trang chủ" userData="HOME" onAction="#onNavClick"
-                    maxWidth="Infinity" styleClass="nav-item-active"/>
-            <Region prefHeight="4"/>
-            <Button fx:id="btnMyAuctions" text="📋   Đấu giá của tôi" userData="MY_AUCTIONS" onAction="#onNavClick"
-                    maxWidth="Infinity" styleClass="nav-item"/>
-            <Region prefHeight="4"/>
-            <Button fx:id="btnWallet" text="💰   Ví tiền" userData="WALLET" onAction="#onNavClick"
-                    maxWidth="Infinity" styleClass="nav-item"/>
-            <Region prefHeight="4"/>
-            <Button fx:id="btnSeller" text="🛒   Quản lý bán hàng" userData="SELLER" onAction="#onNavClick"
-                    maxWidth="Infinity" styleClass="nav-item"/>
+        <HBox alignment="CENTER_RIGHT" prefHeight="72.0" spacing="22.0" style="-fx-padding: 0 36 0 0;">
+            <StackPane maxHeight="40.0" minHeight="40.0" onMouseClicked="#onFavoriteClick" style="-fx-cursor: hand;">
+                <Label fx:id="lblFavCount" style="-fx-background-color: #f97316; -fx-text-fill: white; -fx-font-size: 9px; -fx-padding: 1 4; -fx-background-radius: 10;" text="0" StackPane.alignment="TOP_RIGHT">
+                    <StackPane.margin><Insets right="-4" top="-4" /></StackPane.margin>
+                </Label>
+                <Label fx:id="lblNavFavorites" style="-fx-font-size: 19px;" styleClass="text-sub" text="❤" />
+            </StackPane>
 
-            <Region prefHeight="12"/>
-            <Region prefHeight="1" styleClass="divider-h"/>
-            <Region prefHeight="12"/>
+            <StackPane maxHeight="40.0" minHeight="40.0" onMouseClicked="#onNotificationClick" style="-fx-cursor: hand;">
+                <Label fx:id="lblNavNotifications" style="-fx-font-size: 19px;" styleClass="text-sub" text="🔔" />
+                <Label fx:id="lblNotiCount" style="-fx-background-color: #f97316; -fx-text-fill: white; -fx-font-size: 9px; -fx-padding: 1 4; -fx-background-radius: 10;" text="0" StackPane.alignment="TOP_RIGHT">
+                    <StackPane.margin><Insets right="-4" top="-4" /></StackPane.margin>
+                </Label>
+            </StackPane>
 
-            <Button fx:id="btnSettings" text="⚙️   Cài đặt" userData="SETTINGS" onAction="#onNavClick"
-                    maxWidth="Infinity" styleClass="nav-item"/>
-
-            <Region VBox.vgrow="ALWAYS"/>
-
-            <Button text="🚪   Đăng xuất" onAction="#onLogout"
-                    maxWidth="Infinity" styleClass="nav-item-logout"/>
-        </VBox>
-    </left>
-
-    <!-- CONTENT -->
-    <center>
-        <StackPane fx:id="contentPane" styleClass="app-bg"/>
-    </center>
-
-</BorderPane>
+            <StackPane fx:id="paneNavAvatar" maxHeight="42.0" minHeight="42.0" minWidth="42.0" onMouseClicked="#onProfileClick" prefHeight="42.0" prefWidth="42.0" style="-fx-background-color: linear-gradient(to bottom right, #f97316, #ea580c);                        -fx-background-radius: 50px;                        -fx-border-color: rgba(255,255,255,0.9);                        -fx-border-width: 2px; -fx-border-radius: 50px; -fx-cursor: hand;">
+                <Label fx:id="lblAvatar" style="-fx-text-fill: white;" text="?">
+                    <font><Font name="System Bold" size="15.0" /></font>
+                </Label>
+                <ImageView fx:id="imgAvatar" fitHeight="42.0" fitWidth="42.0" pickOnBounds="true" preserveRatio="true" visible="false" />
+            </StackPane>
+        </HBox>
+    </HBox>
+</StackPane>

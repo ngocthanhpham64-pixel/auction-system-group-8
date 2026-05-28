@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ScrollPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Region?>
+<?import javafx.scene.layout.StackPane?>
+<?import javafx.scene.layout.VBox?>
+
+<VBox prefWidth="460.0" spacing="14.0" style="-fx-background-color: transparent;" xmlns="http://javafx.com/javafx/26" xmlns:fx="http://javafx.com/fxml/1" fx:controller="vn.edu.vnu.uet.group8.client.controller.SalesManagementController">
+   <padding>
+      <Insets bottom="12.0" left="16.0" right="16.0" top="12.0" />
+   </padding>
+   <children>
+      
+      <HBox spacing="10.0" styleClass="glass-card" style="-fx-padding: 16px;">
+         <children>
+            <VBox spacing="2.0" HBox.hgrow="ALWAYS">
+               <children>
+                  <Label styleClass="text-sub" style="-fx-font-size: 11px; -fx-font-weight: bold;" text="TỔNG DOANH THU THỰC NHẬN" />
+                  <Label fx:id="lblMiniRevenue" styleClass="text-price" style="-fx-font-size: 20px; -fx-font-weight: bold; -fx-text-fill: #10b981;" text="0 đ" />
+               </children>
+            </VBox>
+         </children>
+      </HBox>
+      
+      <Label styleClass="text-sub" style="-fx-font-weight: bold; -fx-font-size: 12px;" text="DANH SÁCH TÀI SẢN TRONG KHO" />
+
+      <ScrollPane fitToHeight="true" fitToWidth="true" prefHeight="230.0" styleClass="transparent-scroll" style="-fx-background-color: transparent; -fx-background: transparent; -fx-bar-policy: never;">
+         <content>
+            <VBox fx:id="vboxInventoryList" spacing="12.0" style="-fx-background-color: transparent;">
+               <children>
+                  
+                  <HBox alignment="CENTER_LEFT" spacing="15.0" styleClass="glass-card" style="-fx-padding: 12px;">
+                     <children>
+                        <StackPane minHeight="45.0" minWidth="45.0" style="-fx-background-color: #e0f2fe; -fx-background-radius: 12px;">
+                           <children>
+                              <Label style="-fx-font-size: 16px;" text="📦" />
+                           </children>
+                        </StackPane>
+                        <VBox spacing="2.0" HBox.hgrow="ALWAYS">
+                           <children>
+                              <Label styleClass="text-heading" style="-fx-font-weight: bold; -fx-font-size: 13px;" text="Máy ảnh Sony Alpha A7 Mark IV" />
+                              <Label styleClass="text-sub" style="-fx-font-size: 11px;" text="Mã kho: #ITM-8821 • Đang đấu giá" />
+                           </children>
+                        </VBox>
+                        <Region minWidth="10.0" HBox.hgrow="NEVER" />
+                        <Label alignment="CENTER_RIGHT" style="-fx-font-size: 13px; -fx-font-weight: bold; -fx-text-fill: #0284c7;" text="Listed" />
+                     </children>
+                  </HBox>
+
+                  <HBox alignment="CENTER_LEFT" spacing="15.0" styleClass="glass-card" style="-fx-padding: 12px;">
+                     <children>
+                        <StackPane minHeight="45.0" minWidth="45.0" style="-fx-background-color: #f1f5f9; -fx-background-radius: 12px;">
+                           <children>
+                              <Label style="-fx-font-size: 16px;" text="📝" />
+                           </children>
+                        </StackPane>
+                        <VBox spacing="2.0" HBox.hgrow="ALWAYS">
+                           <children>
+                              <Label styleClass="text-heading" style="-fx-font-weight: bold; -fx-font-size: 13px;" text="Ốp lưng da iPhone chính hãng" />
+                              <Label styleClass="text-sub" style="-fx-font-size: 11px;" text="Mã kho: #ITM-0192 • Chưa lên sàn" />
+                           </children>
+                        </VBox>
+                        <Region minWidth="10.0" HBox.hgrow="NEVER" />
+                        <Label alignment="CENTER_RIGHT" styleClass="text-sub" style="-fx-font-size: 13px; -fx-font-weight: bold;" text="Draft" />
+                     </children>
+                  </HBox>
+                  
+               </children>
+            </VBox>
+         </content>
+      </ScrollPane>
+   </children>
+</VBox>

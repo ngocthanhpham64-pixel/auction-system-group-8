@@ -1,0 +1,223 @@
+/* Hình nền ứng dụng */
+.app-background {
+    -fx-background-color: #f8fafc;
+}
+
+/* Thẻ kính (Glass Card) */
+.glass-card {
+    -fx-background-color: rgba(255, 255, 255, 0.9);
+    -fx-background-radius: 16px;
+    -fx-border-color: #e2e8f0;
+    -fx-border-radius: 16px;
+    -fx-border-width: 1px;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.08), 15, 0, 0, 5);
+}
+
+.button.glass-card {
+    -fx-text-fill: #1e293b;
+}
+
+/* Thẻ Pop-up (Modal Card) đặc nền chống xuyên thấu */
+.modal-card {
+    -fx-background-color: rgba(248, 250, 252, 0.95);
+    -fx-background-radius: 16px;
+    -fx-border-color: #e2e8f0;
+    -fx-border-radius: 16px;
+    -fx-border-width: 1px;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.15), 20, 0, 0, 8);
+}
+
+/* Chữ tiêu đề */
+.text-heading {
+    -fx-text-fill: #0f172a;
+}
+
+.text-sub {
+    -fx-text-fill: #475569;
+}
+
+.divider {
+    -fx-background-color: rgba(0, 0, 0, 0.08);
+}
+
+.settings-row {
+    -fx-border-color: rgba(0, 0, 0, 0.08) !important;
+}
+
+/* CSS cho cụm công tắc bên Light Mode */
+.toggle-container {
+    -fx-background-color: rgba(0, 0, 0, 0.05);
+}
+
+/* Nút đang kích hoạt ở bản Sáng */
+.toggle-btn-active {
+    -fx-background-color: #ffffff;
+    -fx-text-fill: #0f172a;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.1), 4, 0, 0, 1);
+}
+
+/* Nút đang tắt ở bản Sáng */
+.toggle-btn-inactive {
+    -fx-background-color: transparent;
+    -fx-text-fill: #64748b;
+}
+
+/* Layout & Controls */
+.sidebar-bg {
+    -fx-background-color: linear-gradient(to bottom, #0f172a, #1e293b);
+    -fx-border-color: rgba(255,255,255,0.05);
+    -fx-border-width: 0 1px 0 0;
+    -fx-background-radius: 0 32px 0 0;
+    -fx-border-radius: 0 32px 0 0;
+}
+.header-bg {
+    -fx-background-color: rgba(255, 255, 255, 0.95);
+    -fx-border-color: #e2e8f0;
+    -fx-border-width: 0 0 1px 0;
+}
+.search-input { -fx-background-color: #f1f5f9; -fx-border-color: #e2e8f0; -fx-text-fill: #1e293b; }
+.form-input { -fx-background-color: #ffffff; -fx-control-inner-background: #ffffff; -fx-border-color: #cbd5e1; -fx-text-fill: #1e293b; -fx-border-radius: 8; -fx-background-radius: 8; }
+.form-input .list-cell { -fx-text-fill: #1e293b; }
+.nav-btn { -fx-text-fill: #94a3b8; }
+
+/* Home View Category styling */
+.home-category-container {
+    -fx-background-color: rgba(255, 255, 255, 0.85);
+    -fx-background-radius: 20px;
+    -fx-border-color: #e2e8f0;
+    -fx-border-width: 1px;
+    -fx-border-radius: 20px;
+    -fx-padding: 20px;
+}
+
+.category-btn {
+    -fx-background-color: linear-gradient(to bottom, #f8fafc, #e2e8f0);
+    -fx-text-fill: #0f172a;
+    -fx-border-color: #cbd5e1;
+    -fx-border-width: 1.2px;
+    -fx-border-radius: 12px;
+    -fx-background-radius: 12px;
+    -fx-cursor: hand;
+    -fx-alignment: center;
+    -fx-effect: dropshadow(gaussian, rgba(15, 23, 42, 0.06), 6, 0, 0, 2);
+}
+.category-btn:hover {
+    -fx-background-color: linear-gradient(to bottom, #fff7ed, #ffedd5);
+    -fx-text-fill: #ea580c;
+    -fx-border-color: #f97316;
+    -fx-effect: dropshadow(gaussian, rgba(249, 115, 22, 0.15), 8, 0, 0, 3);
+}
+
+/* Detail Card Header for Light Theme */
+.detail-card-header {
+    -fx-background-color: #FFF3EB;
+    -fx-background-radius: 15px 15px 0px 0px;
+    -fx-border-radius: 15px 15px 0px 0px;
+}
+
+/* Bid History Row for Light Theme */
+.bid-history-row {
+    -fx-padding: 10px 20px;
+    -fx-border-color: #e2e8f0;
+    -fx-border-width: 0px 0px 1px 0px;
+}
+.bid-history-row:hover {
+    -fx-background-color: rgba(249, 115, 22, 0.04);
+}
+
+/* === Light Theme Tag Pills === */
+.tag-pill {
+    -fx-background-color: #f1f5f9;
+    -fx-text-fill: #475569;
+    -fx-border-color: #cbd5e1;
+    -fx-border-radius: 20px;
+    -fx-background-radius: 20px;
+    -fx-padding: 8px 16px;
+    -fx-cursor: hand;
+}
+.tag-pill:hover {
+    -fx-background-color: #e2e8f0;
+    -fx-text-fill: #0f172a;
+    -fx-border-color: #94a3b8;
+}
+.tag-pill-active {
+    -fx-background-color: linear-gradient(to right, #ff9233, #ea580c);
+    -fx-text-fill: white;
+    -fx-border-color: #f97316;
+    -fx-border-radius: 20px;
+    -fx-background-radius: 20px;
+    -fx-padding: 8px 16px;
+    -fx-cursor: hand;
+    -fx-font-weight: bold;
+    -fx-effect: dropshadow(gaussian, rgba(249, 115, 22, 0.25), 8, 0, 0, 3);
+}
+
+/* === Light Theme ComboBox === */
+.combo-box {
+    -fx-border-color: rgba(0, 0, 0, 0.12);
+    -fx-text-fill: #1e293b;
+}
+.combo-box:hover {
+    -fx-border-color: #f97316;
+    -fx-background-color: rgba(0, 0, 0, 0.01);
+}
+.combo-box:focused {
+    -fx-border-color: #f97316;
+    -fx-effect: dropshadow(three-pass-box, rgba(249, 115, 22, 0.2), 6, 0, 0, 0);
+}
+.combo-box-popup .list-view {
+    -fx-background-color: #ffffff;
+    -fx-border-color: rgba(0, 0, 0, 0.08);
+}
+.combo-box-popup .list-cell {
+    -fx-text-fill: #1e293b;
+}
+.combo-box-popup .list-cell:hover {
+    -fx-background-color: rgba(249, 115, 22, 0.1);
+    -fx-text-fill: #ea580c;
+}
+.combo-box-popup .list-cell:selected {
+    -fx-background-color: #f97316;
+    -fx-text-fill: #ffffff;
+}
+
+/* ComboBox Selected Cell styling for Light Theme */
+.combo-box .list-cell,
+.combo-box > .list-cell {
+    -fx-text-fill: #1e293b;
+    -fx-background-color: transparent;
+}
+
+/* Product Card Hover Highlight Effect */
+.product-card:hover {
+    -fx-background-color: rgba(255, 255, 255, 0.98);
+    -fx-border-color: #f97316;
+    -fx-effect: dropshadow(gaussian, rgba(249, 115, 22, 0.25), 18, 0, 0, 5);
+    -fx-translate-y: -6;
+}
+/* Nút CTA: Trạng thái mặc định ở bản Sáng */
+.btn-card-cta {
+    -fx-background-color: #fff7ed; /* Nền cam siêu nhạt tinh tế */
+    -fx-border-color: #fdba74; /* Viền cam nhạt */
+    -fx-text-fill: #ea580c; /* Chữ màu cam đậm */
+    -fx-font-weight: bold;
+    -fx-background-radius: 8px;
+    -fx-border-radius: 8px;
+    -fx-padding: 9px;
+    -fx-font-size: 12px;
+    -fx-cursor: hand;
+    -fx-alignment: center;
+}
+
+.btn-card-cta:hover {
+    -fx-background-color: linear-gradient(to right, #f97316, #ea580c);
+    -fx-border-color: #f97316;
+    -fx-text-fill: white;
+    -fx-effect: dropshadow(gaussian, rgba(249, 115, 22, 0.3), 12, 0, 0, 3);
+}
+
+.btn-card-cta:pressed {
+    -fx-background-color: #c2410c;
+    -fx-border-color: #f97316;
+    -fx-effect: innershadow(gaussian, rgba(0, 0, 0, 0.2), 4, 0, 0, 2);
+}

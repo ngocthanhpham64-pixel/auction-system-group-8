@@ -34,26 +34,26 @@ import java.util.regex.Pattern;
  */
 public class RegisterController implements Initializable {
 
-    private static final Logger LOGGER = Logger.getLogger(RegisterController.class.getName());
+    protected static final Logger LOGGER = Logger.getLogger(RegisterController.class.getName());
 
     // Validators
-    private static final Pattern EMAIL_PATTERN    = Pattern.compile("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$");
-    private static final Pattern PHONE_PATTERN    = Pattern.compile("^0\\d{9}$");
-    private static final Pattern USERNAME_PATTERN = Pattern.compile("^[A-Za-z0-9_]{3,20}$");
-    private static final Pattern PASSWORD_PATTERN = Pattern.compile("^(?=.*[A-Za-z])(?=.*\\d).{8,}$");
+    protected static final Pattern EMAIL_PATTERN    = Pattern.compile("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$");
+    protected static final Pattern PHONE_PATTERN    = Pattern.compile("^0\\d{9}$");
+    protected static final Pattern USERNAME_PATTERN = Pattern.compile("^[A-Za-z0-9_]{3,20}$");
+    protected static final Pattern PASSWORD_PATTERN = Pattern.compile("^(?=.*[A-Za-z])(?=.*\\d).{8,}$");
 
-    @FXML private TextField tfUsername;
-    @FXML private TextField tfFullName;
-    @FXML private TextField tfEmail;
-    @FXML private TextField tfPhone;
-    @FXML private PasswordField pfPassword;
-    @FXML private PasswordField pfConfirmPassword;
-    @FXML private CheckBox cbTerms;
-    @FXML private Hyperlink linkTerms;
-    @FXML private Label lblError;
-    @FXML private Button btnSubmit;
-    @FXML private Button btnTabLogin;
-    @FXML private Button btnTabRegister;
+    @FXML TextField tfUsername;
+    @FXML TextField tfFullName;
+    @FXML TextField tfEmail;
+    @FXML TextField tfPhone;
+    @FXML PasswordField pfPassword;
+    @FXML PasswordField pfConfirmPassword;
+    @FXML CheckBox cbTerms;
+    @FXML Hyperlink linkTerms;
+    @FXML Label lblError;
+    @FXML Button btnSubmit;
+    @FXML Button btnTabLogin;
+    @FXML Button btnTabRegister;
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
@@ -61,14 +61,14 @@ public class RegisterController implements Initializable {
         setupEnterKeySubmit();
     }
 
-    private void setupEnterKeySubmit() {
+    void setupEnterKeySubmit() {
         if (pfConfirmPassword != null) {
             pfConfirmPassword.setOnAction(e -> onRegister());
         }
     }
 
     @FXML
-    private void onRegister() {
+    void onRegister() {
         // Lay tat ca input
         String username = safeText(tfUsername);
         String fullName = safeText(tfFullName);
@@ -106,7 +106,7 @@ public class RegisterController implements Initializable {
     /**
      * Validate tat ca field. Return error message hoac null neu OK.
      */
-    private String validate(String username, String fullName, String email,
+    protected String validate(String username, String fullName, String email,
                             String phone, String password, String confirm) {
 
         if (username.isEmpty() || fullName.isEmpty() || email.isEmpty()
@@ -146,17 +146,17 @@ public class RegisterController implements Initializable {
     }
 
     @FXML
-    private void onTabLogin() {
+    void onTabLogin() {
         SceneManager.switchTo(SceneManager.VIEW_LOGIN);
     }
 
     @FXML
-    private void onTabRegister() {
+    void onTabRegister() {
         // Da o RegisterView
     }
 
     @FXML
-    private void onShowTerms() {
+    void onShowTerms() {
         AlertUtil.showInfo(
                 "DIEU KHOAN SU DUNG AUCTIVA\n\n"
                         + "1. Nguoi dung cam ket cung cap thong tin chinh xac.\n\n"
@@ -167,7 +167,7 @@ public class RegisterController implements Initializable {
         );
     }
 
-    private void setLoadingState(boolean loading) {
+    void setLoadingState(boolean loading) {
         if (btnSubmit == null) return;
         btnSubmit.setDisable(loading);
         btnSubmit.setText(loading ? "Dang dang ky..." : "Dang ky");
@@ -175,20 +175,20 @@ public class RegisterController implements Initializable {
 
     // ===== HELPERS =====
 
-    private String safeText(TextField field) {
+    protected String safeText(TextField field) {
         if (field == null) return "";
         String text = field.getText();
         return text != null ? text.trim() : "";
     }
 
-    private void showError(String message) {
+    void showError(String message) {
         if (lblError == null) return;
         lblError.setText(message);
         lblError.setVisible(true);
         lblError.setManaged(true);
     }
 
-    private void hideError() {
+    void hideError() {
         if (lblError == null) return;
         lblError.setVisible(false);
         lblError.setManaged(false);

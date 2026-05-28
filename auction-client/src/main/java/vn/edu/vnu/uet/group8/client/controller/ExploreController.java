@@ -1,5 +1,18 @@
 package vn.edu.vnu.uet.group8.client.controller;
 
+import java.io.IOException;
+import java.math.BigDecimal;
+import java.net.URL;
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
+import java.util.ResourceBundle;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
 import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
@@ -8,85 +21,77 @@ import javafx.scene.Node;
 import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
-import javafx.scene.layout.FlowPane;
-
+import javafx.scene.layout.Pane;
+import javafx.scene.layout.TilePane;
 import vn.edu.vnu.uet.group8.client.model.ClientModel;
 import vn.edu.vnu.uet.group8.client.service.AuctionService;
-import vn.edu.vnu.uet.group8.common.entity.Item;
-
-import java.io.IOException;
-import java.math.BigDecimal;
-import java.net.URL;
-import java.time.Instant;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.List;
-import java.util.ResourceBundle;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import vn.edu.vnu.uet.group8.common.dto.model.AuctionItemDTO;
+import vn.edu.vnu.uet.group8.common.enums.ItemCategory;
 
 /**
  * ExploreController — trang chinh hien danh sach phien dau gia.
- *
- * Tinh nang:
- *  - Load items tu server qua AuctionService.loadAll()
- *  - Binding voi ClientModel.auctionItems -> tu refresh khi co data moi
- *  - Filter 3 chieu: category / price range / status tag
- *  - Sort 4 kieu: sap ket thuc, moi nhat, gia thap-cao, cao-thap
- *  - Loading indicator + empty state
- *  - Render lai khong xoa scroll position
+ * FIX: Đổi FlowPane thành TilePane để khớp với FXML.
  */
 public class ExploreController implements Initializable {
 
-    private static final Logger LOGGER = Logger.getLogger(ExploreController.class.getName());
+    protected static final Logger LOGGER = Logger.getLogger(ExploreController.class.getName());
 
-    // Price range constants (VND)
-    private static final BigDecimal PRICE_10M  = new BigDecimal("10000000");
-    private static final BigDecimal PRICE_100M = new BigDecimal("100000000");
-    private static final BigDecimal PRICE_1B   = new BigDecimal("1000000000");
+    @FXML ComboBox<String> cbCategory;
+    @FXML ComboBox<String> cbPrice;
+    @FXML ComboBox<String> cbSort;
+    
+    // FIX BUG: Kiểu dữ liệu phải khớp với FXML (TilePane)
+    @FXML TilePane productContainer; 
+    
+    @FXML Label lblResultCount;
+    @FXML Button btnTagOpen;
 
-    @FXML private ComboBox<String> cbCategory;
-    @FXML private ComboBox<String> cbPrice;
-    @FXML private ComboBox<String> cbSort;
-    @FXML private FlowPane productContainer;
-    @FXML private Label lblResultCount;
-    @FXML private Button btnTagOpen;
-
-    private Button activeTag;
-    private String currentTagFilter = "open";  // open / ending / hot / new
-    private final List<Item> allItems = new ArrayList<>();
+    protected Button activeTag;
+    protected String currentTagFilter = "ALL";
+    protected final List<AuctionItemDTO> allItems = new ArrayList<>();
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
         initComboBoxes();
         activeTag = btnTagOpen;
         bindAuctionItems();
+        
+        // Sync ban đầu
+        allItems.addAll(ClientModel.getInstance().getAuctionItems());
+        renderProducts();
         loadProducts();
+
+        ClientModel.getInstance().searchQueryProperty().addListener((obs, oldV, newV) -> {
+            Platform.runLater(this::renderProducts);
+        });
     }
 
-    private void initComboBoxes() {
-        cbCategory.getItems().setAll("Tat ca danh muc",
-                "Dong ho cao cap", "Dien tu", "Trang suc",
-                "Nghe thuat", "Xe co", "Do co");
-        cbCategory.getSelectionModel().selectFirst();
+    void initComboBoxes() {
+        if (cbCategory != null) {
+            cbCategory.getItems().setAll("Tất cả danh mục",
+                    ItemCategory.WATCHES.getLabel(), ItemCategory.ELECTRONICS.getLabel(), 
+                    ItemCategory.JEWELRY.getLabel(), ItemCategory.ART.getLabel(), 
+                    ItemCategory.VEHICLES.getLabel(), ItemCategory.ANTIQUES.getLabel(),
+                    ItemCategory.BOOKS.getLabel(), ItemCategory.FASHION.getLabel(), 
+                    ItemCategory.OTHER.getLabel());
+            cbCategory.getSelectionModel().selectFirst();
+            cbCategory.setOnAction(e -> renderProducts());
+        }
 
-        cbPrice.getItems().setAll("Tat ca muc gia",
-                "Duoi 10 trieu", "10 - 100 trieu",
-                "100 trieu - 1 ty", "Tren 1 ty");
-        cbPrice.getSelectionModel().selectFirst();
+        if (cbPrice != null) {
+            cbPrice.getItems().setAll("Tất cả mức giá", "Dưới 10 triệu", "10 - 100 triệu", "100 triệu - 1 tỷ", "Trên 1 tỷ");
+            cbPrice.getSelectionModel().selectFirst();
+            cbPrice.setOnAction(e -> renderProducts());
+        }
 
-        cbSort.getItems().setAll("Sap ket thuc", "Moi nhat",
-                "Gia thap -> cao", "Gia cao -> thap");
-        cbSort.getSelectionModel().selectFirst();
-
-        // Re-render khi user doi filter
-        cbCategory.setOnAction(e -> renderProducts());
-        cbPrice.setOnAction(e -> renderProducts());
-        cbSort.setOnAction(e -> renderProducts());
+        if (cbSort != null) {
+            cbSort.getItems().setAll("Sắp kết thúc", "Mới nhất", "Giá thấp -> cao", "Giá cao -> thap");
+            cbSort.getSelectionModel().selectFirst();
+            cbSort.setOnAction(e -> renderProducts());
+        }
     }
 
-    /** Binding ClientModel -> tu re-render khi co items moi tu server. */
-    private void bindAuctionItems() {
+    void bindAuctionItems() {
         ClientModel.getInstance().auctionItemsProperty().addListener((obs, oldList, newList) ->
                 Platform.runLater(() -> {
                     allItems.clear();
@@ -96,199 +101,180 @@ public class ExploreController implements Initializable {
         );
     }
 
-    // ===== LOAD DATA =====
-
-    /**
-     * Load items async, hien loading indicator.
-     */
-    private void loadProducts() {
-        showLoading();
+    void loadProducts() {
+        if (lblResultCount != null) lblResultCount.setText("Đang tải dữ liệu...");
         AuctionService.loadAll(null, () -> {
-            // Callback chay sau khi AuctionService set ClientModel.auctionItems
-            // Listener da xu ly render -> chi can update count
-            LOGGER.info(() -> "Loaded " + allItems.size() + " items");
+            LOGGER.info("Data loaded from server.");
         });
     }
 
-    private void showLoading() {
-        if (lblResultCount != null) lblResultCount.setText("Dang tai...");
-    }
-
-    // ===== RENDER =====
-
-    /**
-     * Render products theo filter + sort hien tai.
-     * Empty state neu khong co item.
-     */
-    private void renderProducts() {
+    void renderProducts() {
         if (productContainer == null) return;
         productContainer.getChildren().clear();
 
-        if (allItems.isEmpty()) {
-            renderEmptyState("Chua co san pham nao");
-            return;
-        }
-
-        List<Item> filtered = applyFilters(allItems);
+        List<AuctionItemDTO> filtered = filter(allItems);
+        
         if (filtered.isEmpty()) {
-            renderEmptyState("Khong tim thay san pham phu hop");
+            renderEmptyState("Không tìm thấy sản phẩm nào");
             return;
         }
 
-        List<Item> sorted = applySorting(filtered);
-        for (Item item : sorted) {
+        List<AuctionItemDTO> sorted = applySorting(filtered);
+        for (AuctionItemDTO item : sorted) {
             Node card = buildProductCard(item);
             if (card != null) productContainer.getChildren().add(card);
         }
 
         if (lblResultCount != null) {
-            lblResultCount.setText("Hien thi " + sorted.size() + " ket qua");
+            lblResultCount.setText("Hiển thị " + sorted.size() + " kết quả");
         }
     }
 
-    private void renderEmptyState(String message) {
-        Label empty = new Label(message);
-        empty.getStyleClass().add("label-info");
-        empty.setStyle("-fx-padding: 40 0; -fx-font-size: 14px;");
+    void renderEmptyState(String message) {
+
+        if (productContainer == null) {
+            return;
+        }
+
+        Label empty = new Label(
+                message != null ? message : "Không có dữ liệu"
+        );
+
+        empty.setStyle(
+                "-fx-text-fill: #9ca3af; " +
+                        "-fx-font-size: 14px; " +
+                        "-fx-padding: 50 0;"
+        );
+
         productContainer.getChildren().add(empty);
-        if (lblResultCount != null) lblResultCount.setText("0 ket qua");
+
+        if (lblResultCount != null) {
+            lblResultCount.setText("0 kết quả");
+        }
     }
 
-    private List<Item> applyFilters(List<Item> items) {
-        String cat = cbCategory.getValue();
-        String price = cbPrice.getValue();
-        return items.stream()
-                .filter(it -> matchCategory(it, cat))
-                .filter(it -> matchPrice(it, price))
+    protected boolean matchKeyword(AuctionItemDTO item, String keyword) {
+        if (keyword == null || keyword.isEmpty()) return true;
+
+        keyword = keyword.toLowerCase();
+
+        return item.getTitle() != null
+                && item.getTitle().toLowerCase().contains(keyword);
+    }
+
+    protected boolean matchCategory(AuctionItemDTO item, String filterLabel) {
+        if (filterLabel == null || filterLabel.startsWith("Tất cả")) return true;
+        if (item.getCategory() == null) return false;
+        return item.getCategory().getLabel().equalsIgnoreCase(filterLabel);
+    }
+
+    protected boolean matchTagFilter(AuctionItemDTO item) {
+        if (currentTagFilter == null || currentTagFilter.equals("ALL")) return true;
+        if (item.getCategory() == null) return false;
+        return item.getCategory().name().equalsIgnoreCase(currentTagFilter);
+    }
+    protected List<AuctionItemDTO> filter(List<AuctionItemDTO> src) {
+
+        if (src == null || src.isEmpty()) {
+            return List.of();
+        }
+
+        String keyword = ClientModel.getInstance().getSearchQuery();
+
+        String category =
+                cbCategory != null ? cbCategory.getValue() : null;
+
+        return src.stream()
+                .filter(item -> matchKeyword(item, keyword))
+                .filter(item -> matchCategory(item, category))
                 .filter(this::matchTagFilter)
                 .toList();
     }
 
-    private boolean matchCategory(Item item, String filter) {
-        if (filter == null || filter.startsWith("Tat ca")) return true;
-        return filter.equalsIgnoreCase(item.getCategory());
-    }
+    protected List<AuctionItemDTO> applySorting(List<AuctionItemDTO> items) {
 
-    private boolean matchPrice(Item item, String filter) {
-        if (filter == null || filter.startsWith("Tat ca")) return true;
-        BigDecimal price = item.getCurrentPrice();
-        if (price == null) return true;
-        return switch (filter) {
-            case "Duoi 10 trieu"     -> price.compareTo(PRICE_10M) < 0;
-            case "10 - 100 trieu"    -> price.compareTo(PRICE_10M) >= 0 && price.compareTo(PRICE_100M) < 0;
-            case "100 trieu - 1 ty"  -> price.compareTo(PRICE_100M) >= 0 && price.compareTo(PRICE_1B) < 0;
-            case "Tren 1 ty"         -> price.compareTo(PRICE_1B) >= 0;
-            default -> true;
+        if (items == null || items.isEmpty()) {
+            return List.of();
+        }
+
+        String sortMode = "Mới nhất";
+
+        if (cbSort != null && cbSort.getValue() != null) {
+            sortMode = cbSort.getValue();
+        }
+
+        Comparator<AuctionItemDTO> comparator = switch (sortMode) {
+
+            case "Giá thấp -> cao" ->
+                    Comparator.comparing(
+                            AuctionItemDTO::getCurrentPrice,
+                            Comparator.nullsLast(Comparator.naturalOrder())
+                    );
+
+            case "Giá cao -> thap" ->
+                    Comparator.comparing(
+                            AuctionItemDTO::getCurrentPrice,
+                            Comparator.nullsLast(Comparator.naturalOrder())
+                    ).reversed();
+
+            default ->
+                    Comparator.comparing(
+                            AuctionItemDTO::getCreatedAt,
+                            Comparator.nullsLast(Comparator.naturalOrder())
+                    ).reversed();
         };
+
+        return items.stream()
+                .sorted(comparator)
+                .toList();
     }
 
-    private boolean matchTagFilter(Item item) {
-        return switch (currentTagFilter) {
-            case "open"   -> isOpen(item);
-            case "ending" -> isEnding(item);
-            case "hot"    -> true;  // TODO: BE bo sung bidCount field
-            case "new"    -> isNew(item);
-            default       -> true;
-        };
-    }
-
-    private boolean isOpen(Item item) {
-        return item.getEndTime() == null
-                || item.getEndTime().isAfter(Instant.now());
-    }
-
-    private boolean isEnding(Item item) {
-        if (item.getEndTime() == null) return false;
-        long secondsLeft = item.getEndTime().getEpochSecond() - Instant.now().getEpochSecond();
-        return secondsLeft > 0 && secondsLeft < 3600;  // < 1 hour
-    }
-
-    private boolean isNew(Item item) {
-        if (item.getCreatedAt() == null) return false;
-        long secondsAgo = Instant.now().getEpochSecond() - item.getCreatedAt().getEpochSecond();
-        return secondsAgo < 86400;  // < 24h
-    }
-
-    private List<Item> applySorting(List<Item> items) {
-        Comparator<Item> comparator = switch (cbSort.getValue() != null ? cbSort.getValue() : "") {
-            case "Gia thap -> cao" -> Comparator.comparing(
-                    Item::getCurrentPrice,
-                    Comparator.nullsLast(Comparator.naturalOrder()));
-            case "Gia cao -> thap" -> Comparator.comparing(
-                    Item::getCurrentPrice,
-                    Comparator.nullsLast(Comparator.naturalOrder())).reversed();
-            case "Moi nhat" -> Comparator.comparing(
-                    Item::getCreatedAt,
-                    Comparator.nullsLast(Comparator.naturalOrder())).reversed();
-            default -> Comparator.comparing(
-                    Item::getEndTime,
-                    Comparator.nullsLast(Comparator.naturalOrder()));  // sap ket thuc
-        };
-        return items.stream().sorted(comparator).toList();
-    }
-
-    /**
-     * Build product card tu FXML template.
-     * Set data + badges (cert, partner).
-     */
-    private Node buildProductCard(Item item) {
+    protected Node buildProductCard(AuctionItemDTO item) {
         try {
-            URL resource = getClass().getResource("/fxml/ProductCard.fxml");
-            if (resource == null) {
-                LOGGER.warning("Khong tim thay ProductCard.fxml");
-                return null;
-            }
-            FXMLLoader loader = new FXMLLoader(resource);
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/ProductCard.fxml"));
             Node card = loader.load();
             ProductCardController ctrl = loader.getController();
 
-            ctrl.setItem(String.valueOf(item.getId()),
-                    item.getName(),
-                    item.getCurrentPrice(),
-                    item.getImageUrl());
-
-            // Tinh nang #4 Kiem dinh
-            if (item.isVerified()) {
-                ctrl.showCertifiedBadge();
+            // Chuyển đổi Instant sang LocalDateTime để đồng hồ chạy
+            LocalDateTime endTime = null;
+            if (item.getEndTime() != null) {
+                endTime = LocalDateTime.ofInstant(item.getEndTime(), ZoneId.systemDefault());
             }
+
+            // Bind data thực tế từ DTO
+            ctrl.setItem(
+                String.valueOf(item.getItemId()),
+                item.getTitle(),
+                item.getCurrentPrice(),
+                (item.getImageUrls() != null && !item.getImageUrls().isEmpty()) ? item.getImageUrls().get(0) : "",
+                endTime
+            );
+            
+            ctrl.setBidCount(item.getBidCount());
+
             return card;
         } catch (IOException e) {
-            LOGGER.log(Level.WARNING, "Loi build product card cho item: " + item.getId(), e);
+            LOGGER.log(Level.SEVERE, "Loi load ProductCard cho item: " + item.getItemId(), e);
             return null;
         }
     }
 
-    // ===== TAG FILTER =====
-
     @FXML
-    private void onTagClick(javafx.event.ActionEvent event) {
-        Object src = event.getSource();
-        if (!(src instanceof Button btn)) return;
-
-        Object data = btn.getUserData();
-        currentTagFilter = data instanceof String s ? s : "open";
+    void onTagClick(javafx.event.ActionEvent event) {
+        if (!(event.getSource() instanceof Button btn)) return;
+        
+        String tag = (String) btn.getUserData();
+        this.currentTagFilter = (tag != null) ? tag : "ALL";
 
         setActiveTag(btn);
         renderProducts();
     }
 
-    private void setActiveTag(Button target) {
+    void setActiveTag(Button target) {
         if (activeTag != null) {
-            activeTag.getStyleClass().remove("tag-active");
-            if (!activeTag.getStyleClass().contains("tag-inactive")) {
-                activeTag.getStyleClass().add("tag-inactive");
-            }
+            activeTag.setStyle("-fx-background-color: white; -fx-text-fill: #4b5563; -fx-border-color: #e5e7eb;");
         }
-        target.getStyleClass().remove("tag-inactive");
-        if (!target.getStyleClass().contains("tag-active")) {
-            target.getStyleClass().add("tag-active");
-        }
+        target.setStyle("-fx-background-color: #1a2744; -fx-text-fill: white; -fx-border-color: #1a2744;");
         activeTag = target;
-    }
-
-    @FXML
-    private void onAdvancedFilter() {
-        LOGGER.info("Mo bo loc nang cao");
-        // TODO: open advanced filter dialog
     }
 }

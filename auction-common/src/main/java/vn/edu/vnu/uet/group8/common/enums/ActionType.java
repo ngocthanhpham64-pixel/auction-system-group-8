@@ -23,5 +23,23 @@ public enum ActionType {
     @SerializedName("notif_read") NOTIF_MARK_READ,
     @SerializedName("fav_list") FAVORITE_LIST,
     @SerializedName("fav_add") FAVORITE_ADD,
-    @SerializedName("fav_remove") FAVORITE_REMOVE
+    @SerializedName("fav_remove") FAVORITE_REMOVE,
+    @SerializedName("item_create")      ITEM_CREATE,
+    @SerializedName("item_update")      ITEM_UPDATE,
+    @SerializedName("item_delete")      ITEM_DELETE,
+    @SerializedName("item_my_listings") ITEM_MY_LISTINGS,
+    @SerializedName("user_change_password") USER_CHANGE_PASSWORD,
+    @SerializedName("user_withdraw")       USER_WITHDRAW,
+    @SerializedName("wallet_get_transactions") WALLET_GET_TRANSACTIONS, 
+    @SerializedName("notif_delete")    NOTIF_DELETE,
+    @SerializedName("admin_dashboard") ADMIN_DASHBOARD,
+    @SerializedName("admin_get_users") ADMIN_GET_USERS,
+    @SerializedName("admin_update_user_status") ADMIN_UPDATE_USER_STATUS,
+    @SerializedName("admin_get_auctions") ADMIN_GET_AUCTIONS,
+    @SerializedName("admin_cancel_auction") ADMIN_CANCEL_AUCTION,
+    @SerializedName("user_update_profile") USER_UPDATE_PROFILE,
+    @SerializedName("auth_request_otp") AUTH_REQUEST_OTP,
+    @SerializedName("auth_reset_password") AUTH_RESET_PASSWORD;
+
+    // @SerializedName("chat_send_message") CHAT_SEND_MESSAGE; // Chat (nếu triển khai)
 }

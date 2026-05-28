@@ -1,5 +1,12 @@
 package vn.edu.vnu.uet.group8.client.controller;
 
+import java.io.IOException;
+import java.net.URL;
+import java.util.ResourceBundle;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
 import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
@@ -10,54 +17,34 @@ import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
-
 import vn.edu.vnu.uet.group8.client.model.ClientModel;
 import vn.edu.vnu.uet.group8.client.service.AuthService;
 import vn.edu.vnu.uet.group8.client.util.AlertUtil;
 import vn.edu.vnu.uet.group8.client.util.SceneManager;
 import vn.edu.vnu.uet.group8.client.util.SessionManager;
 
-import java.io.IOException;
-import java.net.URL;
-import java.util.ResourceBundle;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-
-/**
- * MainController — khung chinh sau khi login.
- *
- * Trach nhiem:
- *  - Hien thi user info (avatar, fav count, noti count) tu SessionManager + ClientModel
- *  - Binding property -> tu dong update khi data thay doi
- *  - Routing giua cac view bang loadView()
- *  - Thread-safe loadView (chay tren FX Thread)
- *
- * Cap nhat realtime:
- *  - lblFavCount tu binding voi favCountProperty
- *  - lblNotiCount tu binding voi unreadNotificationCountProperty
- *  - lblAvatar tu binding voi currentUser
- */
 public class MainController implements Initializable {
 
-    private static final Logger LOGGER = Logger.getLogger(MainController.class.getName());
+    protected static final Logger LOGGER = Logger.getLogger(MainController.class.getName());
 
-    @FXML private Button btnToggle;
-    @FXML private TextField tfSearch;
-    @FXML private Button btnExplore;
-    @FXML private Button btnLive;
-    @FXML private Label lblFavCount;
-    @FXML private Label lblNotiCount;
-    @FXML private Label lblAvatar;
-    @FXML private VBox sidebar;
-    @FXML private Button btnHome;
-    @FXML private Button btnMyAuctions;
-    @FXML private Button btnWallet;
-    @FXML private Button btnSeller;
-    @FXML private Button btnSettings;
-    @FXML private StackPane contentPane;
+    @FXML Button btnToggle;
+    @FXML TextField tfSearch;
+    @FXML Button btnExplore;
+    @FXML Button btnLive;
+    @FXML Label lblFavCount;
+    @FXML Label lblNotiCount;
+    @FXML Label lblAvatar;
+    @FXML VBox sidebar;
+    @FXML Button btnHome;
+    @FXML Button btnMyAuctions;
+    @FXML Button btnWallet;
+    @FXML Button btnSeller;
+    @FXML Button btnSettings;
+    @FXML StackPane contentPane;
 
-    private Button activeNav;
-    private static MainController instance;
+    protected Button activeNav;
+    protected static MainController instance;
+    protected ScheduledExecutorService timerScheduler; // Khai bao de quan ly tap trung
 
     public static MainController getInstance() {
         return instance;
@@ -69,14 +56,31 @@ public class MainController implements Initializable {
         bindUserInfo();
         bindBadges();
         setupSearch();
+        
+        // Mặc định chọn Home
         setActiveNav(btnHome);
         loadView(SceneManager.VIEW_EXPLORE);
     }
 
-    // ===== BINDING =====
+    /** 
+     * Gan scheduler tu ben ngoai vao de MainController co the shutdown khi logout.
+     */
+    public void setTimerScheduler(ScheduledExecutorService scheduler) {
+        this.timerScheduler = scheduler;
+    }
 
-    /** Hien thi avatar tu SessionManager. */
-    private void bindUserInfo() {
+    void bindUserInfo() {
+        ClientModel.getInstance().currentUserProperty().addListener((obs, oldUser, newUser) -> 
+            Platform.runLater(() -> {
+                if (newUser != null && lblAvatar != null) {
+                    String name = newUser.getFullName() != null ? newUser.getFullName() : newUser.getUsername();
+                    if (name != null && !name.isEmpty()) {
+                        lblAvatar.setText(name.substring(0, 1).toUpperCase());
+                    }
+                }
+            })
+        );
+
         if (lblAvatar != null) {
             String avatarText = SessionManager.getAvatarText();
             if (avatarText != null && !avatarText.isBlank()) {
@@ -85,18 +89,14 @@ public class MainController implements Initializable {
         }
     }
 
-    /** Binding badge -> tu cap nhat khi ClientModel thay doi. */
-    private void bindBadges() {
+    void bindBadges() {
         ClientModel model = ClientModel.getInstance();
-
         if (lblFavCount != null) {
-            // Set lan dau + listen thay doi
             updateFavBadge(model.getFavCount());
             model.favCountProperty().addListener((obs, oldVal, newVal) ->
                     Platform.runLater(() -> updateFavBadge(newVal.intValue()))
             );
         }
-
         if (lblNotiCount != null) {
             updateNotiBadge(model.getUnreadNotificationCount());
             model.unreadNotificationCountProperty().addListener((obs, oldVal, newVal) ->
@@ -105,61 +105,44 @@ public class MainController implements Initializable {
         }
     }
 
-    private void updateFavBadge(int count) {
+    void updateFavBadge(int count) {
+        if (lblFavCount == null) return;
         lblFavCount.setText(String.valueOf(count));
         lblFavCount.setVisible(count > 0);
         lblFavCount.setManaged(count > 0);
     }
 
-    private void updateNotiBadge(int count) {
+    void updateNotiBadge(int count) {
+        if (lblNotiCount == null) return;
         lblNotiCount.setText(String.valueOf(count));
         lblNotiCount.setVisible(count > 0);
         lblNotiCount.setManaged(count > 0);
     }
 
-    /** Search debounce — Enter de submit. */
-    private void setupSearch() {
+    void setupSearch() {
         if (tfSearch == null) return;
         tfSearch.setOnAction(e -> {
             String query = tfSearch.getText().trim();
-            if (query.isEmpty()) return;
-            LOGGER.info(() -> "Tim kiem: " + query);
+            ClientModel.getInstance().setSearchQuery(query);
             loadView(SceneManager.VIEW_EXPLORE);
-            // TODO: pass query to ExploreController
         });
     }
 
-    // ===== NAVIGATION =====
-
-    /**
-     * Load view con vao contentPane.
-     * Thread-safe: tu chuyen ve FX Thread neu can.
-     */
     public void loadView(String fxmlFile) {
         if (!Platform.isFxApplicationThread()) {
             Platform.runLater(() -> loadView(fxmlFile));
             return;
         }
         try {
-            String path = "/fxml/" + fxmlFile;
-            URL resource = getClass().getResource(path);
-            if (resource == null) {
-                LOGGER.warning("Khong tim thay view: " + fxmlFile);
-                AlertUtil.showError("Khong tim thay view: " + fxmlFile);
-                return;
-            }
-            FXMLLoader loader = new FXMLLoader(resource);
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/" + fxmlFile));
             Node view = loader.load();
             contentPane.getChildren().setAll(view);
-            LOGGER.fine(() -> "Loaded view: " + fxmlFile);
         } catch (IOException e) {
             LOGGER.log(Level.SEVERE, "Loi khi load view: " + fxmlFile, e);
-            AlertUtil.showError("Loi khi load view: " + e.getMessage());
         }
     }
 
-    /** Set active state cho nav button. */
-    private void setActiveNav(Button target) {
+    void setActiveNav(Button target) {
         if (target == null) return;
         if (activeNav != null) {
             activeNav.getStyleClass().remove("nav-item-active");
@@ -174,58 +157,54 @@ public class MainController implements Initializable {
         activeNav = target;
     }
 
-    // ===== onAction =====
-
     @FXML
-    private void onExploreClick() {
-        setActiveNav(btnHome);
-        loadView(SceneManager.VIEW_EXPLORE);
-    }
-
-    @FXML
-    private void onLiveClick() {
-        loadView(SceneManager.VIEW_LIVE_AUCTION);
-    }
-
-    @FXML
-    private void onLogout() {
-        boolean ok = AlertUtil.showConfirm("Dang xuat", "Ban co chac muon dang xuat?");
+    void onLogout() {
+        boolean ok = AlertUtil.showConfirm("Xác nhận", "Bạn có chắc chắn muốn đăng xuất?");
         if (!ok) return;
-        LOGGER.info("Nguoi dung dang xuat");
+
+        cleanupResources();
         AuthService.logout();
     }
 
-    @FXML
-    private void onToggleSidebar() {
-        boolean visible = sidebar.isVisible();
-        sidebar.setVisible(!visible);
-        sidebar.setManaged(!visible);
-        LOGGER.fine(() -> "Sidebar visible: " + !visible);
+    /** 
+     * Don dep tai nguyen truoc khi thoat de tránh Memory Leak.
+     */
+    void cleanupResources() {
+        if (timerScheduler != null) {
+            try {
+                timerScheduler.shutdownNow();
+                timerScheduler = null; // Tranh goi lan 2
+                LOGGER.info("TimerScheduler has been shut down.");
+            } catch (Exception e) {
+                LOGGER.warning("Error shutting down timerScheduler: " + e.getMessage());
+            }
+        }
     }
 
     @FXML
-    private void onNavClick(javafx.event.ActionEvent event) {
+    void onNavClick(javafx.event.ActionEvent event) {
         Object source = event.getSource();
         if (!(source instanceof Button btn)) return;
 
-        Object route = btn.getUserData();
-        if (!(route instanceof String routeStr)) return;
+        String route = (String) btn.getUserData();
+        if (route == null) return;
 
         setActiveNav(btn);
-        switch (routeStr) {
+        switch (route) {
             case "HOME"        -> loadView(SceneManager.VIEW_EXPLORE);
+            case "EXPLORE"     -> loadView(SceneManager.VIEW_EXPLORE);
+            case "LIVE"        -> loadView(SceneManager.VIEW_LIVE_AUCTION);
             case "MY_AUCTIONS" -> loadView(SceneManager.VIEW_PROFILE);
             case "WALLET"      -> loadView(SceneManager.VIEW_WALLET);
             case "SELLER"      -> loadView("SellerDashboardView.fxml");
             case "SETTINGS"    -> loadView(SceneManager.VIEW_SETTINGS);
-            default            -> loadView(routeStr);
+            default            -> loadView(route);
         }
     }
 
-    // ===== onMouseClicked =====
-
-    @FXML private void onLogoClick()         { onExploreClick(); }
-    @FXML private void onFavoriteClick()     { loadView(SceneManager.VIEW_FAVORITES); }
-    @FXML private void onNotificationClick() { loadView(SceneManager.VIEW_NOTIFICATIONS); }
-    @FXML private void onProfileClick()      { loadView(SceneManager.VIEW_PROFILE); }
+    @FXML void onLogoClick()         { setActiveNav(btnHome); loadView(SceneManager.VIEW_EXPLORE); }
+    @FXML void onFavoriteClick()     { loadView(SceneManager.VIEW_FAVORITES); }
+    @FXML void onNotificationClick() { loadView(SceneManager.VIEW_NOTIFICATIONS); }
+    @FXML void onProfileClick()      { loadView(SceneManager.VIEW_PROFILE); }
+    @FXML void onToggleSidebar()     { sidebar.setVisible(!sidebar.isVisible()); sidebar.setManaged(sidebar.isVisible()); }
 }

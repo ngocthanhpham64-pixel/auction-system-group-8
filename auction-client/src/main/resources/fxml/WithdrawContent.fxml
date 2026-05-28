@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import java.lang.String?>
+<?import javafx.collections.FXCollections?>
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.ComboBox?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Region?>
+<?import javafx.scene.layout.VBox?>
+
+<VBox prefWidth="440.0" spacing="18.0" style="-fx-background-color: transparent;" xmlns="http://javafx.com/javafx/26" xmlns:fx="http://javafx.com/fxml/1" fx:controller="vn.edu.vnu.uet.group8.client.controller.WithdrawController">
+   <padding>
+      <Insets bottom="16.0" left="16.0" right="16.0" top="16.0" />
+   </padding>
+   <children>
+      <VBox spacing="6.0">
+         <children>
+            <Label styleClass="text-sub" style="-fx-font-weight: bold; -fx-font-size: 12px;" text="NGÂN HÀNG THỤ HƯỞNG" />
+            <ComboBox fx:id="cbWithdrawBank" maxWidth="1.7976931348623157E308" prefHeight="40.0" promptText="Chọn ngân hàng của bạn..." styleClass="form-input">
+               <items>
+                  <FXCollections fx:factory="observableArrayList">
+                     <String fx:value="Vietcombank (VCB)" />
+                     <String fx:value="Techcombank (TCB)" />
+                     <String fx:value="BIDV" />
+                     <String fx:value="VietinBank" />
+                     <String fx:value="MB Bank" />
+                  </FXCollections>
+               </items>
+            </ComboBox>
+         </children>
+      </VBox>
+
+      <VBox spacing="6.0">
+         <children>
+            <Label styleClass="text-sub" style="-fx-font-weight: bold; -fx-font-size: 12px;" text="SỐ TÀI KHOẢN" />
+            <TextField fx:id="txtAccountNumber" prefHeight="40.0" promptText="Nhập STK ngân hàng..." styleClass="form-input" />
+         </children>
+      </VBox>
+
+      <VBox spacing="6.0">
+         <children>
+            <HBox>
+               <children>
+                  <Label styleClass="text-sub" style="-fx-font-weight: bold; -fx-font-size: 12px;" text="SỐ TIỀN RÚT" />
+                  <Region HBox.hgrow="ALWAYS" />
+                  <Label fx:id="lblAvailable" styleClass="text-sub" style="-fx-font-size: 11px;" text="Khả dụng: 0 đ" />
+               </children>
+            </HBox>
+            <TextField fx:id="txtWithdrawAmount" prefHeight="45.0" promptText="Tối thiểu 50.000 đ" styleClass="form-input" style="-fx-font-size: 16px; -fx-font-weight: bold;" />
+         </children>
+      </VBox>
+
+      <Button fx:id="btnConfirmWithdraw" maxWidth="1.7976931348623157E308" prefHeight="45.0" style="-fx-background-color: #ea580c; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 10px; -fx-font-size: 14px; -fx-cursor: hand;" text="YÊU CẦU RÚT TIỀN" />
+   </children>
+</VBox>

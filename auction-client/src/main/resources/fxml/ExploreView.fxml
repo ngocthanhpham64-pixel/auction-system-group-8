@@ -4,9 +4,17 @@
 <?import javafx.geometry.Insets?>
 <?import java.net.URL?>
 
+<!--
+    ExploreView.fxml — UPGRADED
+    - TilePane thêm prefColumns="4" + maxWidth=MAX → số cột tự điều chỉnh
+    - Không cần ScrollPane riêng (dùng của MainLayout)
+    - prefTileWidth="240" → mỗi card rộng 240px
+    - prefTileHeight="340" → chiều cao card đồng đều
+-->
 <VBox xmlns:fx="http://javafx.com/fxml/1"
       fx:controller="vn.edu.vnu.uet.group8.client.controller.ExploreController"
-      styleClass="app-bg"
+      maxWidth="1.7976931348623157E308"
+      style="-fx-background-color: transparent;"
       spacing="0">
 
     <stylesheets>
@@ -15,58 +23,74 @@
         <URL value="@../css/layout.css"/>
     </stylesheets>
 
-    <!-- TIÊU ĐỀ + BỘ LỌC -->
-    <VBox style="-fx-background-color: white; -fx-border-color: #F0F0F0; -fx-border-width: 0 0 1 0;">
-        <padding><Insets top="20" bottom="16" left="24" right="24"/></padding>
-
-        <Label text="Tất cả phiên đấu giá" styleClass="h2" style="-fx-padding: 0 0 16 0;"/>
-
-        <!-- Bộ lọc -->
-        <HBox spacing="10" alignment="CENTER_LEFT" style="-fx-padding: 0 0 12 0;">
-            <ComboBox fx:id="cbCategory" promptText="Tất cả danh mục" prefWidth="240"
-                      style="-fx-border-color: #E0E0E0; -fx-border-radius: 8; -fx-background-radius: 8; -fx-font-size: 13px;"/>
-            <ComboBox fx:id="cbPrice" promptText="Tất cả mức giá" prefWidth="240"
-                      style="-fx-border-color: #E0E0E0; -fx-border-radius: 8; -fx-background-radius: 8; -fx-font-size: 13px;"/>
-            <Button text="Bộ lọc nâng cao" onAction="#onAdvancedFilter" styleClass="btn-secondary"/>
-        </HBox>
-
-        <!-- Tags -->
-        <HBox spacing="8" alignment="CENTER_LEFT">
-            <Button fx:id="btnTagOpen" text="Đang mở" onAction="#onTagClick" styleClass="tag-active"/>
-            <Button text="Sắp kết thúc" onAction="#onTagClick" styleClass="tag-inactive"/>
-            <Button text="Giá cao nhất" onAction="#onTagClick" styleClass="tag-inactive"/>
-            <Button text="Mới nhất" onAction="#onTagClick" styleClass="tag-inactive"/>
-        </HBox>
-    </VBox>
-
-    <!-- KẾT QUẢ + SẮP XẾP -->
-    <HBox alignment="CENTER_LEFT" style="-fx-padding: 12 24 12 24;">
-        <Label fx:id="lblResultCount" text="Hiển thị 8 kết quả" styleClass="label-info"/>
+    <!-- HEADER -->
+    <HBox alignment="CENTER_LEFT" spacing="12" style="-fx-padding: 16 0 14 0;">
+        <VBox spacing="4">
+            <Label text="Sàn đấu giá / Khám phá"
+                   style="-fx-text-fill: #9ca3af; -fx-font-size: 12px;"/>
+            <Label text="Tất cả phiên đấu giá"
+                   styleClass="text-heading" style="-fx-font-size: 22px; -fx-font-weight: 900;"/>
+        </VBox>
         <Region HBox.hgrow="ALWAYS"/>
-        <Label text="Sắp xếp:" styleClass="label-info" style="-fx-padding: 0 8 0 0;"/>
-        <ComboBox fx:id="cbSort" promptText="Sắp kết thúc" prefWidth="160"
-                  style="-fx-border-color: #E0E0E0; -fx-border-radius: 8; -fx-background-radius: 8; -fx-font-size: 13px;"/>
+        <Label fx:id="lblResultCount" text=""
+               style="-fx-text-fill: #6b7280; -fx-font-weight: bold; -fx-font-size: 13px;"/>
     </HBox>
 
-    <!-- DANH SÁCH SẢN PHẨM -->
-    <ScrollPane VBox.vgrow="ALWAYS" fitToWidth="true" styleClass="scrollpane-clean">
-        <content>
-            <FlowPane fx:id="productContainer" hgap="16" vgap="16"
-                      style="-fx-padding: 0 24 24 24; -fx-background-color: #F8F8F8;"/>
-        </content>
-    </ScrollPane>
+    <!-- FILTERS -->
+    <HBox alignment="CENTER_LEFT" spacing="16" style="-fx-padding: 0 0 20 0;">
+        <ScrollPane fitToHeight="true" hbarPolicy="NEVER" vbarPolicy="NEVER" 
+                    style="-fx-background-color: transparent; -fx-background: transparent; -fx-border-color: transparent;" 
+                    HBox.hgrow="ALWAYS">
+            <content>
+                <HBox fx:id="hboxTags" alignment="CENTER_LEFT" spacing="8" style="-fx-background-color: transparent;">
+                    <Button fx:id="btnTagAll" text="Tất cả" onAction="#onTagClick" userData="ALL" styleClass="tag-pill-active"/>
+                    <Button fx:id="btnTagWatches" text="⌚ Đồng hồ" onAction="#onTagClick" userData="WATCHES" styleClass="tag-pill"/>
+                    <Button fx:id="btnTagElectronics" text="💻 Điện tử" onAction="#onTagClick" userData="ELECTRONICS" styleClass="tag-pill"/>
+                    <Button fx:id="btnTagJewelry" text="💎 Trang sức" onAction="#onTagClick" userData="JEWELRY" styleClass="tag-pill"/>
+                </HBox>
+            </content>
+        </ScrollPane>
+        <ComboBox fx:id="cbSort" promptText="Sắp xếp: Mới nhất"
+                  prefWidth="170" styleClass="form-input-sm form-input"/>
+        <ComboBox fx:id="cbCategory" promptText="Danh mục"
+                  prefWidth="160" styleClass="form-input-sm form-input"/>
+    </HBox>
 
-    <!-- PHÂN TRANG -->
-    <HBox alignment="CENTER" spacing="6"
-          style="-fx-background-color: white; -fx-padding: 14; -fx-border-color: #F0F0F0; -fx-border-width: 1 0 0 0;">
-        <Button text="Trước" styleClass="btn-secondary"/>
-        <Button fx:id="btnPage1" text="1"
-                style="-fx-background-color: #F97316; -fx-text-fill: white; -fx-border-radius: 8; -fx-background-radius: 8; -fx-font-size: 13px; -fx-font-weight: bold; -fx-cursor: hand; -fx-padding: 7 13;"/>
-        <Button text="2" styleClass="btn-secondary"/>
-        <Button text="3" styleClass="btn-secondary"/>
-        <Label text="..." styleClass="label-info" style="-fx-padding: 7 4;"/>
-        <Button text="10" styleClass="btn-secondary"/>
-        <Button text="Sau" styleClass="btn-secondary"/>
+    <!--
+        TILE PANE — product cards
+        prefTileWidth / prefTileHeight : kích thước mỗi card
+        maxWidth=MAX : cho phép TilePane fill hết width
+    -->
+    <TilePane
+        fx:id="productContainer"
+        hgap="20"
+        vgap="24"
+        prefTileWidth="240"
+        prefTileHeight="340"
+        alignment="TOP_LEFT"
+        maxWidth="1.7976931348623157E308"
+        style="-fx-padding: 8 0 24 0; -fx-background-color: transparent;">
+        <!-- ProductCard nodes sẽ được render ở đây bởi ExploreController -->
+    </TilePane>
+
+    <!-- PAGINATION BAR -->
+    <HBox alignment="CENTER" spacing="12" style="-fx-padding: 16 0 48 0;">
+        <Button fx:id="btnPrevPage" text="← Trang trước"
+                onAction="#onPrevPage"
+                styleClass="tag-pill"
+                style="-fx-padding: 8 20 8 20;"/>
+        <HBox alignment="CENTER" spacing="6">
+            <Label text="Trang" style="-fx-text-fill: #9ca3af; -fx-font-size: 13px;"/>
+            <Label fx:id="lblCurrentPage" text="1"
+                   style="-fx-text-fill: #f97316; -fx-font-weight: bold; -fx-font-size: 15px;"/>
+            <Label text="/" style="-fx-text-fill: #9ca3af; -fx-font-size: 13px;"/>
+            <Label fx:id="lblTotalPages" text="1"
+                   style="-fx-text-fill: #9ca3af; -fx-font-size: 13px;"/>
+        </HBox>
+        <Button fx:id="btnNextPage" text="Trang sau →"
+                onAction="#onNextPage"
+                styleClass="tag-pill"
+                style="-fx-padding: 8 20 8 20;"/>
     </HBox>
 
 </VBox>
