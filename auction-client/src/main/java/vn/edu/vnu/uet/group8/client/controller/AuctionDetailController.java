@@ -135,14 +135,24 @@ public class AuctionDetailController implements Initializable {
     // ===== COUNTDOWN =====
 
     void startCountdown() {
+
         if (currentItem != null && currentItem.getEndTime() != null) {
-            long seconds = currentItem.getEndTime().getEpochSecond() - Instant.now().getEpochSecond();
+
+            long seconds =
+                    currentItem.getEndTime().getEpochSecond()
+                            - Instant.now().getEpochSecond();
+
             remainSeconds = seconds > 0 ? (int) seconds : 0;
-        } else {
-            remainSeconds = 2 * 3600 + 14 * 60 + 30;  // demo 2h14m30s
+
+        } else if (remainSeconds <= 0) {
+
+            // demo fallback
+            remainSeconds = 2 * 3600 + 14 * 60 + 30;
         }
 
-        countdown = new Timeline(new KeyFrame(Duration.seconds(1), e -> tick()));
+        countdown = new Timeline(
+                new KeyFrame(Duration.seconds(1), e -> tick()));
+
         countdown.setCycleCount(Timeline.INDEFINITE);
         countdown.play();
     }

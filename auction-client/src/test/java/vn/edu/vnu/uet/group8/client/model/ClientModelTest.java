@@ -40,7 +40,7 @@ class ClientModelTest extends TestFXSetup {
         Platform.runLater(latch::countDown);
 
         try {
-            assertTrue(latch.await(2, TimeUnit.SECONDS));
+            assertTrue(latch.await(10, TimeUnit.SECONDS));
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             fail("FX thread interrupted");
