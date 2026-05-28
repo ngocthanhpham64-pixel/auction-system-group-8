@@ -1,14 +1,16 @@
 package vn.edu.vnu.uet.group8.client.util;
-import javafx.application.Platform;
-import javafx.fxml.FXMLLoader;
-import javafx.scene.Parent;
-import javafx.scene.Scene;
-import javafx.stage.Stage;
-
 import java.io.IOException;
 import java.net.URL;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+
+import javafx.animation.FadeTransition;
+import javafx.application.Platform;
+import javafx.fxml.FXMLLoader;
+import javafx.scene.Parent;
+import javafx.scene.Scene;
+import javafx.scene.layout.StackPane;
+import javafx.stage.Stage;
 
 /**
  * Quản lý chuyển màn hình(Scene) trong JavaFX
@@ -22,6 +24,11 @@ public final class SceneManager {
     private static final Logger LOGGER = Logger.getLogger(SceneManager.class.getName());
     private static Stage primaryStage;
     private static String defaultTitle = "Auctiva - Live Online Auction";
+    private static String currentTheme = "light-theme.css";
+    
+    // Khung chứa nội dung cố định để tránh nháy màn hình
+    private static final StackPane rootWrapper = new StackPane();
+
     // Hằng số tên file FXML
 
     /**
@@ -44,6 +51,12 @@ public final class SceneManager {
 
     public static void init(Stage stage){
         primaryStage = stage;
+        
+        // Tạo Scene với wrapper cố định ngay từ đầu
+        Scene scene = new Scene(rootWrapper);
+        applyTheme(scene);
+        primaryStage.setScene(scene);
+        
         if(defaultTitle != null) primaryStage.setTitle(defaultTitle);
     }
     /**
@@ -75,11 +88,31 @@ public final class SceneManager {
         try{
             URL url = SceneManager.class.getResource("/fxml/" + fxmlFile);
             if(url == null) throw new IOException("Không tìm thấy: /fxml/" + fxmlFile);
-            Parent root = FXMLLoader.load(url);
-            Scene scene = new Scene(root);
-            inheritStylesheets(scene);
-            primaryStage.setScene(scene);
+            
+            FXMLLoader loader = new FXMLLoader(url);
+            Parent root = loader.load();
+
+            // Ép khung hình dãn khít tối đa
+            if (root instanceof javafx.scene.layout.Region region) {
+                region.setMaxWidth(Double.MAX_VALUE);
+                region.setMaxHeight(Double.MAX_VALUE);
+            }
+
+            // Thay thế nội dung bên trong wrapper cố định
+            // Điều này cực kỳ mượt mà vì Root của Scene không bao giờ thay đổi
+            rootWrapper.getChildren().setAll(root);
+
+            // Animation chuyển cảnh mượt mà
+            FadeTransition fadeIn = new FadeTransition(javafx.util.Duration.millis(250), root);
+            fadeIn.setFromValue(0.0);
+            fadeIn.setToValue(1.0);
+            fadeIn.play();
+            
             if(title != null) primaryStage.setTitle(title);
+            
+            // Ép JavaFX quét lại layout cho nội dung mới
+            root.requestLayout();
+
             primaryStage.show();
         } catch(IOException e){
             LOGGER.log(Level.SEVERE, "Lỗi tải FXML: "+fxmlFile,e);
@@ -115,11 +148,33 @@ public final class SceneManager {
         Parent root = loader.load();
         Scene scene = new Scene(root);
         inheritStylesheets(scene);
+        applyTheme(scene);
         primaryStage.setScene(scene);
         primaryStage.show();
         // Lưu ý: overload set title không hỗ trợ ở đây vì caller cần set data trước khi hiển thị
         // Caller có th tự set title sau: SceneManager.getStage().setTitle("..")
         return loader;
+    }
+
+    public static void setTheme(String themeFileName) {
+        currentTheme = themeFileName;
+        if (primaryStage != null && primaryStage.getScene() != null) {
+            applyTheme(primaryStage.getScene());
+        }
+    }
+
+    public static String getCurrentTheme() {
+        return currentTheme;
+    }
+
+    public static void applyTheme(Scene scene) {
+        scene.getStylesheets().removeIf(s -> s.contains("theme.css"));
+        URL cssUrl = SceneManager.class.getResource("/css/" + currentTheme);
+        if (cssUrl != null) {
+            scene.getStylesheets().add(cssUrl.toExternalForm());
+        } else {
+            LOGGER.warning("Không tìm thấy file theme: " + currentTheme);
+        }
     }
     public static Stage getStage() { return primaryStage;}
 
@@ -136,4 +191,3 @@ public final class SceneManager {
         }
     }
 }
-

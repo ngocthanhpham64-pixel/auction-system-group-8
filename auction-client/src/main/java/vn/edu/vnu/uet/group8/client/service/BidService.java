@@ -1,18 +1,21 @@
 package vn.edu.vnu.uet.group8.client.service;
 
-import vn.edu.vnu.uet.group8.client.networking.AuctionClient;
-import vn.edu.vnu.uet.group8.client.util.SessionManager;
-import vn.edu.vnu.uet.group8.common.dto.AutoBidRequest;
-import vn.edu.vnu.uet.group8.common.dto.BidRecord;
-import vn.edu.vnu.uet.group8.common.dto.BidRequest;
-import vn.edu.vnu.uet.group8.common.dto.BidResponse;
-import vn.edu.vnu.uet.group8.common.dto.ServerRequest;
-import vn.edu.vnu.uet.group8.common.enums.ActionType;
-import vn.edu.vnu.uet.group8.common.util.GsonUtil;
-
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Consumer;
+
+import com.google.gson.JsonObject;
+
+import vn.edu.vnu.uet.group8.client.networking.AuctionClient;
+import vn.edu.vnu.uet.group8.client.util.SessionManager;
+import vn.edu.vnu.uet.group8.common.dto.model.BidRecord;
+import vn.edu.vnu.uet.group8.common.dto.request.AutoBidRequest;
+import vn.edu.vnu.uet.group8.common.dto.request.BidRequest;
+import vn.edu.vnu.uet.group8.common.dto.request.ServerRequest;
+import vn.edu.vnu.uet.group8.common.dto.response.BidResponse;
+import vn.edu.vnu.uet.group8.common.enums.ActionType;
+import vn.edu.vnu.uet.group8.common.util.GsonUtil;
 
 /**
  * Service xử lý đặt giá thủ công, auto-bid và lịch sử đặt giá.
@@ -69,18 +72,17 @@ public final class BidService {
      * @param maxAmount giá trần tối đa user chịu trả(phải>0)
      * @param onResult callback nhận true nếu thành công
      */
-    public static void setAutoBid(int itemId,BigDecimal maxAmount,Consumer<Boolean> onResult){
+    public static void setAutoBid(int itemId,BigDecimal maxAmount,Consumer<vn.edu.vnu.uet.group8.common.dto.response.ServerResponse> onResult){
         if(!SessionManager.isLoggedIn()){
-            onResult.accept(false);
+            onResult.accept(vn.edu.vnu.uet.group8.common.dto.response.ServerResponse.replyError("BID_AUTO", "", "Bạn cần đăng nhập"));
             return;
         }
-        //Validate: maxAmount bắt buộc > 0, không cho null
-        if(maxAmount == null || maxAmount.compareTo(BigDecimal.ZERO)<=0){
-            onResult.accept(false);
+        if(maxAmount == null){
+            onResult.accept(vn.edu.vnu.uet.group8.common.dto.response.ServerResponse.replyError("BID_AUTO", "", "Giá không hợp lệ"));
             return;
         }
         if(!AuctionClient.getInstance().isConnected()){
-            onResult.accept(false);
+            onResult.accept(vn.edu.vnu.uet.group8.common.dto.response.ServerResponse.replyError("BID_AUTO", "", "Không có kết nối"));
             return;
         }
         AutoBidRequest payload = AutoBidRequest.builder()
@@ -94,7 +96,7 @@ public final class BidService {
                 .payload(payload)
                 .build();
         AuctionClient.getInstance().sendRequest(request,response -> {
-            onResult.accept(response.isSuccess());
+            onResult.accept(response);
         });
     }
     /**
@@ -107,11 +109,11 @@ public final class BidService {
             onResult.accept(List.of());
             return;
         }
-        ServerRequest<Integer> request = ServerRequest
-                .<Integer> builder(ActionType.BID_HISTORY)
+        ServerRequest<Map<String, Integer>> request = ServerRequest
+                .<Map<String, Integer>> builder(ActionType.BID_HISTORY)
                 .userId(SessionManager.getUserId())
                 .token(SessionManager.getAuthToken())
-                .payload(itemId)
+                .payload(Map.of("itemId", itemId))
                 .build();
         AuctionClient.getInstance().sendRequest(request,response -> {
             if(response.isSuccess()){
@@ -120,6 +122,32 @@ public final class BidService {
             } else{
                 onResult.accept(List.of());
             }
+        });
+    }
+
+    /**
+     * Lấy trạng thái Auto-bid hiện tại của người dùng cho phiên đấu giá.
+     */
+    public static void getAutoBidStatus(int itemId, Consumer<Boolean> onResult) {
+        if (!AuctionClient.getInstance().isConnected()) {
+            onResult.accept(false);
+            return;
+        }
+        ServerRequest<Map<String, Integer>> request = ServerRequest
+                .<Map<String, Integer>> builder(ActionType.valueOf("GET_AUTO_BID_STATUS"))
+                .userId(SessionManager.getUserId())
+                .token(SessionManager.getAuthToken())
+                .payload(Map.of("itemId", itemId))
+                .build();
+        AuctionClient.getInstance().sendRequest(request, response -> {
+            if (response.isSuccess() && response.getData() != null) {
+                JsonObject data = response.getData(JsonObject.class);
+                if (data != null && data.has("isActive")) {
+                    onResult.accept(data.get("isActive").getAsBoolean());
+                    return;
+                }
+            }
+            onResult.accept(false);
         });
     }
 }

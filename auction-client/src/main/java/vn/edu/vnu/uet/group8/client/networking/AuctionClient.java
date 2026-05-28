@@ -1,16 +1,11 @@
 package vn.edu.vnu.uet.group8.client.networking;
 
-import javafx.application.Platform;
-import vn.edu.vnu.uet.group8.common.dto.ServerRequest;
-import vn.edu.vnu.uet.group8.common.dto.ServerResponse;
-import vn.edu.vnu.uet.group8.common.enums.ActionType;
-import vn.edu.vnu.uet.group8.client.util.SessionManager;
-import vn.edu.vnu.uet.group8.client.model.ClientModel;
-import vn.edu.vnu.uet.group8.client.util.SceneManager;
-import vn.edu.vnu.uet.group8.client.util.AlertUtil;
-import vn.edu.vnu.uet.group8.common.util.GsonUtil;
-
-import java.io.*;
+import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.EOFException;
+import java.io.IOException;
 import java.net.Socket;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -20,6 +15,16 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+
+import javafx.application.Platform;
+import vn.edu.vnu.uet.group8.client.model.ClientModel;
+import vn.edu.vnu.uet.group8.client.util.AlertUtil;
+import vn.edu.vnu.uet.group8.client.util.SceneManager;
+import vn.edu.vnu.uet.group8.client.util.SessionManager;
+import vn.edu.vnu.uet.group8.common.dto.request.ServerRequest;
+import vn.edu.vnu.uet.group8.common.dto.response.ServerResponse;
+import vn.edu.vnu.uet.group8.common.enums.ActionType;
+import vn.edu.vnu.uet.group8.common.util.GsonUtil;
 
 /**
  * AuctionClient - Singleton quản lý kết nối     Socket tới server.
@@ -48,6 +53,8 @@ public final class AuctionClient {
     // Thread pool
     private ExecutorService receiverExecutor;
     private ScheduledExecutorService heartbeatExecutor;
+    private String host;
+    private int port;
 
     // Logger thay vì System.out/err - có timestamp, cấp độ log, dễ debug
     private static final Logger LOGGER = Logger.getLogger(AuctionClient.class.getName());
@@ -65,11 +72,13 @@ public final class AuctionClient {
      * @param port server port (ví dụ 12345)
      * @throws IOException nếu không thể kết nối
      */
-    public  synchronized void connect(String host, int port) throws IOException {
+    public synchronized void connect(String host, int port) throws IOException {
         if (connected.get()) {
             LOGGER.info("Already connected, ignoring connect request.");
             return;
         }
+        this.host = host;
+        this.port = port;
         disconnect();// dọn dẹp kết nối cũ
         socket = new Socket(host, port);
         // Dùng BufferedOutputStream để tăng hiệu suất (giảm số lần write system call)
@@ -89,42 +98,60 @@ public final class AuctionClient {
     }
 
     /**
+     * Thử kết nối lại với thông số cũ nếu đã mất kết nối.
+     */
+    public synchronized boolean reconnect() {
+        if (connected.get()) return true;
+        if (host == null || port == 0) return false;
+        try {
+            connect(host, port);
+            return true;
+        } catch (IOException e) {
+            LOGGER.warning("Reconnect failed: " + e.getMessage());
+            return false;
+        }
+    }
+
+    /**
      * Gửi một request tới server và đăng ký callback nhận response.
      *
      *  payload  object dữ liệu request (sẽ được gói trong ServerRequest)
      * @param callback hàm xử lý response (có thể null nếu không cần)
      */
     public void sendRequest(ServerRequest<?> request, Consumer<ServerResponse> callback) {
-        if (!connected.get() || out == null) {
-            LOGGER.warning("Cannot send request: not connected to server");
-            if (callback != null) {
-                Platform.runLater(() -> callback.accept(ServerResponse.replyError("ERROR", request.getRequestId(),"Không có kết nối server")));
-            }
-            return;
-        }
-
-        String requestId = request.getRequestId();
-        if (callback != null) {
-            ResponseDispatcher.register(requestId, callback);
-        }
-        try {
-            String json = GsonUtil.GSON.toJson(request);
-            // Synchronized trên out để tránh 2 thread ghi xen kẽ làm hỏng JSON
-            synchronized (out) {
-                out.writeUTF(json);
-                out.flush();
-            }
-            LOGGER.fine("Sent request: " + requestId + " - " + request.getAction());
-        } catch (IOException e) {
-            LOGGER.log(Level.SEVERE, "Error sending request: " + requestId, e);
-            // Xoá callback nếu đã đăng ký để tránh memory leak
-            if (callback != null) {
-                ResponseDispatcher.unregister(requestId);
-            }
-            // Nếu lỗi ghi, coi như mất kết nối
-            handleDisconnect(e);
-        }
+    if (!connected.get() || out == null) {
+      LOGGER.warning("Cannot send request: not connected to server");
+      if (callback != null) {
+        Platform.runLater(() -> callback.accept(ServerResponse.replyError(
+            "ERROR", request.getRequestId(), "Không có kết nối server")));
+      }
+      return;
     }
+
+    String requestId = request.getRequestId();
+    if (callback != null) {
+      ResponseDispatcher.register(requestId, callback);
+    }
+    try {
+      String json = GsonUtil.GSON.toJson(request);
+      byte[] bytes = json.getBytes(java.nio.charset.StandardCharsets.UTF_8);
+      synchronized (out) {
+        out.writeInt(bytes.length);
+        out.write(bytes);
+        out.flush();
+      }
+      LOGGER.fine("Sent request: " + requestId + " - " + request.getAction());
+    } catch (IOException e) {
+      LOGGER.log(Level.SEVERE, "Error sending request: " + requestId, e);
+      if (callback != null) {
+        ResponseDispatcher.unregister(requestId);
+        // TRÁNH TREO UI: Báo ngay lỗi mạng cho callback nếu gửi thất bại
+        Platform.runLater(() -> callback.accept(ServerResponse.replyError(
+            "ERROR", requestId, "Lỗi mạng khi gửi: " + e.getMessage())));
+      }
+      handleDisconnect(e);
+    }
+  }
 
     /**
      * Gửi request không cần callback.
@@ -178,6 +205,9 @@ public final class AuctionClient {
     public boolean isConnected() {
         return connected.get();
     }
+    public String getHost() {
+        return host;
+    }
 
     // ======================== PRIVATE HELPERS ========================
 
@@ -188,10 +218,20 @@ public final class AuctionClient {
         LOGGER.info("Listener loop started");
         try {
             while (connected.get() && !socket.isClosed()) {
-                String json = in.readUTF();
-                ServerResponse response = GsonUtil.GSON.fromJson(json, ServerResponse.class);
-                // Chuyển response cho dispatcher xử lý (trên FX thread nếu cần)
-                ResponseDispatcher.dispatch(response);
+                int length = in.readInt();
+                if (length <= 0 || length > 64 * 1024 * 1024) {
+                    throw new IOException("Độ dài gói tin response không hợp lệ hoặc quá lớn: " + length);
+                }
+                byte[] bytes = new byte[length];
+                in.readFully(bytes);
+                String json = new String(bytes, java.nio.charset.StandardCharsets.UTF_8);
+                try {
+                    ServerResponse response = GsonUtil.GSON.fromJson(json, ServerResponse.class);
+                    // Chuyển response cho dispatcher xử lý (trên FX thread nếu cần)
+                    ResponseDispatcher.dispatch(response);
+                } catch (Exception parseEx) {
+                    LOGGER.log(Level.SEVERE, "Lỗi khi xử lý response từ server: " + parseEx.getMessage());
+                }
             }
         } catch (EOFException e) {
             LOGGER.info("Server closed connection (EOF).");
@@ -278,4 +318,3 @@ public final class AuctionClient {
         });
     }
 }
-

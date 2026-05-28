@@ -36,4 +36,68 @@ public class UIFormatter {
         long secs = seconds % 60;
         return String.format("%02d:%02d:%02d", hours,minutes,secs);
     }
+
+    public static void setCircularAvatar(javafx.scene.image.ImageView imageView, javafx.scene.control.Label fallbackLabel, String avatarUrl, double size) {
+        if (avatarUrl == null || avatarUrl.trim().isEmpty()) {
+            if (imageView != null) imageView.setVisible(false);
+            if (fallbackLabel != null) fallbackLabel.setVisible(true);
+            return;
+        }
+
+        String resolvedUrl = avatarUrl;
+        if (resolvedUrl.startsWith("http://localhost:8081")) {
+            String serverHost = vn.edu.vnu.uet.group8.client.networking.AuctionClient.getInstance().getHost();
+            if (serverHost != null && !serverHost.equalsIgnoreCase("localhost")) {
+                resolvedUrl = resolvedUrl.replace("localhost", serverHost);
+            }
+        }
+
+        try {
+            javafx.scene.image.Image img = new javafx.scene.image.Image(resolvedUrl, true);
+            img.errorProperty().addListener((obs, oldVal, newVal) -> {
+                if (newVal) {
+                    javafx.application.Platform.runLater(() -> {
+                        if (imageView != null) imageView.setVisible(false);
+                        if (fallbackLabel != null) fallbackLabel.setVisible(true);
+                    });
+                }
+            });
+            img.progressProperty().addListener((obs, oldVal, newVal) -> {
+                if (newVal.doubleValue() == 1.0 && !img.isError()) {
+                    javafx.application.Platform.runLater(() -> {
+                        applyImageToImageView(imageView, fallbackLabel, img, size);
+                    });
+                }
+            });
+
+            if (!img.isError() && img.getProgress() == 1.0) {
+                applyImageToImageView(imageView, fallbackLabel, img, size);
+            }
+        } catch (Exception e) {
+            if (imageView != null) imageView.setVisible(false);
+            if (fallbackLabel != null) fallbackLabel.setVisible(true);
+        }
+    }
+
+    public static void applyImageToImageView(javafx.scene.image.ImageView imageView, javafx.scene.control.Label fallbackLabel, javafx.scene.image.Image img, double size) {
+        if (imageView != null) {
+            double w = img.getWidth();
+            double h = img.getHeight();
+            if (w > 0 && h > 0) {
+                double minDim = Math.min(w, h);
+                double startX = (w - minDim) / 2;
+                double startY = (h - minDim) / 2;
+                imageView.setViewport(new javafx.geometry.Rectangle2D(startX, startY, minDim, minDim));
+            }
+            imageView.setImage(img);
+            imageView.setFitWidth(size);
+            imageView.setFitHeight(size);
+            imageView.setPreserveRatio(true);
+            
+            javafx.scene.shape.Circle clip = new javafx.scene.shape.Circle(size / 2, size / 2, size / 2);
+            imageView.setClip(clip);
+            imageView.setVisible(true);
+        }
+        if (fallbackLabel != null) fallbackLabel.setVisible(false);
+    }
 }

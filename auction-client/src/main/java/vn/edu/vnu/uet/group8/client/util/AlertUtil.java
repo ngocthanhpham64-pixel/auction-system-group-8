@@ -1,12 +1,12 @@
 package vn.edu.vnu.uet.group8.client.util;
 
+import java.util.Optional;
+import java.util.logging.Logger;
+
 import javafx.application.Platform;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Alert.AlertType;
 import javafx.scene.control.ButtonType;
-
-import java.util.Optional;
-import java.util.logging.Logger;
 
 
 /**
@@ -20,10 +20,31 @@ public final class AlertUtil {
     private AlertUtil(){}
 
     public static void showInfo(String message){
-        runOnFX(()->show(AlertType.INFORMATION,"Thông báo",message));
+        runOnFX(()-> {
+            if (SceneManager.getStage() != null && SceneManager.getStage().isShowing()) {
+                try {
+                    ModalUtil.showSuccessModal("Thông báo", message);
+                    return;
+                } catch (Exception e) {
+                    // Fallback
+                }
+            }
+            show(AlertType.INFORMATION,"Thông báo",message);
+        });
     }
+    
     public static void showError(String message){
-        runOnFX(()->show(AlertType.ERROR,"Lỗi",message));
+        runOnFX(()-> {
+            if (SceneManager.getStage() != null && SceneManager.getStage().isShowing()) {
+                try {
+                    ModalUtil.showFailureModal("Lỗi", message);
+                    return;
+                } catch (Exception e) {
+                    // Fallback
+                }
+            }
+            show(AlertType.ERROR,"Lỗi",message);
+        });
     }
     public static void showWarning(String message){
         runOnFX(()->show(AlertType.WARNING,"Cảnh báo",message));

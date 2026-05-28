@@ -1,8 +1,5 @@
 package vn.edu.vnu.uet.group8.client.networking;
 
-import javafx.application.Platform;
-import vn.edu.vnu.uet.group8.common.dto.ServerResponse;
-
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -12,6 +9,12 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+
+import javafx.application.Platform;
+import vn.edu.vnu.uet.group8.common.dto.response.ServerResponse;
+import vn.edu.vnu.uet.group8.common.enums.EventType;
+import vn.edu.vnu.uet.group8.client.util.AlertUtil;
+import vn.edu.vnu.uet.group8.client.util.SessionManager;
 
 
 /**
@@ -43,7 +46,7 @@ public final class ResponseDispatcher {
      * Key = eventType(String do server định nghĩa, ví dụ"auction_update)
      * Value = CopyOnWriteArrayList để thread-safe khi subscribe/unsubscribe
      */
-    private static final ConcurrentHashMap<String, CopyOnWriteArrayList<Consumer<ServerResponse>>> broadcastListeners = new ConcurrentHashMap<>();
+    private static final ConcurrentHashMap<EventType, CopyOnWriteArrayList<Consumer<ServerResponse>>> broadcastListeners = new ConcurrentHashMap<>();
     private static final long CALLBACK_TIMEOUT_MS = 30_000;
     //Scheduler dọn dẹp callback hết hạn
     /**
@@ -85,7 +88,7 @@ public final class ResponseDispatcher {
      * Đăng kí một listener để nhận tất cả broadcast theo eventType
      * -Listener được gọi trên FX Thread mỗi khi server push một event có eventType tương ứng. Nhiều listener có thể đăng ký cùng eventType
      */
-    public static void subscribe(String eventType,Consumer<ServerResponse> listener){
+    public static void subscribe(EventType eventType,Consumer<ServerResponse> listener){
         if(eventType == null || listener == null){
             LOGGER.warning("subscribe() bỏ qua: eventType hoặc listener null");
             return;
@@ -97,7 +100,7 @@ public final class ResponseDispatcher {
      * Hủy đăng ký một broadcast listener
      * -Nên gọi trong cleanup của controller để tránh giữ reference và nhận event không mong muốn
      */
-    public static void unsubscribe(String eventType,Consumer<ServerResponse> listener){
+    public static void unsubscribe(EventType eventType,Consumer<ServerResponse> listener){
         if(eventType == null || listener == null) return;
         CopyOnWriteArrayList<Consumer<ServerResponse>> list = broadcastListeners.get(eventType);
         if(list != null && list.remove(listener)){
@@ -146,9 +149,17 @@ public final class ResponseDispatcher {
         }
         // Bước 2: Xử lý broadcast theo eventType
         // Response không có requestId -> đây là server-push event
-        String eventType = response.getEventType();
-        if (eventType == null || eventType.isBlank()) {
+        EventType eventType = response.getEventType();
+        if (eventType == null) {
             LOGGER.warning(() -> "Response không có requestId lẫn eventType: " + response);
+            return;
+        }
+        if (eventType == EventType.KICKED) {
+            Platform.runLater(() -> {
+                LOGGER.warning("Tài khoản đã đăng nhập từ thiết bị khác. Đang đăng xuất...");
+                AlertUtil.showError("Tài khoản của bạn đã được đăng nhập từ một thiết bị khác.");
+                SessionManager.logout();
+            });
             return;
         }
         CopyOnWriteArrayList<Consumer<ServerResponse>> listeners = broadcastListeners.get(eventType);
@@ -181,20 +192,33 @@ public final class ResponseDispatcher {
      * Dùng removeIf để duyệt và xóa atomic trên ConcurrentHashMap-an toàn khi dispatch đang chạy đồng thời
      */
     private static void evictExpiredCallbacks() {
-        long now = System.currentTimeMillis();
-        // int[] thay int vì lambda không capture biến non-effectively-final
-        int[] removed = {0};
+    long now = System.currentTimeMillis();
+    int[] removed = {0};
 
-        pending.entrySet().removeIf(entry -> {
-            if (now - entry.getValue().registeredAt > CALLBACK_TIMEOUT_MS) {
-                removed[0]++;
-                return true; // xoá khỏi map
-            }
-            return false;
+    pending.entrySet().removeIf(entry -> {
+      if (now - entry.getValue().registeredAt > CALLBACK_TIMEOUT_MS) {
+        removed[0]++;
+        String reqId = entry.getKey();
+        PendingCallback pc = entry.getValue();
+
+        // TRÁNH TREO UI: Trả về một phản hồi lỗi giả lập cho callback thay vì âm thầm xoá
+        Platform.runLater(() -> {
+          try {
+            ServerResponse timeoutResponse = ServerResponse.replyError(
+                "TIMEOUT", reqId, "Không có phản hồi từ máy chủ (Timeout 30s)");
+            pc.callback.accept(timeoutResponse);
+          } catch (Exception e) {
+            LOGGER.log(Level.WARNING, "Lỗi khi gọi callback báo timeout | requestId=" + reqId, e);
+          }
         });
 
-        if (removed[0] > 0) {
-            LOGGER.fine(() -> "Evicted " + removed[0] + " expired callbacks");
-        }
+        return true; // Xoá khỏi map
+      }
+      return false;
+    });
+
+    if (removed[0] > 0) {
+      LOGGER.fine(() -> "Evicted " + removed[0] + " expired callbacks");
     }
+  }
 }
