@@ -14,6 +14,7 @@ public final class NotificationDTO {
     private final boolean isRead; // Đánh dấu đã đọc hay chưa(true = đã đọc và ngược lại)
     private final Instant createdAt; // Thời điểm tạo thông báo(UTC). So sánh, hiển thị dễ dàng
     private final String type;// Loại thông báo giúp client xử lý hiển thị khác nhau
+    private final int relatedId; // ID thực thể liên quan (VD: itemId)
 
     private NotificationDTO(Builder builder) {
         this.id = builder.id;
@@ -23,6 +24,7 @@ public final class NotificationDTO {
         this.isRead = builder.isRead;
         this.createdAt = builder.createdAt;
         this.type = builder.type;
+        this.relatedId = builder.relatedId;
     }
 
     // Getters
@@ -33,6 +35,7 @@ public final class NotificationDTO {
     public boolean isRead() { return isRead; }
     public Instant getCreatedAt() { return createdAt; }
     public String getType() { return type; }
+    public int getRelatedId() { return relatedId; }
     // Client sau khi nhận NotificationDTO sẽ gọi các getter này để lấy dữ liệu hiển thị lên giao diện
     public static Builder builder() {
         return new Builder();
@@ -46,6 +49,7 @@ public final class NotificationDTO {
         private boolean isRead;
         private Instant createdAt;
         private String type;
+        private int relatedId;
 
         private Builder() {} // chỉ được gọi từ bên trong, ngăn chặn việc tạo builder 1 cách tùy tiện
 
@@ -56,6 +60,7 @@ public final class NotificationDTO {
         public Builder isRead(boolean isRead) { this.isRead = isRead; return this; }
         public Builder createdAt(Instant createdAt) { this.createdAt = createdAt; return this; }
         public Builder type(String type) { this.type = type; return this; }
+        public Builder relatedId(int relatedId) { this.relatedId = relatedId; return this; }
 
         public NotificationDTO build() {
             return new NotificationDTO(this);

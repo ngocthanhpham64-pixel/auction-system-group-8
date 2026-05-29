@@ -39,6 +39,18 @@ public class AdminStatsDTO {
     @SerializedName("total_bids")
     private int totalBids;
 
+    @SerializedName("sold_auctions")
+    private int soldAuctions;
+
+    @SerializedName("cancelled_auctions")
+    private int cancelledAuctions;
+
+    @SerializedName("upcoming_auctions")
+    private int upcomingAuctions;
+
+    @SerializedName("ended_no_bid_auctions")
+    private int endedNoBidAuctions;
+
     /** No-arg constructor cho Gson. */
     public AdminStatsDTO() {}
 
@@ -47,6 +59,15 @@ public class AdminStatsDTO {
         this.totalUsers = totalUsers;
         this.totalRevenue = totalRevenue;
         this.totalBids = totalBids;
+    }
+
+    public AdminStatsDTO(int activeAuctions, int totalUsers, BigDecimal totalRevenue, int totalBids,
+                         int soldAuctions, int cancelledAuctions, int upcomingAuctions, int endedNoBidAuctions) {
+        this(activeAuctions, totalUsers, totalRevenue, totalBids);
+        this.soldAuctions       = soldAuctions;
+        this.cancelledAuctions  = cancelledAuctions;
+        this.upcomingAuctions   = upcomingAuctions;
+        this.endedNoBidAuctions = endedNoBidAuctions;
     }
 
     /**
@@ -63,6 +84,11 @@ public class AdminStatsDTO {
     public int getTotalUsers()     { return totalUsers; }
     public int getTotalBids()      { return totalBids; }
 
+    public int getSoldAuctions()       { return soldAuctions; }
+    public int getCancelledAuctions()  { return cancelledAuctions; }
+    public int getUpcomingAuctions()   { return upcomingAuctions; }
+    public int getEndedNoBidAuctions() { return endedNoBidAuctions; }
+
     /** Null-safe: nếu server trả null thì trả về ZERO. */
     public BigDecimal getTotalRevenue() {
         return totalRevenue != null ? totalRevenue : BigDecimal.ZERO;
@@ -75,15 +101,24 @@ public class AdminStatsDTO {
     public void setTotalRevenue(BigDecimal revenue)   { this.totalRevenue = revenue; }
     public void setTotalBids(int totalBids)           { this.totalBids = totalBids; }
 
+    public void setSoldAuctions(int v)       { this.soldAuctions = v; }
+    public void setCancelledAuctions(int v)  { this.cancelledAuctions = v; }
+    public void setUpcomingAuctions(int v)   { this.upcomingAuctions = v; }
+    public void setEndedNoBidAuctions(int v) { this.endedNoBidAuctions = v; }
+
     // ===== Object overrides =====
 
     @Override
     public String toString() {
         return "AdminStatsDTO{" +
-                "activeAuctions=" + activeAuctions +
-                ", totalUsers=" + totalUsers +
-                ", totalRevenue=" + getTotalRevenue() +
-                ", totalBids=" + totalBids +
+                "activeAuctions="   + activeAuctions +
+                ", totalUsers="     + totalUsers +
+                ", totalRevenue="   + getTotalRevenue() +
+                ", totalBids="      + totalBids +
+                ", soldAuctions="       + soldAuctions +
+                ", cancelledAuctions="  + cancelledAuctions +
+                ", upcomingAuctions="   + upcomingAuctions +
+                ", endedNoBidAuctions=" + endedNoBidAuctions +
                 '}';
     }
 
@@ -91,14 +126,19 @@ public class AdminStatsDTO {
     public boolean equals(Object o) {
         if (this == o) return true;
         if (!(o instanceof AdminStatsDTO that)) return false;
-        return activeAuctions == that.activeAuctions
-                && totalUsers == that.totalUsers
-                && totalBids == that.totalBids
+        return activeAuctions    == that.activeAuctions
+                && totalUsers    == that.totalUsers
+                && totalBids     == that.totalBids
+                && soldAuctions      == that.soldAuctions
+                && cancelledAuctions == that.cancelledAuctions
+                && upcomingAuctions  == that.upcomingAuctions
+                && endedNoBidAuctions== that.endedNoBidAuctions
                 && Objects.equals(getTotalRevenue(), that.getTotalRevenue());
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(activeAuctions, totalUsers, getTotalRevenue(), totalBids);
+        return Objects.hash(activeAuctions, totalUsers, getTotalRevenue(), totalBids,
+                soldAuctions, cancelledAuctions, upcomingAuctions, endedNoBidAuctions);
     }
 }
