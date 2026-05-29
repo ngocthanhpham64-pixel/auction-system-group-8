@@ -51,6 +51,7 @@ public class ClientModel {
   private final ObjectProperty<BigDecimal> balance = new SimpleObjectProperty<>(BigDecimal.ZERO);
 
   private final StringProperty searchQuery = new SimpleStringProperty("");
+  private final StringProperty avatarUrl = new SimpleStringProperty("");
 
   // Constructor private cho Singleton
   private ClientModel() {}
@@ -78,10 +79,26 @@ public class ClientModel {
   public void setAuctionItems(List<AuctionItemDTO> items) {
     runOnFX(
         () -> {
-          auctionItems.clear();
-          if (items != null) {
-            auctionItems.addAll(items);
+          if (items != null && items.size() == auctionItems.size()) {
+            boolean isIdentical = true;
+            for (int i = 0; i < items.size(); i++) {
+              AuctionItemDTO oldItem = auctionItems.get(i);
+              AuctionItemDTO newItem = items.get(i);
+              if (oldItem.getItemId() != newItem.getItemId() || oldItem.getStatus() != newItem.getStatus()) {
+                isIdentical = false;
+                break;
+              }
+            }
+            if (isIdentical) {
+              // Just update mutable fields to avoid triggering list invalidation
+              for (int i = 0; i < items.size(); i++) {
+                auctionItems.get(i).setCurrentPrice(items.get(i).getCurrentPrice());
+                auctionItems.get(i).setEndTime(items.get(i).getEndTime());
+              }
+              return;
+            }
           }
+          auctionItems.setAll(items == null ? java.util.Collections.emptyList() : items);
         });
   }
 
@@ -96,6 +113,8 @@ public class ClientModel {
           notifications.clear();
           if (list != null) {
             notifications.addAll(list);
+            int unread = (int) list.stream().filter(n -> !n.isRead()).count();
+            unreadNotificationCount.set(unread);
           }
         });
   }
@@ -248,6 +267,18 @@ public class ClientModel {
     return searchQuery;
   }
 
+  public String getAvatarUrl() {
+    return avatarUrl.get();
+  }
+
+  public void setAvatarUrl(String url) {
+    runOnFX(() -> avatarUrl.set(url != null ? url : ""));
+  }
+
+  public StringProperty avatarUrlProperty() {
+    return avatarUrl;
+  }
+
   /**
    * Quản lý danh sách yêu thích
    * (an toàn, dùng theo id thay vì equals)
@@ -302,6 +333,7 @@ public class ClientModel {
           currentAuctionItem.set(null);
           currentAuctionStatus.set(null);
           searchQuery.set("");
+          avatarUrl.set("");
         });
   }
 
