@@ -12,6 +12,7 @@ import vn.edu.vnu.uet.group8.client.networking.AuctionClient;
 import vn.edu.vnu.uet.group8.common.dto.model.AdminStatsDTO;
 import vn.edu.vnu.uet.group8.common.dto.model.AuctionItemDTO;
 import vn.edu.vnu.uet.group8.common.dto.model.UserAdminDTO;
+import vn.edu.vnu.uet.group8.common.dto.model.UserProfileDTO;
 import vn.edu.vnu.uet.group8.common.enums.ActionType;
 import vn.edu.vnu.uet.group8.common.util.GsonUtil;
 
@@ -53,6 +54,25 @@ public final class AdminService {
                 } else {
                     LOGGER.warning("ADMIN_DASHBOARD failed: " + resp.getMessage());
                     deliver(callback, AdminStatsDTO.empty());
+                }
+            });
+    }
+
+    /**
+     * Lấy thông tin chi tiết của một user bất kỳ.
+     */
+    public static void getUserProfile(int targetUserId, Consumer<UserProfileDTO> callback) {
+        Objects.requireNonNull(callback, "callback must not be null");
+        Map<String, Integer> payload = Map.of("targetUserId", targetUserId);
+        
+        AuctionClient.getInstance().sendAuthenticatedRequest(
+            ActionType.USER_PROFILE, payload,
+            resp -> {
+                if (resp.isSuccess()) {
+                    UserProfileDTO profile = GsonUtil.toObject(resp.getData(), UserProfileDTO.class);
+                    deliver(callback, profile);
+                } else {
+                    deliver(callback, null);
                 }
             });
     }

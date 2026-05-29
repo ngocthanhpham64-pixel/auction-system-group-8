@@ -119,36 +119,39 @@ public final class AuctionClient {
      * @param callback hàm xử lý response (có thể null nếu không cần)
      */
     public void sendRequest(ServerRequest<?> request, Consumer<ServerResponse> callback) {
-        if (!connected.get() || out == null) {
-            LOGGER.warning("Cannot send request: not connected to server");
-            if (callback != null) {
-                Platform.runLater(() -> callback.accept(ServerResponse.replyError("ERROR", request.getRequestId(),"Không có kết nối server")));
-            }
-            return;
-        }
-
-        String requestId = request.getRequestId();
-        if (callback != null) {
-            ResponseDispatcher.register(requestId, callback);
-        }
-        try {
-            String json = GsonUtil.GSON.toJson(request);
-            // Synchronized trên out để tránh 2 thread ghi xen kẽ làm hỏng JSON
-            synchronized (out) {
-                out.writeUTF(json);
-                out.flush();
-            }
-            LOGGER.fine("Sent request: " + requestId + " - " + request.getAction());
-        } catch (IOException e) {
-            LOGGER.log(Level.SEVERE, "Error sending request: " + requestId, e);
-            // Xoá callback nếu đã đăng ký để tránh memory leak
-            if (callback != null) {
-                ResponseDispatcher.unregister(requestId);
-            }
-            // Nếu lỗi ghi, coi như mất kết nối
-            handleDisconnect(e);
-        }
+    if (!connected.get() || out == null) {
+      LOGGER.warning("Cannot send request: not connected to server");
+      if (callback != null) {
+        Platform.runLater(() -> callback.accept(ServerResponse.replyError(
+            "ERROR", request.getRequestId(), "Không có kết nối server")));
+      }
+      return;
     }
+
+    String requestId = request.getRequestId();
+    if (callback != null) {
+      ResponseDispatcher.register(requestId, callback);
+    }
+    try {
+      String json = GsonUtil.GSON.toJson(request);
+      byte[] bytes = json.getBytes(java.nio.charset.StandardCharsets.UTF_8);
+      synchronized (out) {
+        out.writeInt(bytes.length);
+        out.write(bytes);
+        out.flush();
+      }
+      LOGGER.fine("Sent request: " + requestId + " - " + request.getAction());
+    } catch (IOException e) {
+      LOGGER.log(Level.SEVERE, "Error sending request: " + requestId, e);
+      if (callback != null) {
+        ResponseDispatcher.unregister(requestId);
+        // TRÁNH TREO UI: Báo ngay lỗi mạng cho callback nếu gửi thất bại
+        Platform.runLater(() -> callback.accept(ServerResponse.replyError(
+            "ERROR", requestId, "Lỗi mạng khi gửi: " + e.getMessage())));
+      }
+      handleDisconnect(e);
+    }
+  }
 
     /**
      * Gửi request không cần callback.
@@ -202,6 +205,9 @@ public final class AuctionClient {
     public boolean isConnected() {
         return connected.get();
     }
+    public String getHost() {
+        return host;
+    }
 
     // ======================== PRIVATE HELPERS ========================
 
@@ -212,10 +218,20 @@ public final class AuctionClient {
         LOGGER.info("Listener loop started");
         try {
             while (connected.get() && !socket.isClosed()) {
-                String json = in.readUTF();
-                ServerResponse response = GsonUtil.GSON.fromJson(json, ServerResponse.class);
-                // Chuyển response cho dispatcher xử lý (trên FX thread nếu cần)
-                ResponseDispatcher.dispatch(response);
+                int length = in.readInt();
+                if (length <= 0 || length > 64 * 1024 * 1024) {
+                    throw new IOException("Độ dài gói tin response không hợp lệ hoặc quá lớn: " + length);
+                }
+                byte[] bytes = new byte[length];
+                in.readFully(bytes);
+                String json = new String(bytes, java.nio.charset.StandardCharsets.UTF_8);
+                try {
+                    ServerResponse response = GsonUtil.GSON.fromJson(json, ServerResponse.class);
+                    // Chuyển response cho dispatcher xử lý (trên FX thread nếu cần)
+                    ResponseDispatcher.dispatch(response);
+                } catch (Exception parseEx) {
+                    LOGGER.log(Level.SEVERE, "Lỗi khi xử lý response từ server: " + parseEx.getMessage());
+                }
             }
         } catch (EOFException e) {
             LOGGER.info("Server closed connection (EOF).");

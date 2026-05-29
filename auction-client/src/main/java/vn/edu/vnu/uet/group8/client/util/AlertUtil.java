@@ -20,10 +20,31 @@ public final class AlertUtil {
     private AlertUtil(){}
 
     public static void showInfo(String message){
-        runOnFX(()->show(AlertType.INFORMATION,"Thông báo",message));
+        runOnFX(()-> {
+            if (SceneManager.getStage() != null && SceneManager.getStage().isShowing()) {
+                try {
+                    ModalUtil.showSuccessModal("Thông báo", message);
+                    return;
+                } catch (Exception e) {
+                    // Fallback
+                }
+            }
+            show(AlertType.INFORMATION,"Thông báo",message);
+        });
     }
+    
     public static void showError(String message){
-        runOnFX(()->show(AlertType.ERROR,"Lỗi",message));
+        runOnFX(()-> {
+            if (SceneManager.getStage() != null && SceneManager.getStage().isShowing()) {
+                try {
+                    ModalUtil.showFailureModal("Lỗi", message);
+                    return;
+                } catch (Exception e) {
+                    // Fallback
+                }
+            }
+            show(AlertType.ERROR,"Lỗi",message);
+        });
     }
     public static void showWarning(String message){
         runOnFX(()->show(AlertType.WARNING,"Cảnh báo",message));

@@ -13,6 +13,8 @@ import java.util.logging.Logger;
 import javafx.application.Platform;
 import vn.edu.vnu.uet.group8.common.dto.response.ServerResponse;
 import vn.edu.vnu.uet.group8.common.enums.EventType;
+import vn.edu.vnu.uet.group8.client.util.AlertUtil;
+import vn.edu.vnu.uet.group8.client.util.SessionManager;
 
 
 /**
@@ -152,6 +154,14 @@ public final class ResponseDispatcher {
             LOGGER.warning(() -> "Response không có requestId lẫn eventType: " + response);
             return;
         }
+        if (eventType == EventType.KICKED) {
+            Platform.runLater(() -> {
+                LOGGER.warning("Tài khoản đã đăng nhập từ thiết bị khác. Đang đăng xuất...");
+                AlertUtil.showError("Tài khoản của bạn đã được đăng nhập từ một thiết bị khác.");
+                SessionManager.logout();
+            });
+            return;
+        }
         CopyOnWriteArrayList<Consumer<ServerResponse>> listeners = broadcastListeners.get(eventType);
         if (listeners == null || listeners.isEmpty()) {
             LOGGER.fine(() -> "Không có listener nào cho eventType=" + eventType);
@@ -182,20 +192,33 @@ public final class ResponseDispatcher {
      * Dùng removeIf để duyệt và xóa atomic trên ConcurrentHashMap-an toàn khi dispatch đang chạy đồng thời
      */
     private static void evictExpiredCallbacks() {
-        long now = System.currentTimeMillis();
-        // int[] thay int vì lambda không capture biến non-effectively-final
-        int[] removed = {0};
+    long now = System.currentTimeMillis();
+    int[] removed = {0};
 
-        pending.entrySet().removeIf(entry -> {
-            if (now - entry.getValue().registeredAt > CALLBACK_TIMEOUT_MS) {
-                removed[0]++;
-                return true; // xoá khỏi map
-            }
-            return false;
+    pending.entrySet().removeIf(entry -> {
+      if (now - entry.getValue().registeredAt > CALLBACK_TIMEOUT_MS) {
+        removed[0]++;
+        String reqId = entry.getKey();
+        PendingCallback pc = entry.getValue();
+
+        // TRÁNH TREO UI: Trả về một phản hồi lỗi giả lập cho callback thay vì âm thầm xoá
+        Platform.runLater(() -> {
+          try {
+            ServerResponse timeoutResponse = ServerResponse.replyError(
+                "TIMEOUT", reqId, "Không có phản hồi từ máy chủ (Timeout 30s)");
+            pc.callback.accept(timeoutResponse);
+          } catch (Exception e) {
+            LOGGER.log(Level.WARNING, "Lỗi khi gọi callback báo timeout | requestId=" + reqId, e);
+          }
         });
 
-        if (removed[0] > 0) {
-            LOGGER.fine(() -> "Evicted " + removed[0] + " expired callbacks");
-        }
+        return true; // Xoá khỏi map
+      }
+      return false;
+    });
+
+    if (removed[0] > 0) {
+      LOGGER.fine(() -> "Evicted " + removed[0] + " expired callbacks");
     }
+  }
 }

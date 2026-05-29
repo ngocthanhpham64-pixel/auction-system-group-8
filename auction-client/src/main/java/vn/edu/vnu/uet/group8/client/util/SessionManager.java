@@ -49,7 +49,7 @@ public final class SessionManager {
         if ("SUPER_ADMIN".equalsIgnoreCase(roleStr)) {
             adminFlag = true;
             adminLevel = "SUPER_ADMIN";
-        } else if ("ADMIN".equalsIgnoreCase(roleStr)) {
+        } else if ("ADMIN".equalsIgnoreCase(roleStr) || "MODERATOR".equalsIgnoreCase(roleStr)) {
             adminFlag = true;
             adminLevel = "MODERATOR"; // admin thường
         } else {
