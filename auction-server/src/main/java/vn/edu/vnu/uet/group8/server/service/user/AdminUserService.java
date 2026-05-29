@@ -16,8 +16,8 @@ import org.slf4j.LoggerFactory;
 
 import vn.edu.vnu.uet.group8.common.dto.model.AdminStatsDTO;
 import vn.edu.vnu.uet.group8.common.dto.model.AuctionItemDTO;
-import vn.edu.vnu.uet.group8.common.dto.model.UserAdminStatsDTO;
 import vn.edu.vnu.uet.group8.common.dto.model.UserAdminDTO;
+import vn.edu.vnu.uet.group8.common.dto.model.UserAdminStatsDTO;
 import vn.edu.vnu.uet.group8.common.entity.User;
 import vn.edu.vnu.uet.group8.common.entity.UserAdmin;
 import vn.edu.vnu.uet.group8.common.enums.ItemCategory;
@@ -48,13 +48,17 @@ public class AdminUserService {
   public AdminStatsDTO getDashboardStats(int adminId) throws SQLException {
     checkAdminAccess(adminId);
     try (Connection conn = DatabaseConnection.getInstance().getConnection()) {
-      int activeAuctions    = countSingle(conn, "SELECT COUNT(*) FROM auction_session WHERE status = 'ACTIVE'       AND is_deleted = FALSE");
-      int soldAuctions      = countSingle(conn, "SELECT COUNT(*) FROM auction_session WHERE status = 'SOLD'         AND is_deleted = FALSE");
-      int cancelledAuctions = countSingle(conn, "SELECT COUNT(*) FROM auction_session WHERE status = 'CANCELLED'    AND is_deleted = FALSE");
-      int upcomingAuctions  = countSingle(conn, "SELECT COUNT(*) FROM auction_session WHERE status = 'UPCOMING'     AND is_deleted = FALSE");
-      int endedNoBidAuctions= countSingle(conn, "SELECT COUNT(*) FROM auction_session WHERE status = 'ENDED_NO_BID' AND is_deleted = FALSE");
-      int totalUsers        = countSingle(conn, "SELECT COUNT(*) FROM users WHERE is_deleted = FALSE");
-      int totalBids         = countSingle(conn, "SELECT COUNT(*) FROM bid_transaction");
+      int activeAuctions = countSingle(conn, "SELECT COUNT(*) FROM auction_session WHERE status = 'ACTIVE' AND is_deleted = FALSE");
+      int totalUsers = countSingle(conn, "SELECT COUNT(*) FROM users WHERE is_deleted = FALSE");
+      int totalBids = countSingle(conn, "SELECT COUNT(*) FROM bid_transaction");
+      int soldAuctions = countSingle(conn,
+              "SELECT COUNT(*) FROM auction_session WHERE status = 'SOLD' AND is_deleted = FALSE");
+      int cancelledAuctions = countSingle(conn,
+              "SELECT COUNT(*) FROM auction_session WHERE status = 'CANCELLED' AND is_deleted = FALSE");
+      int upcomingAuctions = countSingle(conn,
+              "SELECT COUNT(*) FROM auction_session WHERE status = 'UPCOMING' AND is_deleted = FALSE");
+      int endedNoBidAuctions = countSingle(conn,
+              "SELECT COUNT(*) FROM auction_session WHERE status = 'ENDED_NO_BID' AND is_deleted = FALSE");
 
       BigDecimal totalRevenue = BigDecimal.ZERO;
       try (PreparedStatement ps = conn.prepareStatement("SELECT COALESCE(SUM(current_price), 0) FROM auction_session WHERE status = 'SOLD' AND is_deleted = FALSE");
@@ -64,8 +68,7 @@ public class AdminUserService {
           if (sum != null) totalRevenue = sum;
         }
       }
-      return new AdminStatsDTO(activeAuctions, totalUsers, totalRevenue, totalBids,
-              soldAuctions, cancelledAuctions, upcomingAuctions, endedNoBidAuctions);
+      return new AdminStatsDTO(activeAuctions, totalUsers, totalRevenue, totalBids, soldAuctions,cancelledAuctions, upcomingAuctions, endedNoBidAuctions);
     }
   }
 
@@ -78,11 +81,11 @@ public class AdminUserService {
          ResultSet rs = ps.executeQuery()) {
       while (rs.next()) {
         users.add(new UserAdminDTO(
-            rs.getInt("user_id"),
-            rs.getString("username"),
-            rs.getString("email"),
-            resolveRole(rs.getString("roles"), rs.getString("admin_level")),
-            rs.getString("status")
+                rs.getInt("user_id"),
+                rs.getString("username"),
+                rs.getString("email"),
+                resolveRole(rs.getString("roles"), rs.getString("admin_level")),
+                rs.getString("status")
         ));
       }
     }
@@ -92,15 +95,24 @@ public class AdminUserService {
   public List<AuctionItemDTO> getAuctions(int adminId) throws SQLException {
     checkAdminAccess(adminId);
     List<AuctionItemDTO> list = new ArrayList<>();
-    String sql = "SELECT s.session_id , i.item_id, i.title, i.description, i.category, i.condition_type, "
-               + "       i.created_at, "
-               + "       s.current_price, s.end_time, s.status AS session_status, "
-               + "       u.username AS seller_username "
-               + "FROM auction_session s "
-               + "JOIN item i ON s.item_id = i.item_id "
-               + "JOIN users u ON i.seller_id = u.user_id "
-               + "WHERE s.is_deleted = FALSE AND i.is_deleted = FALSE "
-               + "ORDER BY s.created_at DESC";
+    // Alias rõ ràng tất cả cột để tránh Column not found khi JOIN nhiều bảng
+    String sql = "SELECT i.item_id   AS item_id, "
+            + "       i.title        AS title, "
+            + "       i.description  AS description, "
+            + "       i.category     AS category, "
+            + "       i.condition_type AS condition_type, "
+            + "       i.created_at   AS item_created_at, "
+            + "       i.seller_id    AS seller_id, "
+            + "       s.session_id   AS session_id, "
+            + "       s.current_price AS current_price, "
+            + "       s.end_time     AS end_time, "
+            + "       s.status       AS session_status, "
+            + "       u.username     AS seller_username "
+            + "FROM auction_session s "
+            + "JOIN item i ON s.item_id = i.item_id "
+            + "JOIN users u ON i.seller_id = u.user_id "
+            + "WHERE s.is_deleted = FALSE AND i.is_deleted = FALSE "
+            + "ORDER BY s.created_at DESC";
 
     try (Connection conn = DatabaseConnection.getInstance().getConnection();
          PreparedStatement ps = conn.prepareStatement(sql);
@@ -110,70 +122,6 @@ public class AdminUserService {
       }
     }
     return list;
-  }
-
-  /**
-   * Lấy số liệu thống kê cho 1 user cụ thể (để admin xem chi tiết).
-   */
-  public UserAdminStatsDTO getUserStats(int adminId, int targetUserId) throws SQLException {
-    checkAdminAccess(adminId);
-    try (var conn = DatabaseConnection.getInstance().getConnection()) {
-      UserAdminStatsDTO stats = new UserAdminStatsDTO();
-      // Basic user info
-      try (var ps = conn.prepareStatement("SELECT user_id, username, last_login_at FROM users WHERE user_id = ? AND is_deleted = FALSE")) {
-        ps.setInt(1, targetUserId);
-        try (var rs = ps.executeQuery()) {
-          if (rs.next()) {
-            stats.setUserId(rs.getInt("user_id"));
-            stats.setUsername(rs.getString("username"));
-            java.sql.Timestamp ts = rs.getTimestamp("last_login_at");
-            if (ts != null) stats.setLastLogin(ts.toInstant());
-          } else {
-            throw new vn.edu.vnu.uet.group8.common.exception.UserNotFoundException(targetUserId);
-          }
-        }
-      }
-
-      // total auctions created
-      try (var ps = conn.prepareStatement("SELECT COUNT(*) FROM item WHERE seller_id = ? AND is_deleted = FALSE")) {
-        ps.setInt(1, targetUserId);
-        try (var rs = ps.executeQuery()) { if (rs.next()) stats.setTotalAuctionsCreated(rs.getInt(1)); }
-      }
-
-      // active auctions
-      try (var ps = conn.prepareStatement("SELECT COUNT(*) FROM auction_session s JOIN item i ON s.item_id = i.item_id WHERE i.seller_id = ? AND s.status = 'ACTIVE' AND s.is_deleted = FALSE AND i.is_deleted = FALSE")) {
-        ps.setInt(1, targetUserId);
-        try (var rs = ps.executeQuery()) { if (rs.next()) stats.setActiveAuctions(rs.getInt(1)); }
-      }
-
-      // auctions sold and total earned
-      try (var ps = conn.prepareStatement("SELECT COUNT(*), COALESCE(SUM(s.current_price), 0) FROM auction_session s JOIN item i ON s.item_id = i.item_id WHERE i.seller_id = ? AND s.status = 'SOLD' AND s.is_deleted = FALSE AND i.is_deleted = FALSE")) {
-        ps.setInt(1, targetUserId);
-        try (var rs = ps.executeQuery()) {
-          if (rs.next()) {
-            stats.setAuctionsSold(rs.getInt(1));
-            stats.setTotalEarned(rs.getBigDecimal(2));
-          }
-        }
-      }
-
-      // total bids placed by user
-      try (var ps = conn.prepareStatement("SELECT COUNT(*) FROM bid_transaction WHERE bidder_id = ?")) {
-        ps.setInt(1, targetUserId);
-        try (var rs = ps.executeQuery()) { if (rs.next()) stats.setTotalBidsPlaced(rs.getInt(1)); }
-      }
-
-      // total items sold (may equal auctionsSold)
-      stats.setTotalItemsSold(stats.getAuctionsSold());
-
-      // total spent: sum of negative wallet transactions (payments)
-      try (var ps = conn.prepareStatement("SELECT COALESCE(SUM(CASE WHEN amount < 0 THEN -amount ELSE 0 END), 0) FROM wallet_transaction WHERE user_id = ?")) {
-        ps.setInt(1, targetUserId);
-        try (var rs = ps.executeQuery()) { if (rs.next()) stats.setTotalSpent(rs.getBigDecimal(1)); }
-      }
-
-      return stats;
-    }
   }
 
   public void cancelAuction(int adminId, int sessionId) throws SQLException {
@@ -186,8 +134,8 @@ public class AdminUserService {
    * Thay đổi trạng thái tài khoản (khoá / mở / cấm vĩnh viễn).
    */
   public void updateUserStatus(int adminId, int targetUserId, UserStatus newStatus)
-      throws SQLException {
-      
+          throws SQLException {
+
     LOGGER.info("Admin {} yêu cầu đổi trạng thái của User {} thành {}", adminId, targetUserId, newStatus);
 
     // 1. Kiểm tra quyền Admin
@@ -199,13 +147,13 @@ public class AdminUserService {
 
     // 2. Tải Mục tiêu (Target) ngay lập tức để kiểm tra bảo mật
     User targetUser = userDAO.findById(targetUserId)
-        .orElseThrow(() -> new UserNotFoundException(targetUserId));
+            .orElseThrow(() -> new UserNotFoundException(targetUserId));
 
     // -- Bịt lỗ hổng: Không cho phép Admin cấp thấp thao tác lên Admin cấp cao
     if (targetUser.isAdmin()) {
       if (!(admin instanceof UserAdmin adminUser && adminUser.canBanUser())) {
-          LOGGER.warn("Admin {} (Moderator) cố gắng thao tác lên Admin khác: {}", adminId, targetUserId);
-          throw new UnauthorizedException("thay đổi trạng thái của Quản trị viên khác (chỉ Super Admin mới có quyền).");
+        LOGGER.warn("Admin {} (Moderator) cố gắng thao tác lên Admin khác: {}", adminId, targetUserId);
+        throw new UnauthorizedException("thay đổi trạng thái của Quản trị viên khác (chỉ Super Admin mới có quyền).");
       }
     }
 
@@ -221,12 +169,63 @@ public class AdminUserService {
     // (Giả sử Entity User của bạn có hàm getStatus())
     if (targetUser.getStatus() == newStatus) {
       LOGGER.debug("User {} đã ở trạng thái {}. Bỏ qua cập nhật DB.", targetUserId, newStatus);
-      return; 
+      return;
     }
 
     // 5. Thực thi
     userDAO.updateStatus(targetUserId, newStatus);
     LOGGER.info("Thành công: Admin {} đã đổi trạng thái User {} thành {}", adminId, targetUserId, newStatus);
+  }
+  /**
+   * Lấy thống kê chi tiết của một người dùng (Admin xem).
+   * Yêu cầu: Quyền Admin.
+   */
+  public UserAdminStatsDTO getUserStats(int adminId, int targetUserId) throws SQLException {
+    // 1. Kiểm tra quyền Admin (bảo vệ endpoint)
+    checkAdminAccess(adminId);
+
+    // 2. Query gộp (Tối ưu hóa: lấy cả thông tin cơ bản + tính toán thống kê trong 1 lần truy vấn)
+    // Chú ý: Đã khớp tên bảng `item`, `bid_transaction` theo chuẩn hệ thống hiện tại của bạn
+    String sql = "SELECT u.user_id, u.username, u.email, u.roles, u.admin_level, u.seller_rating, u.last_login_at, " +
+            "  (SELECT COUNT(*) FROM bid_transaction b WHERE b.user_id = u.user_id) as total_bids, " +
+            "  (SELECT COUNT(*) FROM item i JOIN auction_session s ON i.item_id = s.item_id WHERE i.seller_id = u.user_id AND s.status = 'SOLD') as total_sold, " +
+            "  (SELECT COALESCE(SUM(s.current_price), 0) FROM item i JOIN auction_session s ON i.item_id = s.item_id WHERE i.seller_id = u.user_id AND s.status = 'SOLD') as total_earned " +
+            "FROM users u " +
+            "WHERE u.user_id = ? AND u.is_deleted = FALSE";
+
+    try (Connection conn = DatabaseConnection.getInstance().getConnection();
+         PreparedStatement ps = conn.prepareStatement(sql)) {
+
+      ps.setInt(1, targetUserId);
+
+      try (ResultSet rs = ps.executeQuery()) {
+        if (rs.next()) {
+          UserAdminStatsDTO stats = new UserAdminStatsDTO();
+          stats.setUserId(rs.getInt("user_id"));
+          stats.setUsername(rs.getString("username"));
+          stats.setEmail(rs.getString("email"));
+
+          // Tận dụng ngay helper resolveRole cực hay mà bạn đã viết ở dưới
+          stats.setDisplayRole(resolveRole(rs.getString("roles"), rs.getString("admin_level")));
+
+          // Chuyển đổi thời gian an toàn qua helper toInstant có sẵn
+          stats.setLastLogin(toInstant(rs.getTimestamp("last_login_at")));
+
+          // Đẩy các chỉ số thống kê
+          stats.setTotalBidsPlaced(rs.getInt("total_bids"));
+          stats.setTotalItemsSold(rs.getInt("total_sold"));
+          stats.setTotalEarned(rs.getBigDecimal("total_earned"));
+          stats.setSellerRating(rs.getDouble("seller_rating"));
+
+          // (Tương lai) Nếu bạn có bảng lưu lịch sử mua hàng, query thêm total_spent. Hiện tại set 0.
+          stats.setTotalSpent(BigDecimal.ZERO);
+
+          return stats;
+        }
+      }
+    }
+    // Nếu không tìm thấy hoặc is_deleted = true
+    throw new UserNotFoundException(targetUserId);
   }
 
   // ===========================================================================
@@ -235,7 +234,7 @@ public class AdminUserService {
 
   private User checkAdminAccess(int adminId) throws SQLException {
     User admin = userDAO.findById(adminId)
-        .orElseThrow(() -> new UserNotFoundException(adminId));
+            .orElseThrow(() -> new UserNotFoundException(adminId));
     if (!admin.isAdmin()) {
       LOGGER.warn("Cảnh báo bảo mật: User {} cố gắng dùng quyền Admin trái phép!", adminId);
       throw new UnauthorizedException("thực hiện thao tác quản trị");
@@ -256,30 +255,29 @@ public class AdminUserService {
       return "SUPER_ADMIN".equalsIgnoreCase(adminLevel) ? UserAdminDTO.ROLE_SUPER_ADMIN : UserAdminDTO.ROLE_ADMIN;
     }
     if (rolesCsv == null) return UserAdminDTO.ROLE_MEMBER;
-    String csv = rolesCsv.toUpperCase();
-    if(csv.contains("SUPER_ADMIN")) return UserAdminDTO.ROLE_SUPER_ADMIN;
-    if(csv.contains("ADMIN")) return UserAdminDTO.ROLE_ADMIN;
-    if(csv.contains("SELLER")) return UserAdminDTO.ROLE_SELLER;
-    return UserAdminDTO.ROLE_MEMBER;
+    return rolesCsv.toUpperCase().contains("SELLER") ? UserAdminDTO.ROLE_SELLER : UserAdminDTO.ROLE_MEMBER;
   }
 
-    private AuctionItemDTO buildItemDTO(ResultSet rs) throws SQLException {
-    return AuctionItemDTO.of(
-        rs.getInt("item_id"),
-        rs.getString("title"),
-        rs.getString("description"),
-        parseEnum(ItemCategory.class, rs.getString("category"), ItemCategory.OTHER),
-        parseEnum(ItemCondition.class, rs.getString("condition_type"), null),
-        parseEnum(SessionStatus.class, rs.getString("session_status"), SessionStatus.UPCOMING),
-        rs.getBigDecimal("current_price"),
-        toInstant(rs.getTimestamp("end_time")),
-        rs.getString("seller_username"),
-        rs.getInt("session_id"),
-        Collections.emptyMap(),
-        Collections.emptyList(),
-        0,
-        toInstant(rs.getTimestamp("created_at"))
+  private AuctionItemDTO buildItemDTO(ResultSet rs) throws SQLException {
+    AuctionItemDTO dto = AuctionItemDTO.of(
+            rs.getInt("item_id"),
+            rs.getString("title"),
+            rs.getString("description"),
+            parseEnum(ItemCategory.class, rs.getString("category"), ItemCategory.OTHER),
+            parseEnum(ItemCondition.class, rs.getString("condition_type"), null),
+            parseEnum(SessionStatus.class, rs.getString("session_status"), SessionStatus.UPCOMING),
+            rs.getBigDecimal("current_price"),
+            toInstant(rs.getTimestamp("end_time")),
+            rs.getInt("seller_id"),
+            rs.getString("seller_username"),
+            Collections.emptyMap(),
+            Collections.emptyList(),
+            0,
+            toInstant(rs.getTimestamp("item_created_at"))
     );
+    // Gán sessionId từ kết quả JOIN
+    dto.setSessionId(rs.getInt("session_id"));
+    return dto;
   }
 
   private static <E extends Enum<E>> E parseEnum(Class<E> type, String value, E fallback) {
