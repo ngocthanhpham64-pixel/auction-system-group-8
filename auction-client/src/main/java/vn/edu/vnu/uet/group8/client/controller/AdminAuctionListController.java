@@ -1,6 +1,5 @@
 package vn.edu.vnu.uet.group8.client.controller;
 
-import java.math.BigDecimal;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
@@ -41,7 +40,7 @@ public class AdminAuctionListController {
 
     @FXML
     public void initialize() {
-        cbFilterStatus.getItems().addAll("Tất cả", "ACTIVE", "SOLD", "CANCELLED", "UPCOMING");
+        cbFilterStatus.getItems().addAll("Tất cả", "ACTIVE", "SOLD", "CANCELLED", "UPCOMING", "ENDED_NO_BID");
         cbFilterStatus.getSelectionModel().selectFirst();
 
         colId.setCellValueFactory(new javafx.scene.control.cell.PropertyValueFactory<>("itemId"));
@@ -91,6 +90,10 @@ public class AdminAuctionListController {
                         case "UPCOMING":
                             badge.setText("Sắp diễn ra");
                             badge.setStyle(baseStyle + "-fx-background-color: #FEF3C7; -fx-text-fill: #B45309;");
+                            break;
+                        case "ENDED_NO_BID":
+                            badge.setText("Không có lượt đặt");
+                            badge.setStyle(baseStyle + "-fx-background-color: #F1F5F9; -fx-text-fill: #64748B;");
                             break;
                         default:
                             badge.setText(item);
@@ -179,7 +182,9 @@ public class AdminAuctionListController {
                     AuctionItemDTO a = getTableView().getItems().get(getIndex());
 
                     boolean isEnded = a.getStatus() != null &&
-                            (a.getStatus().name().equals("SOLD") || a.getStatus().name().equals("CANCELLED"));
+                            (a.getStatus().name().equals("SOLD")
+                                    || a.getStatus().name().equals("CANCELLED")
+                                    || a.getStatus().name().equals("ENDED_NO_BID"));
                     itemCancel.setDisable(isEnded);
 
                     setGraphic(menuBtn);
@@ -191,9 +196,17 @@ public class AdminAuctionListController {
 
     private void cancelAuction(AuctionItemDTO a) {
         if (a == null) return;
+
+        // FIX: getSessionId() trả Integer (nullable) — phải kiểm tra trước khi unbox
+        Integer sessionId = a.getSessionId();
+        if (sessionId == null) {
+            AlertUtil.showError("Không thể huỷ: phiên đấu giá chưa có ID.");
+            return;
+        }
+
         boolean ok = AlertUtil.showConfirm("Xác nhận", "Bạn có chắc muốn huỷ phiên đấu giá: '" + a.getTitle() + "'?\n(Lưu ý: thao tác này có thể hoàn tiền cho người đã đặt giá)");
         if (!ok) return;
-        AdminService.cancelAuction(a.getSessionId(), success -> {
+        AdminService.cancelAuction(sessionId, success -> {
             if (success) {
                 AlertUtil.showInfo("Đã huỷ phiên đấu giá");
                 loadAuctions();
@@ -216,15 +229,22 @@ public class AdminAuctionListController {
                 AlertUtil.showInfo("Không có lịch sử đặt giá cho '" + title + "'");
                 return;
             }
+
+            // Khởi tạo bộ format số chuẩn Việt Nam an toàn cho BigDecimal
+            java.text.NumberFormat currencyFormat = java.text.NumberFormat.getNumberInstance(new java.util.Locale("vi", "VN"));
+
             StringBuilder sb = new StringBuilder();
             sb.append("Lịch sử đặt giá - ").append(title).append("\n\n");
             for (var r : list) {
                 sb.append("• Người dùng: ").append(r.getDisplayName())
                         .append(" (ID: ").append(r.getUserId()).append(")\n")
-                        .append("  ↳ Mức giá: ").append(String.format("%,d", (BigDecimal)r.getAmount())).append(" đ\n")
+                        // FIX: Sử dụng currencyFormat thay vì String.format("%,d")
+                        .append("  ↳ Mức giá: ").append(currencyFormat.format(r.getAmount())).append(" đ\n")
                         .append("  ↳ Thời gian: ").append(r.getPlacedAt()).append("\n\n");
             }
-            AlertUtil.showInfo(sb.toString());
+
+            // Cần bọc Platform.runLater phòng khi callback chạy ngầm
+            javafx.application.Platform.runLater(() -> AlertUtil.showInfo(sb.toString()));
         });
     }
 }

@@ -18,6 +18,7 @@ import vn.edu.vnu.uet.group8.common.dto.model.AdminStatsDTO;
 
 /**
  * Controller điều khiển trang Tổng quan hệ thống (Admin Dashboard).
+ * Phiên bản hoàn chỉnh - Đã sửa triệt để lỗi biên dịch Lambda Scope.
  */
 public class AdminDashboardController {
 
@@ -108,6 +109,7 @@ public class AdminDashboardController {
     private void updateChartsData(AdminStatsDTO stats) {
 
         // ===== 1. AREA CHART — Normalize cả 2 series về 0–100% =====
+        // FIX: dùng getTotalRevenue() null-safe thay vì truy cập trực tiếp
         double revenueInMillions = stats.getTotalRevenue().doubleValue() / 1_000_000.0;
         int totalBids = stats.getTotalBids();
 

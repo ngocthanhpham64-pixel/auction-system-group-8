@@ -22,6 +22,7 @@ import javafx.util.Callback;
 import vn.edu.vnu.uet.group8.client.service.AdminService;
 import vn.edu.vnu.uet.group8.client.util.AlertUtil;
 import vn.edu.vnu.uet.group8.common.dto.model.UserAdminDTO;
+import vn.edu.vnu.uet.group8.common.dto.model.UserProfileDTO;
 
 public class AdminUserListController {
     @FXML private TextField tfSearch;
@@ -174,19 +175,16 @@ public class AdminUserListController {
     }
 
     private void showUserStats(int userId) {
-        AdminService.getUserStats(userId, stats -> {
+        AdminService.getUserProfile(userId, stats -> {
             if (stats == null) { AlertUtil.showError("Không tải được thông tin người dùng"); return; }
             StringBuilder sb = new StringBuilder();
-            sb.append("Người dùng: ").append(stats.getUsername()).append(" (ID: ").append(stats.getUserId()).append(")\n\n");
-            sb.append("Tổng phiên tạo: ").append(stats.getTotalAuctionsCreated()).append("\n");
-            sb.append("Phiên đang hoạt động: ").append(stats.getActiveAuctions()).append("\n");
-            sb.append("Phiên đã bán: ").append(stats.getAuctionsSold()).append("\n");
+            sb.append("Người dùng: ").append(stats.getUsername()).append(" (ID: ").append(stats.getUserId()).append(")\n");
+            if (stats.getEmail() != null) sb.append("Email: ").append(stats.getEmail()).append("\n");
+            sb.append("Vai trò: ").append(stats.getDisplayRole()).append("\n\n");
             sb.append("Tổng lượt đặt giá: ").append(stats.getTotalBidsPlaced()).append("\n");
             sb.append("Tổng vật phẩm bán được: ").append(stats.getTotalItemsSold()).append("\n");
+            if (stats.getSellerRating() != null) sb.append("Đánh giá: ").append(stats.getSellerRating()).append(" / 5\n");
             java.time.Instant li = stats.getLastLogin();
-            sb.append("Lần đăng nhập gần nhất: ").append(li != null ? dtf.format(li) : "Chưa có").append("\n");
-            sb.append("Tổng thu nhập: ").append(stats.getTotalEarned()).append(" đ\n");
-            sb.append("Tổng chi tiêu: ").append(stats.getTotalSpent()).append(" đ\n");
             AlertUtil.showInfo(sb.toString());
         });
     }
