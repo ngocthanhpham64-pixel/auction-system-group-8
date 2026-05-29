@@ -1,164 +1,159 @@
 package vn.edu.vnu.uet.group8.client.controller;
 
-import javafx.animation.KeyFrame;
-import javafx.animation.Timeline;
 import javafx.fxml.FXML;
-import javafx.fxml.Initializable;
 import javafx.scene.control.Label;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
-import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
-import javafx.util.Duration;
-
-import vn.edu.vnu.uet.group8.client.model.ClientModel;
 import vn.edu.vnu.uet.group8.client.service.AuctionService;
-import vn.edu.vnu.uet.group8.client.util.AlertUtil;
-import vn.edu.vnu.uet.group8.client.util.SceneManager;
+import vn.edu.vnu.uet.group8.client.util.UIFormatter;
+import vn.edu.vnu.uet.group8.common.dto.model.AuctionItemDTO;
 
-import java.math.BigDecimal;
-import java.net.URL;
-import java.time.LocalDateTime;
-import java.time.temporal.ChronoUnit;
-import java.util.ResourceBundle;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+/**
+ * Controller quản lý hiển thị và tương tác cho từng thẻ sản phẩm đơn lẻ.
+ */
+public class ProductCardController {
+    @FXML private VBox root;
+    @FXML private ImageView productImage;
+    @FXML private Label productName;
+    @FXML private Label currentPrice;
+    @FXML private Label lblCategory;
+    @FXML private Label lblCondition;
+    @FXML private Label lblBidCount;
+    @FXML private Label lblTimer;
+    @FXML private Label lblCertBadge;
+    @FXML private javafx.scene.control.Button btnAction;
 
-public class ProductCardController implements Initializable {
-
-    protected static final Logger LOGGER = Logger.getLogger(ProductCardController.class.getName());
-
-    @FXML VBox root;
-    @FXML StackPane imageContainer;
-    @FXML ImageView productImage;
-    @FXML Label productName;
-    @FXML Label currentPrice;
-    @FXML Label lblTimer;
-    @FXML Label lblBidCount;
-
-    @FXML Label lblCertBadge;
-    @FXML Label lblPartnerBadge;
-
-    protected int itemId;
-    protected Timeline timerTimeline;
-    protected LocalDateTime endTime;
-
-    @Override
-    public void initialize(URL location, ResourceBundle resources) {
-        hideBadge(lblCertBadge);
-        hideBadge(lblPartnerBadge);
-        setupClickHandler();
-    }
-
-    void setupClickHandler() {
-        if (root != null) {
-            root.setOnMouseClicked(e -> onCardClick());
-        }
-    }
-
-    public void setItem(String id, String name, BigDecimal price, String imageUrl) {
-        setItem(id, name, price, imageUrl, LocalDateTime.now().plusHours(2)); // Default 2h if no endtime
-    }
+    private AuctionItemDTO item;
+    private javafx.animation.AnimationTimer countdownTimer;
+    private java.util.function.Consumer<vn.edu.vnu.uet.group8.common.dto.response.ServerResponse> priceUpdateSub;
+    private boolean navigating = false;
 
     /**
-     * Set data and start countdown.
+     * Đổ dữ liệu từ DTO vào UI của thẻ.
      */
-    public void setItem(String id, String name, BigDecimal price, String imageUrl, LocalDateTime endTime) {
-        try {
-            this.itemId = (id != null) ? Integer.parseInt(id) : 0;
-        } catch (NumberFormatException e) {
-            this.itemId = 0;
-        }
-
-        if (productName != null) productName.setText(name != null ? name : "Unknown");
-        if (currentPrice != null) currentPrice.setText(formatPrice(price));
+    public void setData(AuctionItemDTO item) {
+        this.item = item;
+        productName.setText(item.getTitle());
+        currentPrice.setText(UIFormatter.formatPrice(item.getCurrentPrice()));
+        lblCategory.setText(item.getCategory() != null ? item.getCategory().name() : "Other");
+        lblCondition.setText(item.getCondition() != null ? item.getCondition().name() : "USED");
+        lblBidCount.setText(item.getBidCount() + " bids");
         
-        this.endTime = endTime;
-        startCountdown();
-        loadImage(imageUrl);
-    }
-
-    void startCountdown() {
-        if (timerTimeline != null) timerTimeline.stop();
-        if (endTime == null) return;
-
-        timerTimeline = new Timeline(new KeyFrame(Duration.seconds(1), e -> updateTimerLabel()));
-        timerTimeline.setCycleCount(Timeline.INDEFINITE);
-        timerTimeline.play();
-        updateTimerLabel();
-    }
-
-    void updateTimerLabel() {
-        if (lblTimer == null || endTime == null) return;
-
-        long seconds = ChronoUnit.SECONDS.between(LocalDateTime.now(), endTime);
-        if (seconds <= 0) {
-            lblTimer.setText("Kết thúc");
-            lblTimer.setStyle("-fx-text-fill: #ef4444;");
-            timerTimeline.stop();
-            return;
+        // Hiển thị ảnh bìa sản phẩm
+        if (item.getImageUrls() != null && !item.getImageUrls().isEmpty()) {
+            try {
+                productImage.setImage(new Image(item.getImageUrls().get(0), true));
+            } catch (Exception e) {
+                // Image fallback được xử lý tự động bởi label placeholder trong FXML
+            }
         }
-
-        long h = seconds / 3600;
-        long m = (seconds % 3600) / 60;
-        long s = seconds % 60;
-        lblTimer.setText(String.format("%02d:%02d:%02d", h, m, s));
+        
+        // Hiển thị trạng thái theo đúng Enum
+        if (item.getStatus() == vn.edu.vnu.uet.group8.common.enums.SessionStatus.UPCOMING) {
+            if (countdownTimer != null) countdownTimer.stop();
+            lblTimer.setText("Sắp diễn ra");
+            if (btnAction != null) btnAction.setText("Xem chi tiết →");
+            if (lblCertBadge != null) {
+                lblCertBadge.setText("SẮP DIỄN RA");
+                lblCertBadge.setStyle("-fx-background-color: #f59e0b; -fx-text-fill: white; -fx-font-size: 10px; -fx-font-weight: bold; -fx-background-radius: 6; -fx-padding: 3 9;");
+                lblCertBadge.setVisible(true);
+                lblCertBadge.setManaged(true);
+            }
+        } else if (item.getStatus() == vn.edu.vnu.uet.group8.common.enums.SessionStatus.SOLD || item.getStatus() == vn.edu.vnu.uet.group8.common.enums.SessionStatus.ENDED_NO_BID || item.getStatus() == vn.edu.vnu.uet.group8.common.enums.SessionStatus.CANCELLED) {
+            if (countdownTimer != null) countdownTimer.stop();
+            lblTimer.setText("Đã kết thúc");
+            if (btnAction != null) btnAction.setText("Xem kết quả →");
+            if (lblCertBadge != null) {
+                lblCertBadge.setText("ĐÃ KẾT THÚC");
+                lblCertBadge.setStyle("-fx-background-color: #ef4444; -fx-text-fill: white; -fx-font-size: 10px; -fx-font-weight: bold; -fx-background-radius: 6; -fx-padding: 3 9;");
+                lblCertBadge.setVisible(true);
+                lblCertBadge.setManaged(true);
+            }
+        } else if (item.getEndTime() != null) {
+            if (btnAction != null) btnAction.setText("Tham gia đấu giá →");
+            if (lblCertBadge != null) {
+                lblCertBadge.setText("🔥 LIVE");
+                lblCertBadge.setStyle("-fx-background-color: #ef4444; -fx-text-fill: white; -fx-font-size: 10px; -fx-font-weight: bold; -fx-background-radius: 6; -fx-padding: 3 9;");
+                lblCertBadge.setVisible(true);
+                lblCertBadge.setManaged(true);
+            }
+            if (countdownTimer != null) countdownTimer.stop();
+            countdownTimer = new javafx.animation.AnimationTimer() {
+                @Override
+                public void handle(long now) {
+                    long remainingMillis = item.getEndTime().toEpochMilli() - System.currentTimeMillis();
+                    if (remainingMillis <= 0) {
+                        lblTimer.setText("00:00:00");
+                        this.stop();
+                    } else {
+                        long totalSeconds = remainingMillis / 1000;
+                        long hours = totalSeconds / 3600;
+                        long minutes = (totalSeconds % 3600) / 60;
+                        long seconds = totalSeconds % 60;
+                        lblTimer.setText(String.format("%02d:%02d:%02d", hours, minutes, seconds));
+                    }
+                }
+            };
+            countdownTimer.start();
+        } else {
+            lblTimer.setText("--:--:--");
+        }
+        
+        setupRealtimePrice();
     }
 
-    void loadImage(String imageUrl) {
-        if (productImage == null) return;
-        if (imageUrl == null || imageUrl.isBlank()) {
-             // Optional: Set default image
-             return;
+    private void setupRealtimePrice() {
+        if (priceUpdateSub != null) {
+            AuctionService.unsubscribeAuctionStatus(priceUpdateSub);
         }
-
-        try {
-            Image img = new Image(imageUrl, true);
-            productImage.setImage(img);
-            
-            // Fix: Tránh méo ảnh bằng cách căn giữa trong container
-            productImage.setPreserveRatio(true);
-            
-            img.errorProperty().addListener((obs, oldVal, hasError) -> {
-                if (hasError) LOGGER.fine("Error loading image: " + imageUrl);
+        priceUpdateSub = AuctionService.subscribeAuctionStatus(status -> {
+            javafx.application.Platform.runLater(() -> {
+                if (this.item != null && this.item.getItemId() == status.getItemId()) {
+                    currentPrice.setText(UIFormatter.formatPrice(status.getCurrentPrice()));
+                }
             });
-        } catch (Exception e) {
-            LOGGER.log(Level.FINE, "Image exception: " + imageUrl, e);
-        }
-    }
-
-    public void setBidCount(int count) {
-        if (lblBidCount != null) {
-            lblBidCount.setText(count + " bids");
-        }
-    }
-
-    @FXML
-    void onCardClick() {
-        if (itemId <= 0) return;
-        AuctionService.loadDetail(itemId, item -> {
-            if (item == null) return;
-            ClientModel.getInstance().setCurrentAuctionItem(item);
-            navigateToDetail();
+        });
+        root.sceneProperty().addListener((obs, oldScene, newScene) -> {
+            if (newScene == null) {
+                if (priceUpdateSub != null) {
+                    AuctionService.unsubscribeAuctionStatus(priceUpdateSub);
+                }
+                if (countdownTimer != null) {
+                    countdownTimer.stop();
+                }
+            }
         });
     }
 
-    void navigateToDetail() {
-        MainController main = MainController.getInstance();
-        if (main != null) {
-            main.loadView(SceneManager.VIEW_AUCTION_DETAIL);
+    /**
+     * Khi click vào thẻ -> Load chi tiết và chuyển sang AuctionDetailView.
+     */
+    @FXML
+    private void onCardClick() {
+        if (navigating) return;
+        if (item != null && (item.getStatus() == vn.edu.vnu.uet.group8.common.enums.SessionStatus.ENDED_NO_BID || 
+            item.getStatus() == vn.edu.vnu.uet.group8.common.enums.SessionStatus.SOLD ||
+            item.getStatus() == vn.edu.vnu.uet.group8.common.enums.SessionStatus.CANCELLED)) {
+            vn.edu.vnu.uet.group8.client.util.AlertUtil.showError("Phiên đấu giá đã kết thúc. Bạn không thể xem chi tiết.");
+            return;
         }
-    }
-
-    void hideBadge(Label badge) {
-        if (badge != null) {
-            badge.setVisible(false);
-            badge.setManaged(false);
+        
+        if (item != null && item.getStatus() == vn.edu.vnu.uet.group8.common.enums.SessionStatus.UPCOMING) {
+            vn.edu.vnu.uet.group8.client.util.AlertUtil.showInfo("Sản phẩm đang chuẩn bị đấu giá.");
+            return;
         }
-    }
-
-    protected String formatPrice(BigDecimal price) {
-        if (price == null) return "0đ";
-        return String.format("%,.0fđ", price);
+        
+        navigating = true;
+        AuctionService.loadDetail(item.getItemId(), detail -> {
+            javafx.application.Platform.runLater(() -> {
+                if (MainController.getInstance() != null) {
+                    MainController.getInstance().loadContentView("AuctionDetailView.fxml");
+                } else {
+                    vn.edu.vnu.uet.group8.client.util.SceneManager.switchTo("AuctionDetailView.fxml");
+                }
+                navigating = false;
+            });
+        });
     }
 }
