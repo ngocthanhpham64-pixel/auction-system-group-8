@@ -1,0 +1,170 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.geometry.Insets?>
+<?import java.net.URL?>
+
+<VBox xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="vn.edu.vnu.uet.group8.client.controller.WalletController"
+      styleClass="app-bg"
+      spacing="0">
+
+    <stylesheets>
+        <URL value="@../css/tokens.css"/>
+        <URL value="@../css/components.css"/>
+        <URL value="@../css/layout.css"/>
+    </stylesheets>
+
+    <ScrollPane fitToWidth="true" VBox.vgrow="ALWAYS" styleClass="scrollpane-clean">
+        <content>
+            <VBox spacing="16" style="-fx-padding: 24;">
+
+                <!-- TIÊU ĐỀ -->
+                <Label text="Ví tiền" styleClass="h2"/>
+
+                <!-- CARD SỐ DƯ -->
+                <VBox styleClass="card-orange" spacing="20">
+
+                    <HBox alignment="TOP_LEFT">
+                        <VBox HBox.hgrow="ALWAYS" spacing="6">
+                            <Label text="Số dư khả dụng"
+                                   style="-fx-font-size: 12px; -fx-text-fill: rgba(255,255,255,0.85);"/>
+                            <Label fx:id="lblBalance" text="50.000.000 đ"
+                                   style="-fx-font-size: 32px; -fx-font-weight: bold; -fx-text-fill: white;"/>
+                        </VBox>
+                        <Label text="AUCTIVA WALLET"
+                               style="-fx-background-color: rgba(255,255,255,0.2); -fx-text-fill: white; -fx-font-size: 11px; -fx-font-weight: bold; -fx-background-radius: 8; -fx-padding: 6 12;"/>
+                    </HBox>
+
+                    <HBox spacing="24" style="-fx-padding: 16 0 0 0; -fx-border-color: rgba(255,255,255,0.2); -fx-border-width: 1 0 0 0;">
+                        <VBox spacing="2">
+                            <Label text="Đang giữ chỗ"
+                                   style="-fx-font-size: 11px; -fx-text-fill: rgba(255,255,255,0.85);"/>
+                            <Label fx:id="lblHolding" text="12.000.000 đ"
+                                   style="-fx-font-size: 14px; -fx-font-weight: bold; -fx-text-fill: white;"/>
+                        </VBox>
+                        <VBox spacing="2">
+                            <Label text="Tổng đã chi"
+                                   style="-fx-font-size: 11px; -fx-text-fill: rgba(255,255,255,0.85);"/>
+                            <Label fx:id="lblTotalSpent" text="238.000.000 đ"
+                                   style="-fx-font-size: 14px; -fx-font-weight: bold; -fx-text-fill: white;"/>
+                        </VBox>
+                    </HBox>
+
+                </VBox>
+
+                <!-- 3 NÚT HÀNH ĐỘNG -->
+                <HBox spacing="10">
+                    <Button onAction="#onDeposit" maxWidth="Infinity" HBox.hgrow="ALWAYS"
+                            style="-fx-background-color: white; -fx-border-color: #E0E0E0; -fx-border-radius: 12; -fx-background-radius: 12; -fx-padding: 14; -fx-cursor: hand;">
+                        <graphic>
+                            <VBox alignment="CENTER" spacing="6">
+                                <Label text="↓" styleClass="icon-circle-orange"/>
+                                <Label text="Nạp tiền" styleClass="text-bold" style="-fx-font-size: 12px;"/>
+                            </VBox>
+                        </graphic>
+                    </Button>
+                    <Button onAction="#onWithdraw" maxWidth="Infinity" HBox.hgrow="ALWAYS"
+                            style="-fx-background-color: white; -fx-border-color: #E0E0E0; -fx-border-radius: 12; -fx-background-radius: 12; -fx-padding: 14; -fx-cursor: hand;">
+                        <graphic>
+                            <VBox alignment="CENTER" spacing="6">
+                                <Label text="↑" styleClass="icon-circle-orange"/>
+                                <Label text="Rút tiền" styleClass="text-bold" style="-fx-font-size: 12px;"/>
+                            </VBox>
+                        </graphic>
+                    </Button>
+                    <Button onAction="#onHistory" maxWidth="Infinity" HBox.hgrow="ALWAYS"
+                            style="-fx-background-color: white; -fx-border-color: #E0E0E0; -fx-border-radius: 12; -fx-background-radius: 12; -fx-padding: 14; -fx-cursor: hand;">
+                        <graphic>
+                            <VBox alignment="CENTER" spacing="6">
+                                <Label text="⇄" styleClass="icon-circle-orange"/>
+                                <Label text="Lịch sử" styleClass="text-bold" style="-fx-font-size: 12px;"/>
+                            </VBox>
+                        </graphic>
+                    </Button>
+                </HBox>
+
+                <!-- LỊCH SỬ GIAO DỊCH -->
+                <VBox styleClass="card" style="-fx-padding: 16;" spacing="14">
+
+                    <!-- Header -->
+                    <HBox alignment="CENTER_LEFT">
+                        <Label text="Lịch sử giao dịch" styleClass="section-title"/>
+                        <Region HBox.hgrow="ALWAYS"/>
+                        <Label text="Xem tất cả" onMouseClicked="#onViewAll" styleClass="text-link"/>
+                    </HBox>
+
+                    <!-- Tab filter -->
+                    <HBox spacing="8">
+                        <Button fx:id="btnTabAll" text="Tất cả" onAction="#onTabAll" styleClass="tag-active"/>
+                        <Button fx:id="btnTabDeposit" text="Nạp tiền" onAction="#onTabDeposit" styleClass="tag-inactive"/>
+                        <Button fx:id="btnTabHold" text="Đặt cọc" onAction="#onTabHold" styleClass="tag-inactive"/>
+                        <Button fx:id="btnTabPayment" text="Thanh toán" onAction="#onTabPayment" styleClass="tag-inactive"/>
+                    </HBox>
+
+                    <!-- Danh sách giao dịch -->
+                    <VBox fx:id="transactionList" spacing="0">
+
+                        <!-- Nạp tiền -->
+                        <HBox alignment="CENTER_LEFT" spacing="12"
+                              style="-fx-padding: 10 0; -fx-border-color: #F0F0F0; -fx-border-width: 0 0 1 0;">
+                            <Label text="↓" styleClass="icon-circle-success icon-circle-sm"/>
+                            <VBox spacing="2" HBox.hgrow="ALWAYS">
+                                <Label text="Nạp tiền qua VietcomBank" styleClass="text-bold" style="-fx-font-size: 13px;"/>
+                                <Label text="28/04/2026 · 14:30" styleClass="text-muted"/>
+                            </VBox>
+                            <VBox alignment="CENTER_RIGHT" spacing="2">
+                                <Label text="+10.000.000 đ" styleClass="text-success" style="-fx-font-size: 13px;"/>
+                                <Label text="Thành công" styleClass="text-muted-sm"/>
+                            </VBox>
+                        </HBox>
+
+                        <!-- Đặt cọc -->
+                        <HBox alignment="CENTER_LEFT" spacing="12"
+                              style="-fx-padding: 10 0; -fx-border-color: #F0F0F0; -fx-border-width: 0 0 1 0;">
+                            <Label text="⏳" styleClass="icon-circle-orange icon-circle-sm"/>
+                            <VBox spacing="2" HBox.hgrow="ALWAYS">
+                                <Label text="Đặt cọc đấu giá Rolex Submariner" styleClass="text-bold" style="-fx-font-size: 13px;"/>
+                                <Label text="28/04/2026 · 10:15" styleClass="text-muted"/>
+                            </VBox>
+                            <VBox alignment="CENTER_RIGHT" spacing="2">
+                                <Label text="-12.000.000 đ" styleClass="text-orange-bold" style="-fx-font-size: 13px;"/>
+                                <Label text="Đang giữ" styleClass="text-muted-sm"/>
+                            </VBox>
+                        </HBox>
+
+                        <!-- Thanh toán -->
+                        <HBox alignment="CENTER_LEFT" spacing="12"
+                              style="-fx-padding: 10 0; -fx-border-color: #F0F0F0; -fx-border-width: 0 0 1 0;">
+                            <Label text="↑" styleClass="icon-circle-danger icon-circle-sm"/>
+                            <VBox spacing="2" HBox.hgrow="ALWAYS">
+                                <Label text="Thanh toán Nhẫn Kim Cương 5 Carat" styleClass="text-bold" style="-fx-font-size: 13px;"/>
+                                <Label text="27/04/2026 · 16:45" styleClass="text-muted"/>
+                            </VBox>
+                            <VBox alignment="CENTER_RIGHT" spacing="2">
+                                <Label text="-980.000.000 đ" styleClass="text-danger" style="-fx-font-size: 13px; -fx-font-weight: bold;"/>
+                                <Label text="Thành công" styleClass="text-muted-sm"/>
+                            </VBox>
+                        </HBox>
+
+                        <!-- Hoàn tiền -->
+                        <HBox alignment="CENTER_LEFT" spacing="12" style="-fx-padding: 10 0;">
+                            <Label text="↩" styleClass="icon-circle-success icon-circle-sm"/>
+                            <VBox spacing="2" HBox.hgrow="ALWAYS">
+                                <Label text="Hoàn tiền cọc - Đấu giá đã kết thúc" styleClass="text-bold" style="-fx-font-size: 13px;"/>
+                                <Label text="26/04/2026 · 23:00" styleClass="text-muted"/>
+                            </VBox>
+                            <VBox alignment="CENTER_RIGHT" spacing="2">
+                                <Label text="+5.000.000 đ" styleClass="text-success" style="-fx-font-size: 13px;"/>
+                                <Label text="Thành công" styleClass="text-muted-sm"/>
+                            </VBox>
+                        </HBox>
+
+                    </VBox>
+
+                </VBox>
+
+            </VBox>
+        </content>
+    </ScrollPane>
+</VBox>

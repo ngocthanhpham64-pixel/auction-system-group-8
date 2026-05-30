@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.geometry.Insets?>
+<?import java.net.URL?>
+
+<StackPane xmlns:fx="http://javafx.com/fxml/1"
+           fx:controller="vn.edu.vnu.uet.group8.client.controller.RegisterController"
+           styleClass="app-bg-light"
+           prefWidth="800" prefHeight="900">
+
+    <stylesheets>
+        <URL value="@../css/tokens.css"/>
+        <URL value="@../css/components.css"/>
+        <URL value="@../css/layout.css"/>
+    </stylesheets>
+
+    <VBox alignment="CENTER" spacing="0">
+        <VBox styleClass="card" maxWidth="420" spacing="0"
+              style="-fx-background-radius: 16; -fx-border-radius: 16; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.08), 24, 0, 0, 4);">
+            <padding><Insets top="36" bottom="36" left="36" right="36"/></padding>
+
+            <!-- LOGO + TIÊU ĐỀ -->
+            <HBox alignment="CENTER" spacing="10" style="-fx-padding: 0 0 14 0;">
+                <StackPane prefWidth="44" prefHeight="44" style="-fx-background-color: #1E3A6E; -fx-background-radius: 10;">
+                    <Label text="A" style="-fx-text-fill: #F97316; -fx-font-size: 18px; -fx-font-weight: 500;"/>
+                </StackPane>
+                <VBox alignment="CENTER_LEFT">
+                    <Label text="AUCTIVA" styleClass="brand-name"/>
+                    <Label text="LIVE ONLINE AUCTIONS" styleClass="brand-tagline"/>
+                </VBox>
+            </HBox>
+
+            <Label text="Tạo tài khoản mới" styleClass="h2" style="-fx-padding: 4 0 4 0;"/>
+            <Label text="Đăng ký để bắt đầu đấu giá" styleClass="label-info" style="-fx-padding: 0 0 18 0;"/>
+
+            <!-- TAB ĐĂNG NHẬP / ĐĂNG KÝ -->
+            <HBox spacing="0" style="-fx-background-color: #F5F5F5; -fx-background-radius: 10; -fx-padding: 4;">
+                <Button fx:id="btnTabLogin" text="Đăng nhập" onAction="#onTabLogin"
+                        styleClass="tab-inactive" maxWidth="Infinity" HBox.hgrow="ALWAYS"/>
+                <Button fx:id="btnTabRegister" text="Đăng ký" onAction="#onTabRegister"
+                        styleClass="tab-active" maxWidth="Infinity" HBox.hgrow="ALWAYS"/>
+            </HBox>
+
+            <!-- USERNAME -->
+            <Label text="Tên đăng nhập" styleClass="form-label" style="-fx-padding: 16 0 4 0;"/>
+            <TextField fx:id="tfUsername" promptText="username123" styleClass="input-field"/>
+
+            <!-- HỌ TÊN -->
+            <Label text="Họ và tên" styleClass="form-label" style="-fx-padding: 12 0 4 0;"/>
+            <TextField fx:id="tfFullName" promptText="Nguyễn Văn A" styleClass="input-field"/>
+
+            <!-- EMAIL -->
+            <Label text="Email" styleClass="form-label" style="-fx-padding: 12 0 4 0;"/>
+            <TextField fx:id="tfEmail" promptText="example@email.com" styleClass="input-field"/>
+
+            <!-- SĐT -->
+            <Label text="Số điện thoại" styleClass="form-label" style="-fx-padding: 12 0 4 0;"/>
+            <TextField fx:id="tfPhone" promptText="0901234567" styleClass="input-field"/>
+
+            <!-- MẬT KHẨU -->
+            <Label text="Mật khẩu" styleClass="form-label" style="-fx-padding: 12 0 4 0;"/>
+            <PasswordField fx:id="pfPassword" promptText="Tối thiểu 8 ký tự" styleClass="input-field"/>
+
+            <!-- XÁC NHẬN MẬT KHẨU -->
+            <Label text="Xác nhận mật khẩu" styleClass="form-label" style="-fx-padding: 12 0 4 0;"/>
+            <PasswordField fx:id="pfConfirmPassword" promptText="Nhập lại mật khẩu" styleClass="input-field"/>
+
+            <!-- CHECKBOX ĐIỀU KHOẢN -->
+            <HBox spacing="8" alignment="CENTER_LEFT" style="-fx-padding: 16 0 8 0;">
+                <CheckBox fx:id="cbTerms"/>
+                <Label text="Tôi đồng ý với" styleClass="label-info"/>
+                <Hyperlink fx:id="linkTerms" text="Điều khoản sử dụng" onAction="#onShowTerms" styleClass="link-orange"/>
+            </HBox>
+
+            <!-- LABEL HIỂN LỖI -->
+            <Label fx:id="lblError" visible="false" managed="false"
+                   styleClass="label-error"
+                   style="-fx-padding: 4 0 4 0;"/>
+
+            <!-- NÚT ĐĂNG KÝ -->
+            <Button fx:id="btnSubmit" text="Đăng ký" onAction="#onRegister"
+                    styleClass="btn-primary"
+                    maxWidth="Infinity" prefHeight="44"
+                    style="-fx-padding: 12 0 12 0;"/>
+
+            <!-- LINK QUAY VỀ LOGIN -->
+            <HBox alignment="CENTER" spacing="4" style="-fx-padding: 14 0 0 0;">
+                <Label text="Đã có tài khoản?" styleClass="label-info"/>
+                <Hyperlink text="Đăng nhập ngay" onAction="#onTabLogin" styleClass="link-orange"/>
+            </HBox>
+
+        </VBox>
+    </VBox>
+</StackPane>

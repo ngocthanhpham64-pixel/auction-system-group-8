@@ -57,6 +57,7 @@ class ClientModelTest extends TestFXSetup {
                 null,
                 new BigDecimal("1000000"),
                 null,
+                1,              // sellerId
                 "seller",
                 null,
                 null,

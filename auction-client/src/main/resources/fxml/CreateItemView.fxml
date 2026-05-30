@@ -1,0 +1,153 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.geometry.Insets?>
+<?import java.net.URL?>
+
+<ScrollPane xmlns:fx="http://javafx.com/fxml/1"
+            fx:controller="vn.edu.vnu.uet.group8.client.controller.CreateItemController"
+            fitToWidth="true"
+            styleClass="scrollpane-clean app-bg-light"
+            prefWidth="1000" prefHeight="900">
+
+    <stylesheets>
+        <URL value="@../css/tokens.css"/>
+        <URL value="@../css/components.css"/>
+        <URL value="@../css/layout.css"/>
+    </stylesheets>
+
+    <VBox spacing="0" maxWidth="800" style="-fx-padding: 32;">
+
+        <!-- HEADER -->
+        <HBox alignment="CENTER_LEFT" spacing="12" style="-fx-padding: 0 0 24 0;">
+            <Button text="← Quay lại" onAction="#onBack" styleClass="btn-secondary"/>
+            <VBox HBox.hgrow="ALWAYS">
+                <Label text="Đăng sản phẩm mới" styleClass="h1"/>
+                <Label text="Điền thông tin để bắt đầu phiên đấu giá" styleClass="label-info"/>
+            </VBox>
+        </HBox>
+
+        <!-- SECTION 1: THÔNG TIN CƠ BẢN -->
+        <VBox styleClass="card" spacing="14" style="-fx-padding: 24; -fx-background-radius: 12;">
+            <Label text="1. Thông tin sản phẩm" styleClass="h2"/>
+
+            <VBox spacing="4">
+                <Label text="Tên sản phẩm *" styleClass="form-label"/>
+                <TextField fx:id="tfName" promptText="VD: Đồng hồ Rolex Submariner 2023" styleClass="input-field"/>
+            </VBox>
+
+            <VBox spacing="4">
+                <Label text="Danh mục *" styleClass="form-label"/>
+                <ComboBox fx:id="cbCategory" maxWidth="Infinity"/>
+            </VBox>
+
+            <VBox spacing="4">
+                <Label text="Tình trạng *" styleClass="form-label"/>
+                <ComboBox fx:id="cbCondition" maxWidth="Infinity"/>
+            </VBox>
+
+            <VBox spacing="4">
+                <Label text="Mô tả chi tiết *" styleClass="form-label"/>
+                <TextArea fx:id="taDescription"
+                          promptText="Mô tả chi tiết về sản phẩm, nguồn gốc, đặc điểm..."
+                          prefRowCount="5"
+                          wrapText="true"
+                          styleClass="input-field"/>
+            </VBox>
+        </VBox>
+
+        <!-- SECTION 2: THÔNG SỐ -->
+        <VBox styleClass="card" spacing="14" style="-fx-padding: 24; -fx-background-radius: 12; -fx-margin: 16 0 0 0;">
+            <padding><Insets top="16" right="0" bottom="0" left="0"/></padding>
+            <Label text="2. Thông số kỹ thuật" styleClass="h2"/>
+
+            <GridPane hgap="12" vgap="10">
+                <columnConstraints>
+                    <ColumnConstraints percentWidth="50"/>
+                    <ColumnConstraints percentWidth="50"/>
+                </columnConstraints>
+
+                <VBox spacing="4" GridPane.columnIndex="0" GridPane.rowIndex="0">
+                    <Label text="Thương hiệu" styleClass="form-label"/>
+                    <TextField fx:id="tfBrand" promptText="VD: Rolex" styleClass="input-field"/>
+                </VBox>
+
+                <VBox spacing="4" GridPane.columnIndex="1" GridPane.rowIndex="0">
+                    <Label text="Model" styleClass="form-label"/>
+                    <TextField fx:id="tfModel" promptText="VD: Submariner 126610LN" styleClass="input-field"/>
+                </VBox>
+
+                <VBox spacing="4" GridPane.columnIndex="0" GridPane.rowIndex="1">
+                    <Label text="Năm sản xuất" styleClass="form-label"/>
+                    <TextField fx:id="tfYear" promptText="VD: 2023" styleClass="input-field"/>
+                </VBox>
+
+                <VBox spacing="4" GridPane.columnIndex="1" GridPane.rowIndex="1">
+                    <Label text="Chất liệu" styleClass="form-label"/>
+                    <TextField fx:id="tfMaterial" promptText="VD: Thép không gỉ 904L" styleClass="input-field"/>
+                </VBox>
+
+                <VBox spacing="4" GridPane.columnIndex="0" GridPane.rowIndex="2">
+                    <Label text="Xuất xứ" styleClass="form-label"/>
+                    <TextField fx:id="tfOrigin" promptText="VD: Thụy Sĩ" styleClass="input-field"/>
+                </VBox>
+            </GridPane>
+        </VBox>
+
+        <!-- SECTION 3: ĐẤU GIÁ -->
+        <VBox styleClass="card" spacing="14" style="-fx-padding: 24; -fx-background-radius: 12;">
+            <padding><Insets top="16" right="0" bottom="0" left="0"/></padding>
+            <Label text="3. Cài đặt đấu giá" styleClass="h2"/>
+
+            <VBox spacing="4">
+                <Label text="Giá khởi điểm (VND) *" styleClass="form-label"/>
+                <TextField fx:id="tfStartPrice" promptText="VD: 500000000" styleClass="input-field"/>
+            </VBox>
+
+            <VBox spacing="4">
+                <Label text="Bước nhảy giá tối thiểu (VND) *" styleClass="form-label"/>
+                <TextField fx:id="tfBidStep" promptText="VD: 10000000" styleClass="input-field"/>
+            </VBox>
+
+            <VBox spacing="4">
+                <Label text="Thời gian đấu giá (giờ) *" styleClass="form-label"/>
+                <TextField fx:id="tfDurationHours" promptText="VD: 24" text="24" styleClass="input-field"/>
+            </VBox>
+        </VBox>
+
+        <!-- SECTION 4: KIỂM ĐỊNH (tùy chọn) -->
+        <VBox styleClass="card" spacing="14" style="-fx-padding: 24; -fx-background-radius: 12;">
+            <padding><Insets top="16" right="0" bottom="0" left="0"/></padding>
+            <HBox alignment="CENTER_LEFT" spacing="10">
+                <CheckBox fx:id="cbHasCert" onAction="#onToggleCert"/>
+                <Label text="4. Sản phẩm có chứng nhận kiểm định" styleClass="h2"/>
+            </HBox>
+
+            <VBox fx:id="paneCertFields" spacing="14" visible="false" managed="false">
+                <VBox spacing="4">
+                    <Label text="Tổ chức kiểm định" styleClass="form-label"/>
+                    <TextField fx:id="tfCertBody" promptText="VD: GIA Vietnam, PNJ Lab" styleClass="input-field"/>
+                </VBox>
+
+                <VBox spacing="4">
+                    <Label text="Mã chứng nhận" styleClass="form-label"/>
+                    <TextField fx:id="tfCertId" promptText="VD: CERT-2025-001234" styleClass="input-field"/>
+                </VBox>
+            </VBox>
+        </VBox>
+
+        <!-- LABEL LỖI -->
+        <Label fx:id="lblError" visible="false" managed="false"
+               styleClass="label-error"
+               style="-fx-padding: 16 0 0 0;"/>
+
+        <!-- ACTIONS -->
+        <HBox spacing="12" alignment="CENTER_RIGHT" style="-fx-padding: 24 0 0 0;">
+            <Button text="Lưu nháp" onAction="#onSaveDraft" styleClass="btn-secondary"/>
+            <Button fx:id="btnSubmit" text="Đăng bán ngay"
+                    onAction="#onSubmit"
+                    styleClass="btn-primary"
+                    style="-fx-padding: 10 24;"/>
+        </HBox>
+    </VBox>
+</ScrollPane>
