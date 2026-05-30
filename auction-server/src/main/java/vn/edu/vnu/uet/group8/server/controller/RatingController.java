@@ -60,22 +60,4 @@ public class RatingController {
       return ServerResponse.replyError("USER_GET_SELLER_REVIEWS", requestId, e.getMessage());
     }
   }
-
-  public ServerResponse handleGetSellerComments(JsonObject request, String requestId) {
-    try {
-      JsonObject payload = request.has("payload") && request.get("payload").isJsonObject()
-          ? request.getAsJsonObject("payload") : request;
-      
-      int sellerId = RequestParser.requireInt(payload, "sellerId");
-      List<vn.edu.vnu.uet.group8.common.dto.model.CommentDTO> comments = ratingService.getCommentsForUser(sellerId);
-
-      return ServerResponse.reply("USER_GET_SELLER_COMMENTS", requestId)
-          .success(true)
-          .data(comments)
-          .build();
-    } catch (Exception e) {
-      log.warn("Lỗi lấy danh sách comment người bán sellerId={}", requestId, e);
-      return ServerResponse.replyError("USER_GET_SELLER_COMMENTS", requestId, e.getMessage());
-    }
-  }
 }

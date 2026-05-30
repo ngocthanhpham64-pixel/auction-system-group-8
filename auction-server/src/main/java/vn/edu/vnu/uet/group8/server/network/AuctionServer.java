@@ -27,7 +27,6 @@ import vn.edu.vnu.uet.group8.server.controller.UserController;
 import vn.edu.vnu.uet.group8.server.dao.AuctionSessionDAO;
 import vn.edu.vnu.uet.group8.server.dao.AutoBidDAO;
 import vn.edu.vnu.uet.group8.server.dao.BidTransactionDAO;
-import vn.edu.vnu.uet.group8.server.dao.CommentDAO;
 import vn.edu.vnu.uet.group8.server.dao.DatabaseConnection;
 import vn.edu.vnu.uet.group8.server.dao.FavoriteDAO;
 import vn.edu.vnu.uet.group8.server.dao.ItemDAO;
@@ -98,7 +97,6 @@ public class AuctionServer {
       FavoriteDAO favoriteDAO = new FavoriteDAO();
       AutoBidDAO autoBidDAO = new AutoBidDAO();
       RatingDAO ratingDAO = new RatingDAO();
-      CommentDAO commentDAO = new CommentDAO();
 
       // Infrastructure
       SessionManager sessionManager = new SessionManager();
@@ -111,7 +109,7 @@ public class AuctionServer {
       ProfileService profileService = new ProfileService(userDAO);
       BalanceService balanceService = new BalanceService(userDAO, transactionDAO);
       NotificationService notificationService = new NotificationService(notificationDAO);
-      RatingService ratingService = new RatingService(ratingDAO, userDAO, commentDAO);
+      RatingService ratingService = new RatingService(ratingDAO, userDAO);
       AuctionEventSubscriber auctionEventSubscriber = new AuctionEventSubscriber(broadcastChannel, notificationService);
       auctionEventSubscriber.registerTo(eventBus);
 
@@ -119,7 +117,7 @@ public class AuctionServer {
 
       ItemSpecValidator specValidator = new ItemSpecValidator();
       ItemQueryService itemQueryService = new ItemQueryService(
-          itemDAO, sessionDAO, userDAO, bidDAO, commentDAO);
+          itemDAO, sessionDAO, userDAO, bidDAO);
       ItemWriteService itemWriteService = new ItemWriteService(
           itemDAO, userDAO, sessionDAO, specValidator);
       FavoriteService favoriteService = new FavoriteService(favoriteDAO, itemQueryService);

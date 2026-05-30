@@ -30,11 +30,19 @@ class UserProfileDTOTest {
     }
 
     private UserMember memberWithRating() {
-        UserMember m = UserMember.builder("seller01", "s@e.com", "pw")
-                .sellerRating(new BigDecimal("4.5"))
+        UserMember m = UserMember.reconstructor()
+                .id(20)
+                .createdAt(java.time.Instant.now())
+                .isDeleted(false)
+                .username("seller01")
+                .email("s@e.com")
+                .encryptedPassword("pw")
+                .status(UserStatus.ACTIVE)
+                .roles(java.util.Set.of(vn.edu.vnu.uet.group8.common.enums.UserRole.BIDDER))
+                .balance(BigDecimal.ZERO)
                 .phone("0987654321")
+                .sellerRating(new BigDecimal("4.5"))
                 .build();
-        m.assignId(20);
         return m;
     }
 

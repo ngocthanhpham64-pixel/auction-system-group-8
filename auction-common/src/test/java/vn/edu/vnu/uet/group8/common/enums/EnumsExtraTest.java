@@ -48,12 +48,13 @@ class EnumsExtraTest {
     @DisplayName("EventType")
     class EventTypeTest {
         @Test
-        @DisplayName("Đủ 3 giá trị: PRICE_UPDATE, AUCTION_ENDED, NOTIFICATION")
+        @DisplayName("Đủ 4 giá trị: PRICE_UPDATE, AUCTION_ENDED, NOTIFICATION, KICKED")
         void duGiaTri() {
-            assertEquals(3, EventType.values().length);
+            assertEquals(4, EventType.values().length);
             assertNotNull(EventType.valueOf("PRICE_UPDATE"));
             assertNotNull(EventType.valueOf("AUCTION_ENDED"));
             assertNotNull(EventType.valueOf("NOTIFICATION"));
+            assertNotNull(EventType.valueOf("KICKED"));
         }
     }
 

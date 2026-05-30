@@ -108,6 +108,8 @@ public final class BidRecord {
                 throw new IllegalArgumentException("amount không được null");
             if(amount.compareTo(BigDecimal.ZERO)<=0)
                 throw new IllegalArgumentException("amount phải lớn hơn 0");
+            if(placedAt != null && placedAt.isAfter(Instant.now()))
+                throw new IllegalArgumentException("placedAt không được ở tương lai");
             return new BidRecord(this);
         }
     }

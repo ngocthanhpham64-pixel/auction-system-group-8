@@ -1,4 +1,4 @@
-package vn.edu.vnu.uet.group8.server.service.item;
+package vn.edu.vnu.uet.group8.server.dao;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
@@ -23,7 +23,6 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import vn.edu.vnu.uet.group8.common.dto.model.AuctionItemDTO;
-import vn.edu.vnu.uet.group8.common.dto.model.CommentDTO;
 import vn.edu.vnu.uet.group8.common.dto.request.GetAuctionsRequest;
 import vn.edu.vnu.uet.group8.common.entity.AuctionSession;
 import vn.edu.vnu.uet.group8.common.entity.Item;
@@ -35,9 +34,9 @@ import vn.edu.vnu.uet.group8.common.enums.ItemCondition;
 import vn.edu.vnu.uet.group8.common.enums.ItemStatus;
 import vn.edu.vnu.uet.group8.common.enums.SessionStatus;
 import vn.edu.vnu.uet.group8.common.exception.ItemNotFoundException;
+import vn.edu.vnu.uet.group8.server.service.item.ItemQueryService;
 import vn.edu.vnu.uet.group8.server.dao.AuctionSessionDAO;
 import vn.edu.vnu.uet.group8.server.dao.BidTransactionDAO;
-import vn.edu.vnu.uet.group8.server.dao.CommentDAO;
 import vn.edu.vnu.uet.group8.server.dao.ItemDAO;
 import vn.edu.vnu.uet.group8.server.dao.UserDAO;
 
@@ -72,14 +71,13 @@ class ItemQueryServiceFullTest {
     @Mock private AuctionSessionDAO sessionDAO;
     @Mock private UserDAO           userDAO;
     @Mock private BidTransactionDAO bidTransactionDAO;
-    @Mock private CommentDAO        commentDAO;
 
     private ItemQueryService service;
 
     @BeforeEach
     void setUp() {
         service = new ItemQueryService(
-                itemDAO, sessionDAO, userDAO, bidTransactionDAO, commentDAO);
+                itemDAO, sessionDAO, userDAO, bidTransactionDAO);
     }
 
     // ════════════════════════════════════════════════════════════════
@@ -728,62 +726,7 @@ class ItemQueryServiceFullTest {
         }
     }
 
-    // ════════════════════════════════════════════════════════════════
-    // ⑤ getCommentsForAnItemId() — 0% → 100%
-    // ════════════════════════════════════════════════════════════════
 
-    @Nested
-    @DisplayName("⑤ getCommentsForAnItemId() — 0% → 100%")
-    class GetCommentsFull {
-
-        @Test
-        @DisplayName("Không có comment → trả empty list")
-        void khongCoComment() {
-            when(commentDAO.getCommentsForAnItemId(10))
-                    .thenReturn(Collections.emptyList());
-
-            List<CommentDTO> result = service.getCommentsForAnItemId(10);
-
-            assertTrue(result.isEmpty());
-            verify(commentDAO).getCommentsForAnItemId(10);
-        }
-
-        @Test
-        @DisplayName("Có comment → trả đúng danh sách từ DAO")
-        void coComment() {
-            CommentDTO c1 = new CommentDTO(10, 1, "alice", "Đẹp lắm!", Instant.now());
-            CommentDTO c2 = new CommentDTO(10, 2, "bob", "Giá hợp lý", Instant.now());
-            when(commentDAO.getCommentsForAnItemId(10))
-                    .thenReturn(List.of(c1, c2));
-
-            List<CommentDTO> result = service.getCommentsForAnItemId(10);
-
-            assertEquals(2, result.size());
-            assertEquals("alice", result.get(0).getUsername());
-            assertEquals("bob", result.get(1).getUsername());
-        }
-
-        @Test
-        @DisplayName("commentDAO trả null → propagate null (không bị NPE trong service)")
-        void commentDaoTraNull() {
-            when(commentDAO.getCommentsForAnItemId(10)).thenReturn(null);
-
-            // Service trả thẳng kết quả từ DAO
-            assertNull(service.getCommentsForAnItemId(10));
-        }
-
-        @Test
-        @DisplayName("getCommentsForAnItemId chỉ gọi commentDAO đúng 1 lần với đúng itemId")
-        void goiCommentDaoMot_Lan() {
-            when(commentDAO.getCommentsForAnItemId(55))
-                    .thenReturn(Collections.emptyList());
-
-            service.getCommentsForAnItemId(55);
-
-            verify(commentDAO, times(1)).getCommentsForAnItemId(55);
-            verifyNoInteractions(itemDAO, sessionDAO, userDAO, bidTransactionDAO);
-        }
-    }
 
     // ════════════════════════════════════════════════════════════════
     // ⑥ findRelevantSession() — 77% → 100% (test gián tiếp qua getMyItems)

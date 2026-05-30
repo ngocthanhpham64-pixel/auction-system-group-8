@@ -12,7 +12,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import vn.edu.vnu.uet.group8.common.dto.model.AuctionItemDTO;
-import vn.edu.vnu.uet.group8.common.dto.model.CommentDTO;
 import vn.edu.vnu.uet.group8.common.dto.request.GetAuctionsRequest;
 import vn.edu.vnu.uet.group8.common.entity.AuctionSession;
 import vn.edu.vnu.uet.group8.common.entity.Item;
@@ -22,7 +21,6 @@ import vn.edu.vnu.uet.group8.common.enums.ItemCategory;
 import vn.edu.vnu.uet.group8.common.exception.ItemNotFoundException;
 import vn.edu.vnu.uet.group8.server.dao.AuctionSessionDAO;
 import vn.edu.vnu.uet.group8.server.dao.BidTransactionDAO;
-import vn.edu.vnu.uet.group8.server.dao.CommentDAO;
 import vn.edu.vnu.uet.group8.server.dao.ItemDAO;
 import vn.edu.vnu.uet.group8.server.dao.UserDAO;
 
@@ -46,18 +44,15 @@ public class ItemQueryService {
   private final AuctionSessionDAO sessionDAO;
   private final UserDAO           userDAO;
   private final BidTransactionDAO bidTransactionDAO;
-  private final CommentDAO commentDAO;
 
   public ItemQueryService(ItemDAO itemDAO,
                           AuctionSessionDAO sessionDAO,
                           UserDAO userDAO,
-                          BidTransactionDAO bidTransactionDAO,
-                          CommentDAO commentDAO) {
+                          BidTransactionDAO bidTransactionDAO) {
     this.itemDAO    = itemDAO;
     this.sessionDAO = sessionDAO;
     this.userDAO    = userDAO;
     this.bidTransactionDAO = bidTransactionDAO;
-    this.commentDAO = commentDAO;
   }
 
   // ════════════════════════════════════════════════════
@@ -238,13 +233,6 @@ public class ItemQueryService {
     }
 
     return Optional.empty();
-  }
-
-  // ════════════════════════════════════════════════════
-  // Comment
-  // ════════════════════════════════════════════════════
-  public List<CommentDTO> getCommentsForAnItemId(int item_id) {
-    return commentDAO.getCommentsForAnItemId(item_id);
   }
 
   // ════════════════════════════════════════════════════

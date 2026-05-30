@@ -88,9 +88,9 @@ class EnumsTest {
     class ItemStatusTest {
 
         @Test
-        @DisplayName("ItemStatus có đúng 4 giá trị: DRAFT/LISTED/SOLD/ARCHIVED")
-        void coDung4GiaTri() {
-            assertEquals(4, ItemStatus.values().length);
+        @DisplayName("ItemStatus có đúng 5 giá trị: DRAFT/LISTED/SOLD/UNSOLD/ARCHIVED")
+        void coDung5GiaTri() {
+            assertEquals(5, ItemStatus.values().length);
         }
 
         @Test

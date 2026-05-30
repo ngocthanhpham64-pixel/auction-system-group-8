@@ -345,7 +345,7 @@ class AdminUserServiceExtendedTest {
           Timestamp.from(Instant.now().plusSeconds(3600))
       );
       when(rs.getString("seller_username")).thenReturn("seller01");
-      when(rs.getTimestamp("created_at")).thenReturn(Timestamp.from(Instant.now()));
+      when(rs.getTimestamp("item_created_at")).thenReturn(Timestamp.from(Instant.now()));
     }
 
     @Test
@@ -377,7 +377,7 @@ class AdminUserServiceExtendedTest {
       when(rs.getBigDecimal("current_price")).thenReturn(null);
       when(rs.getTimestamp("end_time")).thenReturn(null);
       when(rs.getString("seller_username")).thenReturn("s");
-      when(rs.getTimestamp("created_at")).thenReturn(null);
+      when(rs.getTimestamp("item_created_at")).thenReturn(null);
 
       List<AuctionItemDTO> auctions = service.getAuctions(1);
 

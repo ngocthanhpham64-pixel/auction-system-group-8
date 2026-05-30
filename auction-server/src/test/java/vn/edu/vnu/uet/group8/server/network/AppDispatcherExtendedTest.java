@@ -123,15 +123,6 @@ class AppDispatcherExtendedTest {
       dispatcher.dispatch(req("ITEM_CREATE"), null);
       verify(itemController).handleCreateItem(any(), any(), eq(VALID_USER_ID));
     }
-
-    @Test
-    @DisplayName("ITEM_COMMENT → handleItemComment()")
-    void itemComment() throws Exception {
-      when(itemController.handleItemComment(any(), any())).thenReturn(OK);
-      dispatcher.dispatch(req("ITEM_COMMENT"), null);
-      verify(itemController).handleItemComment(any(), any());
-    }
-
     @Test
     @DisplayName("ITEM_MY_LISTINGS → handleGetMyListings()")
     void itemMyListings() throws Exception {
@@ -386,14 +377,6 @@ class AppDispatcherExtendedTest {
       when(ratingController.handleGetSellerReviews(any(), any())).thenReturn(OK);
       dispatcher.dispatch(req("USER_GET_SELLER_REVIEWS"), null);
       verify(ratingController).handleGetSellerReviews(any(), any());
-    }
-
-    @Test
-    @DisplayName("USER_GET_SELLER_COMMENTS → handleGetSellerComments()")
-    void userGetSellerComments() throws Exception {
-      when(ratingController.handleGetSellerComments(any(), any())).thenReturn(OK);
-      dispatcher.dispatch(req("USER_GET_SELLER_COMMENTS"), null);
-      verify(ratingController).handleGetSellerComments(any(), any());
     }
   }
 

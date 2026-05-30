@@ -14,7 +14,6 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import vn.edu.vnu.uet.group8.common.exception.ValidationException;
-import vn.edu.vnu.uet.group8.server.dao.CommentDAO;
 import vn.edu.vnu.uet.group8.server.dao.RatingDAO;
 import vn.edu.vnu.uet.group8.server.dao.UserDAO;
 
@@ -29,7 +28,6 @@ class RatingServiceTest {
 
   @Mock private RatingDAO ratingDAO;
   @Mock private UserDAO userDAO;
-  @Mock private CommentDAO commentDAO;
 
   @InjectMocks private RatingService ratingService;
 

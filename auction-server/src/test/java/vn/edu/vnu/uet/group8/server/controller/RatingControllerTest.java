@@ -19,7 +19,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.google.gson.JsonObject;
 
-import vn.edu.vnu.uet.group8.common.dto.model.CommentDTO;
 import vn.edu.vnu.uet.group8.common.dto.model.ReviewDTO;
 import vn.edu.vnu.uet.group8.common.dto.response.ServerResponse;
 import vn.edu.vnu.uet.group8.common.exception.ValidationException;
@@ -228,64 +227,6 @@ class RatingControllerTest {
 
       assertFalse(resp.isSuccess());
       assertEquals("USER_GET_SELLER_REVIEWS", resp.getAction());
-    }
-  }
-
-  // ─────────────────────────────────────────────────────────────
-  // handleGetSellerComments
-  // ─────────────────────────────────────────────────────────────
-  @Nested
-  @DisplayName("handleGetSellerComments()")
-  class GetSellerCommentsTest {
-
-    @Test
-    @DisplayName("Success - trả về danh sách comment")
-    void success() {
-      List<CommentDTO> comments = List.of(
-          new CommentDTO("user1", 3, "Hay lắm", Instant.now()));
-      when(ratingService.getCommentsForUser(7)).thenReturn(comments);
-
-      ServerResponse resp = controller.handleGetSellerComments(
-          reqSellerIdPayload(7), "req-comments");
-
-      assertTrue(resp.isSuccess());
-      assertEquals("USER_GET_SELLER_COMMENTS", resp.getAction());
-      verify(ratingService).getCommentsForUser(7);
-    }
-
-    @Test
-    @DisplayName("Success - list rỗng")
-    void successEmpty() {
-      when(ratingService.getCommentsForUser(anyInt())).thenReturn(Collections.emptyList());
-
-      ServerResponse resp = controller.handleGetSellerComments(
-          reqSellerIdPayload(1), "req-empty");
-
-      assertTrue(resp.isSuccess());
-    }
-
-    @Test
-    @DisplayName("Thiếu sellerId → error response")
-    void thieuSellerId() {
-      JsonObject req = new JsonObject();
-      req.add("payload", new JsonObject());
-
-      ServerResponse resp = controller.handleGetSellerComments(req, "req-no-id");
-
-      assertFalse(resp.isSuccess());
-      assertEquals("USER_GET_SELLER_COMMENTS", resp.getAction());
-    }
-
-    @Test
-    @DisplayName("RuntimeException từ service → error response")
-    void runtimeException() {
-      when(ratingService.getCommentsForUser(anyInt()))
-          .thenThrow(new RuntimeException("unexpected"));
-
-      ServerResponse resp = controller.handleGetSellerComments(
-          reqSellerIdPayload(1), "req-rt");
-
-      assertFalse(resp.isSuccess());
     }
   }
 }

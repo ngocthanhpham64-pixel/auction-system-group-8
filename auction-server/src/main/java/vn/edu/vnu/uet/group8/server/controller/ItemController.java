@@ -10,7 +10,6 @@ import org.slf4j.LoggerFactory;
 import com.google.gson.JsonObject;
 
 import vn.edu.vnu.uet.group8.common.dto.model.AuctionItemDTO;
-import vn.edu.vnu.uet.group8.common.dto.model.CommentDTO;
 import vn.edu.vnu.uet.group8.common.dto.request.GetAuctionsRequest;
 import vn.edu.vnu.uet.group8.common.dto.response.ServerResponse;
 import vn.edu.vnu.uet.group8.common.entity.Item;
@@ -277,29 +276,4 @@ public class ItemController {
     }
   }
 
-  /**
-   * Lấy danh sách comment của 1 vật phẩm
-   */
-  public ServerResponse handleItemComment(JsonObject request, String requestId) {
-    try {
-      JsonObject payload = request.has("payload")
-          && request.get("payload").isJsonObject()
-              ? request.getAsJsonObject("payload")
-              : request;
-
-      int itemId = RequestParser.requireInt(payload, "itemId");
-
-      List<CommentDTO> comments = itemQueryService.getCommentsForAnItemId(itemId);
-
-      return ServerResponse.reply("ITEM_COMMENT", requestId)
-          .success(true)
-          .message("Lấy danh sách comment thành công")
-          .data(comments)
-          .build();
-    } catch (Exception e) {
-      log.error("Lỗi ITEM_COMMENT", e);
-      return ServerResponse.replyError("ITEM_COMMENT", requestId,
-          "Lỗi: " + e.getMessage());
-    }
-  }
 }

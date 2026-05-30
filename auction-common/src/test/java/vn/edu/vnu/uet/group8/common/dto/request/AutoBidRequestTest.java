@@ -216,7 +216,7 @@ class RequestBasicTest {
                     "iPhone 17", "ELECTRONICS", "NEW",
                     "Điện thoại mới nhất",
                     new BigDecimal("20000000"), new BigDecimal("500000"),
-                    72, urls, true, "Apple", "CERT-001");
+                    72, 1716900000000L, urls);
 
             assertEquals("iPhone 17", req.name);
             assertEquals("ELECTRONICS", req.category);
@@ -224,25 +224,9 @@ class RequestBasicTest {
             assertEquals("Điện thoại mới nhất", req.description);
             assertEquals(0, req.startPrice.compareTo(new BigDecimal("20000000")));
             assertEquals(0, req.bidStep.compareTo(new BigDecimal("500000")));
-            assertEquals(72, req.durationHours);
+            assertEquals(72, req.durationMinutes);
+            assertEquals(1716900000000L, req.startTime);
             assertEquals(2, req.imageUrls.size());
-            assertTrue(req.hasCert);
-            assertEquals("Apple", req.certBody);
-            assertEquals("CERT-001", req.certId);
-        }
-
-        @Test
-        @DisplayName("Không có chứng nhận - hasCert = false, certBody = null")
-        void khongCoCertification() {
-            CreateItemRequest req = new CreateItemRequest(
-                    "Đồng hồ cổ", "WATCHES", "USED_FAIR",
-                    "Cổ điển", new BigDecimal("5000000"),
-                    new BigDecimal("100000"), 48,
-                    List.of(), false, null, null);
-
-            assertFalse(req.hasCert);
-            assertNull(req.certBody);
-            assertNull(req.certId);
         }
 
         @Test
@@ -251,7 +235,7 @@ class RequestBasicTest {
             CreateItemRequest req = new CreateItemRequest(
                     "Item", "OTHER", null,
                     null, BigDecimal.ONE, null, 24,
-                    List.of(), false, null, null);
+                    null, List.of());
             assertTrue(req.imageUrls.isEmpty());
         }
 
@@ -261,7 +245,7 @@ class RequestBasicTest {
             assertDoesNotThrow(() -> new CreateItemRequest(
                     "Item", "OTHER", null,
                     null, BigDecimal.ONE, null, 24,
-                    null, false, null, null));
+                    null, null));
         }
     }
 

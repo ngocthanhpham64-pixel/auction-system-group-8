@@ -1,9 +1,5 @@
 package vn.edu.vnu.uet.group8.server.service.auction;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.*;
-
 import java.math.BigDecimal;
 import java.sql.SQLException;
 import java.time.Instant;
@@ -12,12 +8,25 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.anyInt;
 import org.mockito.Mock;
+import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.when;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import vn.edu.vnu.uet.group8.common.dto.model.BidRecord;
@@ -28,7 +37,6 @@ import vn.edu.vnu.uet.group8.common.exception.AuctionException;
 import vn.edu.vnu.uet.group8.common.exception.ItemNotFoundException;
 import vn.edu.vnu.uet.group8.server.dao.AuctionSessionDAO;
 import vn.edu.vnu.uet.group8.server.dao.BidTransactionDAO;
-import vn.edu.vnu.uet.group8.server.service.auction.AuctionEventBus;
 
 @ExtendWith(MockitoExtension.class)
 class AuctionServiceTest {
@@ -358,7 +366,7 @@ class AuctionServiceTest {
         @DisplayName("Có phiên ACTIVE → trả lịch sử đặt giá")
         void coPhienActive() throws Exception {
             AuctionSession session = sessionActive(5, 10);
-            when(sessionDAO.findActiveSessionByItemId(10)).thenReturn(Optional.of(session));
+            when(sessionDAO.findByItemId(10)).thenReturn(List.of(session));
 
             BidTransactionDAO.BidHistoryEntry entry =
                     new BidTransactionDAO.BidHistoryEntry(
@@ -381,9 +389,8 @@ class AuctionServiceTest {
         @Test
         @DisplayName("Không có phiên ACTIVE, có phiên UPCOMING → dùng upcoming")
         void coPhienUpcoming() throws Exception {
-            when(sessionDAO.findActiveSessionByItemId(10)).thenReturn(Optional.empty());
             AuctionSession session = sessionUpcoming(3, 10);
-            when(sessionDAO.findUpcomingByItemId(10)).thenReturn(Optional.of(session));
+            when(sessionDAO.findByItemId(10)).thenReturn(List.of(session));
             when(bidTransactionDAO.findHistoryByItem(3)).thenReturn(Collections.emptyList());
 
             List<BidRecord> result = service.getItemBidHistory(10);
@@ -394,8 +401,7 @@ class AuctionServiceTest {
         @Test
         @DisplayName("Không có phiên nào → list rỗng")
         void khongCoPhien() throws Exception {
-            when(sessionDAO.findActiveSessionByItemId(10)).thenReturn(Optional.empty());
-            when(sessionDAO.findUpcomingByItemId(10)).thenReturn(Optional.empty());
+            when(sessionDAO.findByItemId(10)).thenReturn(Collections.emptyList());
 
             List<BidRecord> result = service.getItemBidHistory(10);
 
@@ -407,7 +413,7 @@ class AuctionServiceTest {
         @DisplayName("Nhiều bid records → map đầy đủ")
         void nhieuBidRecords() throws Exception {
             AuctionSession session = sessionActive(5, 10);
-            when(sessionDAO.findActiveSessionByItemId(10)).thenReturn(Optional.of(session));
+            when(sessionDAO.findByItemId(10)).thenReturn(List.of(session));
 
             Instant now = Instant.now();
             List<BidTransactionDAO.BidHistoryEntry> entries = List.of(

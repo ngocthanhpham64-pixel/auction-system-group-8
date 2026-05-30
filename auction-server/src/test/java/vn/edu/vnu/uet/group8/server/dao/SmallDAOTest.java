@@ -22,7 +22,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
-import vn.edu.vnu.uet.group8.common.dto.model.CommentDTO;
 import vn.edu.vnu.uet.group8.common.dto.model.ReviewDTO;
 import vn.edu.vnu.uet.group8.common.dto.model.TransactionHistoryEntry;
 import vn.edu.vnu.uet.group8.common.dto.model.TransactionRecord;
@@ -388,118 +387,6 @@ class SmallDaoTest {
       assertThrows(SQLException.class, () -> dao.findActiveBySession(1));
     }
   }
-
-  // ═══════════════════════════════════════════════════════════════
-  // CommentDAO
-  // ═══════════════════════════════════════════════════════════════
-  @Nested
-  @DisplayName("CommentDAO")
-  class CommentDAOTest {
-
-    private CommentDAO dao;
-
-    @BeforeEach
-    void init() {
-      dao = new CommentDAO();
-    }
-
-    @Test
-    @DisplayName("insert - gọi đúng tham số, không ném exception")
-    void insert() throws SQLException {
-      when(conn.prepareStatement(anyString(), eq(Statement.RETURN_GENERATED_KEYS)))
-          .thenReturn(ps);
-      dao.insert(10, 3, "user_a", "Sản phẩm tốt lắm!");
-      verify(ps).setInt(1, 10);
-      verify(ps).setInt(2, 3);
-      verify(ps).setString(3, "user_a");
-      verify(ps).setString(4, "Sản phẩm tốt lắm!");
-      verify(ps).executeUpdate();
-    }
-
-    @Test
-    @DisplayName("insert - SQLException bị catch + log, không ném lên")
-    void insertSQLExceptionBiCatch() throws SQLException {
-      when(conn.prepareStatement(anyString(), eq(Statement.RETURN_GENERATED_KEYS)))
-          .thenThrow(new SQLException("DB lỗi"));
-      // Không ném exception - CommentDAO.insert() catch internally
-      assertDoesNotThrow(() -> dao.insert(1, 1, "u", "c"));
-    }
-
-    @Test
-    @DisplayName("getCommentsForAnItemId - trả về danh sách đúng")
-    void getCommentsForAnItemId() throws SQLException {
-      when(conn.prepareStatement(anyString())).thenReturn(ps);
-      when(ps.executeQuery()).thenReturn(rs);
-      Instant now = Instant.now();
-      when(rs.next()).thenReturn(true, true, false);
-      when(rs.getString("username")).thenReturn("u1", "u2");
-      when(rs.getInt("user_id")).thenReturn(1, 2);
-      when(rs.getString("content")).thenReturn("Hay lắm", "Bình thường");
-      when(rs.getTimestamp("created_at")).thenReturn(Timestamp.from(now));
-
-      List<CommentDTO> result = dao.getCommentsForAnItemId(10);
-
-      assertEquals(2, result.size());
-      assertEquals("u1", result.get(0).getUsername());
-      assertEquals("Hay lắm", result.get(0).getContent());
-      verify(ps).setInt(1, 10);
-    }
-
-    @Test
-    @DisplayName("getCommentsForAnItemId - list rỗng khi không có comment")
-    void getCommentsForAnItemIdEmpty() throws SQLException {
-      when(conn.prepareStatement(anyString())).thenReturn(ps);
-      when(ps.executeQuery()).thenReturn(rs);
-      when(rs.next()).thenReturn(false);
-
-      assertTrue(dao.getCommentsForAnItemId(99).isEmpty());
-    }
-
-    @Test
-    @DisplayName("getCommentsForAnItemId - SQLException bị catch → list rỗng")
-    void getCommentsForAnItemIdSQLException() throws SQLException {
-      when(conn.prepareStatement(anyString())).thenThrow(new SQLException("DB"));
-      List<CommentDTO> result = dao.getCommentsForAnItemId(1);
-      assertTrue(result.isEmpty());
-    }
-
-    @Test
-    @DisplayName("getCommentsForUser - trả về danh sách đúng")
-    void getCommentsForUser() throws SQLException {
-      when(conn.prepareStatement(anyString())).thenReturn(ps);
-      when(ps.executeQuery()).thenReturn(rs);
-      Instant now = Instant.now();
-      when(rs.next()).thenReturn(true, false);
-      when(rs.getString("username")).thenReturn("seller01");
-      when(rs.getInt("user_id")).thenReturn(5);
-      when(rs.getString("content")).thenReturn("Giao hàng nhanh");
-      when(rs.getTimestamp("created_at")).thenReturn(Timestamp.from(now));
-
-      List<CommentDTO> result = dao.getCommentsForUser(5);
-
-      assertEquals(1, result.size());
-      assertEquals("seller01", result.get(0).getUsername());
-      verify(ps).setInt(1, 5);
-    }
-
-    @Test
-    @DisplayName("getCommentsForUser - list rỗng khi không có comment")
-    void getCommentsForUserEmpty() throws SQLException {
-      when(conn.prepareStatement(anyString())).thenReturn(ps);
-      when(ps.executeQuery()).thenReturn(rs);
-      when(rs.next()).thenReturn(false);
-
-      assertTrue(dao.getCommentsForUser(99).isEmpty());
-    }
-
-    @Test
-    @DisplayName("getCommentsForUser - SQLException bị catch → list rỗng")
-    void getCommentsForUserSQLException() throws SQLException {
-      when(conn.prepareStatement(anyString())).thenThrow(new SQLException("DB"));
-      assertTrue(dao.getCommentsForUser(1).isEmpty());
-    }
-  }
-
   // ═══════════════════════════════════════════════════════════════
   // TransactionDAO
   // ═══════════════════════════════════════════════════════════════

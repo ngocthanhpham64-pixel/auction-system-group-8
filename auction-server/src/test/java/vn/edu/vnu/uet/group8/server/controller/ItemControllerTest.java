@@ -14,7 +14,6 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import vn.edu.vnu.uet.group8.common.dto.model.AuctionItemDTO;
-import vn.edu.vnu.uet.group8.common.dto.model.CommentDTO;
 import vn.edu.vnu.uet.group8.common.dto.request.GetAuctionsRequest;
 import vn.edu.vnu.uet.group8.common.dto.response.ServerResponse;
 import vn.edu.vnu.uet.group8.common.entity.Item;
@@ -777,100 +776,6 @@ class ItemControllerTest {
       assertFalse(res.isSuccess());
     }
   }
-
-  // ════════════════════════════════════════════════════════════════════════
-  // 8. handleItemComment
-  // ════════════════════════════════════════════════════════════════════════
-
-  @Nested
-  @DisplayName("handleItemComment")
-  class HandleItemCommentTests {
-
-    @Test
-    @DisplayName("Payload là JsonObject → đọc itemId từ payload và trả comments")
-    void payloadIsJsonObject_returnsComments() throws Exception {
-      JsonObject req = wrappedRequest(payloadWithItemId(3));
-      List<CommentDTO> comments = List.of(
-          new CommentDTO(3, 1, "user1", "nice item", Instant.now()),
-          new CommentDTO(3, 2, "user2", "good", Instant.now())
-      );
-      when(itemQueryService.getCommentsForAnItemId(3)).thenReturn(comments);
-
-      ServerResponse res = itemController.handleItemComment(req, REQUEST_ID);
-
-      assertTrue(res.isSuccess());
-      assertSame(comments, res.getData());
-      assertEquals("ITEM_COMMENT", res.getAction());
-    }
-
-    @Test
-    @DisplayName("Không có payload key → đọc itemId từ root")
-    void noPayloadKey_readsFromRoot() throws Exception {
-      JsonObject req = rootRequest("itemId", "3");
-      List<CommentDTO> comments = List.of();
-      when(itemQueryService.getCommentsForAnItemId(3)).thenReturn(comments);
-
-      ServerResponse res = itemController.handleItemComment(req, REQUEST_ID);
-
-      assertTrue(res.isSuccess());
-      verify(itemQueryService).getCommentsForAnItemId(3);
-    }
-
-    @Test
-    @DisplayName("Payload hiện diện nhưng không phải JsonObject → fallback root")
-    void payloadNotJsonObject_fallbackRoot() throws Exception {
-      JsonObject req = new JsonObject();
-      req.add("payload", new JsonPrimitive("bad-payload"));
-      req.addProperty("itemId", 8);
-      List<CommentDTO> comments = List.of();
-      when(itemQueryService.getCommentsForAnItemId(8)).thenReturn(comments);
-
-      ServerResponse res = itemController.handleItemComment(req, REQUEST_ID);
-
-      assertTrue(res.isSuccess());
-      verify(itemQueryService).getCommentsForAnItemId(8);
-    }
-
-    @Test
-    @DisplayName("Service ném RuntimeException → response lỗi")
-    void serviceThrows_returnsErrorResponse() {
-      JsonObject req = wrappedRequest(payloadWithItemId(3));
-      when(itemQueryService.getCommentsForAnItemId(3))
-          .thenThrow(new RuntimeException("DB lỗi"));
-
-      ServerResponse res = itemController.handleItemComment(req, REQUEST_ID);
-
-      assertFalse(res.isSuccess());
-      assertTrue(res.getMessage().contains("DB lỗi"));
-    }
-
-    @Test
-    @DisplayName("Thiếu itemId trong payload → ValidationException → response lỗi")
-    void missingItemId_returnsErrorResponse() {
-      JsonObject req = wrappedRequest(new JsonObject());
-
-      ServerResponse res = itemController.handleItemComment(req, REQUEST_ID);
-
-      assertFalse(res.isSuccess());
-    }
-
-    @Test
-    @DisplayName("Trả về danh sách rỗng khi không có comment")
-    void noComments_returnsEmptyList() throws Exception {
-      JsonObject req = wrappedRequest(payloadWithItemId(3));
-      when(itemQueryService.getCommentsForAnItemId(3)).thenReturn(List.of());
-
-      ServerResponse res = itemController.handleItemComment(req, REQUEST_ID);
-
-      assertTrue(res.isSuccess());
-      @SuppressWarnings("unchecked")
-      List<CommentDTO> data = (List<CommentDTO>) res.getData();
-      assertNotNull(data);
-      assertTrue(data.isEmpty());
-    }
-  }
-
-  // ════════════════════════════════════════════════════════════════════════
   // 9. Kiểm tra cấu trúc ServerResponse chung
   // ════════════════════════════════════════════════════════════════════════
 

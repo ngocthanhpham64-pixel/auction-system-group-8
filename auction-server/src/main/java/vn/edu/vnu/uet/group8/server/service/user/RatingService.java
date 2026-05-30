@@ -3,23 +3,19 @@ package vn.edu.vnu.uet.group8.server.service.user;
 import java.sql.SQLException;
 import java.util.List;
 
-import vn.edu.vnu.uet.group8.common.dto.model.CommentDTO;
 import vn.edu.vnu.uet.group8.common.dto.model.ReviewDTO;
 import vn.edu.vnu.uet.group8.common.exception.ValidationException;
-import vn.edu.vnu.uet.group8.server.dao.CommentDAO;
 import vn.edu.vnu.uet.group8.server.dao.RatingDAO;
 import vn.edu.vnu.uet.group8.server.dao.UserDAO;
 
 public class RatingService {
   private final RatingDAO ratingDAO;
   private final UserDAO userDAO;
-  private final CommentDAO commentDAO;
 
 
-  public RatingService(RatingDAO ratingDAO, UserDAO userDAO, CommentDAO commentDAO) {
+  public RatingService(RatingDAO ratingDAO, UserDAO userDAO) {
     this.ratingDAO = ratingDAO;
     this.userDAO = userDAO;
-    this.commentDAO = commentDAO;
   }
 
   public void rateSeller(int raterId, String raterUsername, int sellerId, int itemId, int score, String comment) throws SQLException {
@@ -41,9 +37,5 @@ public class RatingService {
 
   public List<ReviewDTO> getSellerReviews(int sellerId) throws SQLException {
     return ratingDAO.getSellerReviews(sellerId);
-  }
-
-  public List<CommentDTO> getCommentsForUser(int user_id) {
-    return commentDAO.getCommentsForUser(user_id);
   }
 }

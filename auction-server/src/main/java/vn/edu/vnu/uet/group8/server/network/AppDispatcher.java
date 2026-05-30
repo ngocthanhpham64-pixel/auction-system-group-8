@@ -135,10 +135,7 @@ public class AppDispatcher {
         return itemController.handleGetDetail(request, requestId);
       case "ITEM_CREATE":
         return itemController.handleCreateItem(request, requestId, userId);
-      case "ITEM_COMMENT":
-        return itemController.handleItemComment(request, requestId);
       
-    
       // Bid
       case "BID_PLACE":
         return bidController.handlePlaceBid(request, requestId, userId);
@@ -212,8 +209,6 @@ public class AppDispatcher {
         return ratingController.handleRateSeller(request, requestId, userId);
       case "USER_GET_SELLER_REVIEWS":
         return ratingController.handleGetSellerReviews(request, requestId);
-      case "USER_GET_SELLER_COMMENTS":
-        return ratingController.handleGetSellerComments(request, requestId);
 
       default:
         log.warn("Action không xác định: {}", action);
