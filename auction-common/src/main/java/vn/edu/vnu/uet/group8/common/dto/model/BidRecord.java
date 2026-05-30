@@ -20,6 +20,8 @@ public final class BidRecord {
     //Phân biệt đặt tay và tự động đặt
     //->UI hiển thị badge "Tự động" cho isAutoBid = true
     private final boolean isAutoBid;
+    private final String status; // Trạng thái bid: LEADER, FAILED, OUTBID...
+    
     //No-arg constructor cho GSON-dùng reflection để deseriable
     private BidRecord(){
         this.bidId = 0;
@@ -29,6 +31,7 @@ public final class BidRecord {
         this.amount = null;
         this.placedAt = null;
         this.isAutoBid = false;
+        this.status = "LEADER";
     }
     // Constructor từ Builder
     private BidRecord(Builder b){
@@ -39,6 +42,7 @@ public final class BidRecord {
         this.amount      = b.amount;
         this.placedAt    = b.placedAt;
         this.isAutoBid   = b.isAutoBid;
+        this.status      = b.status;
     }
     public int getBidId(){ return bidId;}
     public int getItemId(){ return itemId;}
@@ -47,6 +51,7 @@ public final class BidRecord {
     public BigDecimal getAmount(){ return amount;}
     public Instant getPlacedAt(){ return placedAt;}
     public boolean isAutoBid(){ return isAutoBid;}
+    public String getStatus(){ return status;}
     //Entry point
     public static Builder builder(){ return new Builder();}
     @Override
@@ -58,7 +63,8 @@ public final class BidRecord {
                 + ", displayName='" + displayName + '\''
                 + ", amount=" + amount
                 + ", placedAt=" + placedAt
-                + ", isAutoBid=" + isAutoBid + '}';
+                + ", isAutoBid=" + isAutoBid 
+                + ", status='" + status + '\'' + '}';
     }
     // Builder
     public static class Builder{
@@ -69,6 +75,7 @@ public final class BidRecord {
         private BigDecimal amount;
         private Instant placedAt;
         private boolean isAutoBid = false;//Mặc định là đặt tay
+        private String status = "LEADER";
 
         private Builder(){}
 
@@ -79,6 +86,7 @@ public final class BidRecord {
         public Builder amount(BigDecimal v){ amount = v; return this;}
         public Builder placedAt(Instant v){ placedAt = v; return this;}
         public Builder isAutoBid(boolean v){ isAutoBid = v; return this;}
+        public Builder status(String v){ status = v; return this;}
 
         /**
          * Validate trước khi tạo object
@@ -100,8 +108,7 @@ public final class BidRecord {
                 throw new IllegalArgumentException("amount không được null");
             if(amount.compareTo(BigDecimal.ZERO)<=0)
                 throw new IllegalArgumentException("amount phải lớn hơn 0");
-            // Thời gian không được ở tương lai
-            if(placedAt.isAfter(Instant.now()))
+            if(placedAt != null && placedAt.isAfter(Instant.now()))
                 throw new IllegalArgumentException("placedAt không được ở tương lai");
             return new BidRecord(this);
         }

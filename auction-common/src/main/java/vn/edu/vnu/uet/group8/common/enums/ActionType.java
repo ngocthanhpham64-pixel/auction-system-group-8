@@ -11,8 +11,8 @@ public enum ActionType {
     @SerializedName("register") REGISTER,
     @SerializedName("logout") LOGOUT,
     @SerializedName("heartbeat") HEARTBEAT,
-    @SerializedName("item_all") ITEM_GET_ALL,
-    @SerializedName("item_detail") ITEM_GET_DETAIL,
+    @SerializedName("item_get_all") ITEM_GET_ALL,
+    @SerializedName("item_get_detail") ITEM_GET_DETAIL,
     @SerializedName("bid_place") BID_PLACE,
     @SerializedName("bid_auto") BID_AUTO,
     @SerializedName("bid_history") BID_HISTORY,
@@ -39,7 +39,13 @@ public enum ActionType {
     @SerializedName("admin_cancel_auction") ADMIN_CANCEL_AUCTION,
     @SerializedName("user_update_profile") USER_UPDATE_PROFILE,
     @SerializedName("auth_request_otp") AUTH_REQUEST_OTP,
-    @SerializedName("auth_reset_password") AUTH_RESET_PASSWORD;
+    @SerializedName("auth_reset_password") AUTH_RESET_PASSWORD,
+    @SerializedName("user_rate_seller") USER_RATE_SELLER,
+    @SerializedName("user_get_seller_reviews") USER_GET_SELLER_REVIEWS,
+    @SerializedName("item_comment") ITEM_COMMENT,
+    @SerializedName("user_get_seller_comments") USER_GET_SELLER_COMMENTS,
+    @SerializedName("user_purchase_history") USER_PURCHASE_HISTORY,
+    @SerializedName("get_auto_bid_status") GET_AUTO_BID_STATUS;
 
     // @SerializedName("chat_send_message") CHAT_SEND_MESSAGE; // Chat (nếu triển khai)
 }

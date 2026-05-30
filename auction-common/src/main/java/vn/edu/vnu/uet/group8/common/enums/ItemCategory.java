@@ -10,6 +10,8 @@ public enum ItemCategory {
   ANTIQUES("Đồ cổ"),
   FASHION("Thời trang"),
   REAL_ESTATE("Bất động sản"),
+  HOME("Nhà cửa"),
+  SPORTS("Thể thao"),
   OTHER("Khác");
 
   private final String label;

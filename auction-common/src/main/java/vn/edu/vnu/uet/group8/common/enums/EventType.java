@@ -17,5 +17,9 @@ public enum EventType {
 
     /** Thông báo đẩy cho user (bị outbid, thắng đấu giá...) */
     @SerializedName("notification")
-    NOTIFICATION
+    NOTIFICATION,
+
+    /** Bị kick do đăng nhập từ thiết bị khác */
+    @SerializedName("kicked")
+    KICKED;
 }

@@ -40,6 +40,7 @@ public class UserProfileDTO {
   private String fullName;   // null nếu là UserAdmin
   private String phone;      // null nếu chưa điền hoặc UserAdmin
   private String avatarUrl;
+  private String address;    // Thêm địa chỉ
 
   // ── Tài chính (chỉ UserMember xem profile của chính mình) ──
   // null nếu Admin xem — Admin không cần biết số dư user
@@ -82,6 +83,7 @@ public class UserProfileDTO {
       dto.fullName         = user.getFullname();
       dto.phone            = user.getPhone();
       dto.avatarUrl        = user.getAvatarUrl();
+      dto.address          = user.getAddress();
       dto.balance          = user.getBalance();
       dto.sellerRating     = user.getSellerRating();
       dto.totalBidsPlaced  = user.getTotalBidsPlaced();
@@ -152,6 +154,7 @@ public class UserProfileDTO {
     // Bảo mật: Ẩn các thông tin nhạy cảm/nội bộ
     dto.email            = null;
     dto.phone            = null;
+    dto.address          = null;
     dto.balance          = null;
     dto.status           = null;
     dto.lastLogin        = null;
@@ -182,6 +185,9 @@ public class UserProfileDTO {
   }
   public String     getPhone()           {
     return phone;
+  }
+  public String     getAddress()         {
+    return address;
   }
   public BigDecimal getBalance()         {
     return balance;

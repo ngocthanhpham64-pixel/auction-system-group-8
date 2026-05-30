@@ -1,0 +1,1 @@
+// File test này đã được đổi tên thành BroadcastChannelImplTest.java để tránh xung đột đặt tên.

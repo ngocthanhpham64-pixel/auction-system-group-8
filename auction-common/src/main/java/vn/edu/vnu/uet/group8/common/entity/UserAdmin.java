@@ -13,6 +13,7 @@ public final class UserAdmin extends User {
 
   private UserAdmin(Builder b) {
     super(b);
+    this.adminLevel = b.adminLevel;
     addRole(UserRole.ADMIN);
   }
 

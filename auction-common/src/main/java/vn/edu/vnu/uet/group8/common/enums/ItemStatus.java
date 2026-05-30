@@ -4,6 +4,7 @@ public enum ItemStatus {
   DRAFT     ("Nháp, chưa bán"),
   LISTED    ("Đang lên sàn"),
   SOLD      ("Đã bán thành công"),
+  UNSOLD    ("Không có người mua"),
   ARCHIVED  ("Đã xóa do người bán");
 
   private final String label;
