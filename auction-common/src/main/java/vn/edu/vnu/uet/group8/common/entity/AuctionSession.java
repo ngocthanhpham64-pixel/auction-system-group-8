@@ -175,6 +175,9 @@ public final class AuctionSession extends Entity {
   }
 
   public boolean transitionStatus(SessionStatus from, SessionStatus to) {
+    if (this.status != from) {
+      return false;
+    }
     boolean isValid = switch (from) {
       case UPCOMING     -> to == SessionStatus.ACTIVE || to == SessionStatus.CANCELLED;
       case ACTIVE       -> to == SessionStatus.SOLD || to == SessionStatus.ENDED_NO_BID || to == SessionStatus.CANCELLED;

@@ -1,9 +1,5 @@
 package vn.edu.vnu.uet.group8.server.dao;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.*;
-
 import java.math.BigDecimal;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -15,15 +11,33 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Optional;
+
 import org.junit.jupiter.api.AfterEach;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.contains;
+import static org.mockito.ArgumentMatchers.eq;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
+import static org.mockito.Mockito.atLeastOnce;
+import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.mockStatic;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 import org.mockito.junit.jupiter.MockitoExtension;
+
 import vn.edu.vnu.uet.group8.common.entity.AuctionSession;
 import vn.edu.vnu.uet.group8.common.enums.SessionStatus;
 
@@ -43,7 +57,7 @@ class AuctionSessionDAOTest {
   void setUp() throws SQLException {
     staticMock = mockStatic(DatabaseConnection.class);
     staticMock.when(DatabaseConnection::getInstance).thenReturn(dbConn);
-    when(dbConn.getConnection()).thenReturn(conn);
+    lenient().when(dbConn.getConnection()).thenReturn(conn);
     dao = new AuctionSessionDAO();
   }
 
@@ -142,6 +156,26 @@ class AuctionSessionDAOTest {
 
       assertThrows(SQLException.class, () -> dao.insert(session));
     }
+
+    @Test
+    @DisplayName("insert - highestBidderId non-null → setInt")
+    void insertHighestBidderNonNull() throws SQLException {
+      when(conn.prepareStatement(anyString(), eq(Statement.RETURN_GENERATED_KEYS)))
+          .thenReturn(ps);
+      when(ps.getGeneratedKeys()).thenReturn(keyRs);
+      when(keyRs.next()).thenReturn(true);
+      when(keyRs.getInt(1)).thenReturn(1);
+
+      Instant now = Instant.now();
+      AuctionSession session = new AuctionSession.Builder(
+          5, new BigDecimal("500000"), now, now.plus(1, ChronoUnit.HOURS))
+          .highestBidderId(7)
+          .build();
+
+      dao.insert(session);
+
+      verify(ps).setInt(9, 7);
+    }
   }
 
   // ─────────────────────────────────────────────────────────────
@@ -200,6 +234,20 @@ class AuctionSessionDAOTest {
       when(conn.prepareStatement(anyString())).thenThrow(new SQLException("DB"));
 
       assertThrows(SQLException.class, () -> dao.findById(1));
+    }
+
+    @Test
+    @DisplayName("start_time và end_time là null → ném IllegalStateException do thiếu field bắt buộc")
+    void startEndTimeNull() throws SQLException {
+      when(conn.prepareStatement(anyString())).thenReturn(ps);
+      when(ps.executeQuery()).thenReturn(rs);
+      when(rs.next()).thenReturn(true);
+
+      setupSessionRs(1, 10, "ACTIVE");
+      when(rs.getTimestamp("start_time")).thenReturn(null);
+      when(rs.getTimestamp("end_time")).thenReturn(null);
+
+      assertThrows(IllegalStateException.class, () -> dao.findById(1));
     }
   }
 
@@ -473,5 +521,177 @@ class AuctionSessionDAOTest {
 
     assertEquals(1, result.size());
     verify(ps).setInt(1, 7);
+  }
+
+  // ─────────────────────────────────────────────────────────────
+  // lockSessionForUpdate
+  // ─────────────────────────────────────────────────────────────
+  @Nested
+  @DisplayName("lockSessionForUpdate()")
+  class LockSessionForUpdateTest {
+
+    @Test
+    @DisplayName("Tìm thấy và lock thành công → trả Optional.of")
+    void lockThanhCong() throws SQLException {
+      when(conn.prepareStatement(anyString())).thenReturn(ps);
+      when(ps.executeQuery()).thenReturn(rs);
+      when(rs.next()).thenReturn(true);
+      setupSessionRs(100, 200, "ACTIVE");
+
+      Optional<AuctionSession> result = dao.lockSessionForUpdate(conn, 100);
+
+      assertTrue(result.isPresent());
+      assertEquals(100, result.get().getId());
+      verify(ps).setInt(1, 100);
+    }
+
+    @Test
+    @DisplayName("Không tìm thấy để lock → trả Optional.empty")
+    void lockKhongTimThay() throws SQLException {
+      when(conn.prepareStatement(anyString())).thenReturn(ps);
+      when(ps.executeQuery()).thenReturn(rs);
+      when(rs.next()).thenReturn(false);
+
+      Optional<AuctionSession> result = dao.lockSessionForUpdate(conn, 999);
+
+      assertTrue(result.isEmpty());
+      verify(ps).setInt(1, 999);
+    }
+  }
+
+  // ─────────────────────────────────────────────────────────────
+  // findActiveByCategory
+  // ─────────────────────────────────────────────────────────────
+  @Nested
+  @DisplayName("findActiveByCategory()")
+  class FindActiveByCategoryTest {
+
+    @Test
+    @DisplayName("Có session ACTIVE theo category → trả list đúng")
+    void coSessionActiveTheoCategory() throws SQLException {
+      when(conn.prepareStatement(anyString())).thenReturn(ps);
+      when(ps.executeQuery()).thenReturn(rs);
+      when(rs.next()).thenReturn(true, false);
+      setupSessionRs(1, 10, "ACTIVE");
+
+      List<AuctionSession> result = dao.findActiveByCategory(vn.edu.vnu.uet.group8.common.enums.ItemCategory.ELECTRONICS);
+
+      assertEquals(1, result.size());
+      verify(ps).setString(1, vn.edu.vnu.uet.group8.common.enums.ItemCategory.ELECTRONICS.name());
+    }
+  }
+
+  // ─────────────────────────────────────────────────────────────
+  // findUpcomingToStart
+  // ─────────────────────────────────────────────────────────────
+  @Nested
+  @DisplayName("findUpcomingToStart()")
+  class FindUpcomingToStartTest {
+
+    @Test
+    @DisplayName("Có session UPCOMING đến giờ bắt đầu → trả list đúng")
+    void coSessionUpcomingToStart() throws SQLException {
+      when(conn.prepareStatement(anyString())).thenReturn(ps);
+      when(ps.executeQuery()).thenReturn(rs);
+      when(rs.next()).thenReturn(true, false);
+      setupSessionRs(2, 20, "UPCOMING");
+
+      List<AuctionSession> result = dao.findUpcomingToStart();
+
+      assertEquals(1, result.size());
+      verify(ps).setTimestamp(eq(1), any(Timestamp.class));
+    }
+  }
+
+  // ─────────────────────────────────────────────────────────────
+  // findByPriceRange
+  // ─────────────────────────────────────────────────────────────
+  @Nested
+  @DisplayName("findByPriceRange()")
+  class FindByPriceRangeTest {
+
+    @Test
+    @DisplayName("Không truyền filter và sort → dùng mặc định")
+    void khongTruyenGi() throws SQLException {
+      when(conn.prepareStatement(anyString())).thenReturn(ps);
+      when(ps.executeQuery()).thenReturn(rs);
+      when(rs.next()).thenReturn(true, false);
+      setupSessionRs(1, 10, "ACTIVE");
+
+      List<AuctionSession> result = dao.findByPriceRange(null, null, null, null);
+
+      assertEquals(1, result.size());
+      verify(ps, never()).setString(anyInt(), anyString());
+      verify(ps, never()).setBigDecimal(anyInt(), any(BigDecimal.class));
+    }
+
+    @Test
+    @DisplayName("Có category, minPrice, maxPrice, và SortOption.NEWEST")
+    void coFilterVaSortNewest() throws SQLException {
+      when(conn.prepareStatement(anyString())).thenReturn(ps);
+      when(ps.executeQuery()).thenReturn(rs);
+      when(rs.next()).thenReturn(true, false);
+      setupSessionRs(1, 10, "ACTIVE");
+
+      List<AuctionSession> result = dao.findByPriceRange(
+          vn.edu.vnu.uet.group8.common.enums.ItemCategory.ELECTRONICS,
+          new BigDecimal("100"),
+          new BigDecimal("500"),
+          vn.edu.vnu.uet.group8.common.dto.request.GetAuctionsRequest.SortOption.NEWEST
+      );
+
+      assertEquals(1, result.size());
+      verify(ps).setString(1, vn.edu.vnu.uet.group8.common.enums.ItemCategory.ELECTRONICS.name());
+      verify(ps).setBigDecimal(2, new BigDecimal("100"));
+      verify(ps).setBigDecimal(3, new BigDecimal("500"));
+    }
+
+    @Test
+    @DisplayName("SortOption.ENDING_SOON")
+    void sortEndingSoon() throws SQLException {
+      when(conn.prepareStatement(anyString())).thenReturn(ps);
+      when(ps.executeQuery()).thenReturn(rs);
+      when(rs.next()).thenReturn(false);
+
+      dao.findByPriceRange(null, null, null, vn.edu.vnu.uet.group8.common.dto.request.GetAuctionsRequest.SortOption.ENDING_SOON);
+
+      verify(conn).prepareStatement(contains("ORDER BY s.end_time ASC"));
+    }
+
+    @Test
+    @DisplayName("SortOption.PRICE_ASC")
+    void sortPriceAsc() throws SQLException {
+      when(conn.prepareStatement(anyString())).thenReturn(ps);
+      when(ps.executeQuery()).thenReturn(rs);
+      when(rs.next()).thenReturn(false);
+
+      dao.findByPriceRange(null, null, null, vn.edu.vnu.uet.group8.common.dto.request.GetAuctionsRequest.SortOption.PRICE_ASC);
+
+      verify(conn).prepareStatement(contains("ORDER BY s.current_price ASC"));
+    }
+
+    @Test
+    @DisplayName("SortOption.PRICE_DESC")
+    void sortPriceDesc() throws SQLException {
+      when(conn.prepareStatement(anyString())).thenReturn(ps);
+      when(ps.executeQuery()).thenReturn(rs);
+      when(rs.next()).thenReturn(false);
+
+      dao.findByPriceRange(null, null, null, vn.edu.vnu.uet.group8.common.dto.request.GetAuctionsRequest.SortOption.PRICE_DESC);
+
+      verify(conn).prepareStatement(contains("ORDER BY s.current_price DESC"));
+    }
+
+    @Test
+    @DisplayName("SortOption.HOT")
+    void sortHot() throws SQLException {
+      when(conn.prepareStatement(anyString())).thenReturn(ps);
+      when(ps.executeQuery()).thenReturn(rs);
+      when(rs.next()).thenReturn(false);
+
+      dao.findByPriceRange(null, null, null, vn.edu.vnu.uet.group8.common.dto.request.GetAuctionsRequest.SortOption.HOT);
+
+      verify(conn).prepareStatement(contains("ORDER BY s.bid_count DESC, s.current_price DESC"));
+    }
   }
 }

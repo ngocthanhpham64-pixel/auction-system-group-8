@@ -1,1114 +1,825 @@
 package vn.edu.vnu.uet.group8.server.dao;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.*;
-
 import java.math.BigDecimal;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Statement;
+import java.sql.Timestamp;
+import java.sql.Types;
 import java.time.Instant;
-import java.util.Collections;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Optional;
 
+import org.junit.jupiter.api.AfterEach;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.EnumSource;
-import org.mockito.ArgumentCaptor;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.ArgumentMatchers.eq;
 import org.mockito.Mock;
+import org.mockito.MockedStatic;
+import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.mockStatic;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import vn.edu.vnu.uet.group8.common.dto.model.AuctionItemDTO;
-import vn.edu.vnu.uet.group8.common.dto.request.GetAuctionsRequest;
-import vn.edu.vnu.uet.group8.common.entity.AuctionSession;
-import vn.edu.vnu.uet.group8.common.entity.Item;
+import vn.edu.vnu.uet.group8.common.entity.User;
 import vn.edu.vnu.uet.group8.common.entity.UserAdmin;
 import vn.edu.vnu.uet.group8.common.entity.UserMember;
 import vn.edu.vnu.uet.group8.common.enums.AdminLevel;
-import vn.edu.vnu.uet.group8.common.enums.ItemCategory;
-import vn.edu.vnu.uet.group8.common.enums.ItemCondition;
-import vn.edu.vnu.uet.group8.common.enums.ItemStatus;
-import vn.edu.vnu.uet.group8.common.enums.SessionStatus;
-import vn.edu.vnu.uet.group8.common.exception.ItemNotFoundException;
-import vn.edu.vnu.uet.group8.server.service.item.ItemQueryService;
-import vn.edu.vnu.uet.group8.server.dao.AuctionSessionDAO;
-import vn.edu.vnu.uet.group8.server.dao.BidTransactionDAO;
-import vn.edu.vnu.uet.group8.server.dao.ItemDAO;
-import vn.edu.vnu.uet.group8.server.dao.UserDAO;
+import vn.edu.vnu.uet.group8.common.enums.PaymentMethod;
+import vn.edu.vnu.uet.group8.common.enums.TransactionType;
+import vn.edu.vnu.uet.group8.common.enums.UserRole;
+import vn.edu.vnu.uet.group8.common.enums.UserStatus;
+import vn.edu.vnu.uet.group8.common.exception.InsufficientBalanceException;
+import vn.edu.vnu.uet.group8.common.exception.UserNotFoundException;
+import vn.edu.vnu.uet.group8.server.util.PasswordUtil;
 
-/**
- * Test FULL COVERAGE cho {@link ItemQueryService}.
- *
- * <p>Mục tiêu coverage: 56% → ~95%
- *
- * <p>Các method CẦN tăng (từ 0%):
- * <ul>
- *   <li>{@code getMyItemsByStatus()}  — 0%</li>
- *   <li>{@code resolveSellerUsername()} — 0% (private, test gián tiếp)</li>
- *   <li>{@code getWonItems()}          — 0%</li>
- *   <li>{@code getActiveItems()}       — 0%</li>
- *   <li>{@code getCommentsForAnItemId()} — 0%</li>
- *   <li>{@code buildDtoList()}         — 14% (nhiều branch chưa đi qua)</li>
- *   <li>{@code findRelevantSession()}  — 77% (branch cuối chưa cover)</li>
- * </ul>
- *
- * <p>Các method GIỮ VỮNG (đã có, bổ sung thêm branch):
- * <ul>
- *   <li>{@code getItemDetail()}  — 97%</li>
- *   <li>{@code getMyItems()}     — 96%</li>
- *   <li>{@code getAuctions()}    — 100%</li>
- * </ul>
- */
 @ExtendWith(MockitoExtension.class)
-@DisplayName("ItemQueryService - Full Coverage Tests")
-class ItemQueryServiceFullTest {
+@DisplayName("UserDAO - Unit Tests")
+public class UserDAOTest {
 
-    @Mock private ItemDAO           itemDAO;
-    @Mock private AuctionSessionDAO sessionDAO;
-    @Mock private UserDAO           userDAO;
-    @Mock private BidTransactionDAO bidTransactionDAO;
+  @Mock private DatabaseConnection dbConn;
+  @Mock private Connection conn;
+  @Mock private PreparedStatement ps;
+  @Mock private ResultSet rs;
+  @Mock private ResultSet keyRs;
 
-    private ItemQueryService service;
+  private UserDAO dao;
+  private MockedStatic<DatabaseConnection> staticDbMock;
+  private MockedStatic<PasswordUtil> staticPasswordMock;
 
-    @BeforeEach
-    void setUp() {
-        service = new ItemQueryService(
-                itemDAO, sessionDAO, userDAO, bidTransactionDAO);
+  @BeforeEach
+  void setUp() throws SQLException {
+    staticDbMock = mockStatic(DatabaseConnection.class);
+    staticDbMock.when(DatabaseConnection::getInstance).thenReturn(dbConn);
+    lenient().when(dbConn.getConnection()).thenReturn(conn);
+
+    staticPasswordMock = mockStatic(PasswordUtil.class);
+
+    dao = new UserDAO();
+  }
+
+  @AfterEach
+  void tearDown() {
+    staticDbMock.close();
+    staticPasswordMock.close();
+  }
+
+  // ═══════════════════════════════════════════════════
+  // HELPERS
+  // ═══════════════════════════════════════════════════
+
+  private void setupUserMemberRs() throws SQLException {
+    when(rs.getInt("user_id")).thenReturn(1);
+    when(rs.getTimestamp("created_at")).thenReturn(Timestamp.from(Instant.now()));
+    when(rs.getBoolean("is_deleted")).thenReturn(false);
+    when(rs.getString("username")).thenReturn("member1");
+    when(rs.getString("email")).thenReturn("member1@mail.com");
+    when(rs.getString("password_hash")).thenReturn("hashedPass");
+    when(rs.getString("status")).thenReturn("ACTIVE");
+    when(rs.getTimestamp("last_login_at")).thenReturn(Timestamp.from(Instant.now()));
+    when(rs.getString("admin_level")).thenReturn(null);
+    when(rs.getString("roles")).thenReturn("BIDDER,SELLER");
+    when(rs.getBigDecimal("balance")).thenReturn(new BigDecimal("100.50"));
+    when(rs.getString("full_name")).thenReturn("Member One");
+    when(rs.getString("phone")).thenReturn("0912345678");
+    when(rs.getString("address")).thenReturn("Hanoi");
+    when(rs.getBigDecimal("seller_rating")).thenReturn(new BigDecimal("4.8"));
+    when(rs.getString("avatar_url")).thenReturn("avatar.png");
+    when(rs.getInt("total_bids_placed")).thenReturn(5);
+    when(rs.getInt("total_items_sold")).thenReturn(2);
+  }
+
+  private void setupUserAdminRs() throws SQLException {
+    when(rs.getInt("user_id")).thenReturn(2);
+    when(rs.getTimestamp("created_at")).thenReturn(Timestamp.from(Instant.now()));
+    when(rs.getBoolean("is_deleted")).thenReturn(false);
+    when(rs.getString("username")).thenReturn("admin1");
+    when(rs.getString("email")).thenReturn("admin1@mail.com");
+    when(rs.getString("password_hash")).thenReturn("hashedPassAdmin");
+    when(rs.getString("status")).thenReturn("ACTIVE");
+    when(rs.getTimestamp("last_login_at")).thenReturn(null);
+    when(rs.getString("admin_level")).thenReturn("SUPER_ADMIN");
+    when(rs.getString("full_name")).thenReturn("Admin One");
+  }
+
+  // ═══════════════════════════════════════════════════
+  // CRUD & BASIC QUERIES
+  // ═══════════════════════════════════════════════════
+
+  @Nested
+  @DisplayName("CRUD Operations")
+  class CRUDTest {
+
+    @Test
+    @DisplayName("insert() - UserMember success")
+    void insertUserMemberSuccess() throws SQLException {
+      when(conn.prepareStatement(anyString(), eq(Statement.RETURN_GENERATED_KEYS))).thenReturn(ps);
+      when(ps.getGeneratedKeys()).thenReturn(keyRs);
+      when(keyRs.next()).thenReturn(true);
+      when(keyRs.getInt(1)).thenReturn(99);
+
+      UserMember member = UserMember.builder("testmember", "member@test.com", "pass")
+          .fullname("Test Member")
+          .phone("0987654321")
+          .address("HCMC")
+          .build();
+
+      dao.insert(member);
+
+      assertEquals(99, member.getId());
+      verify(ps).setString(1, "testmember");
+      verify(ps).setString(2, "member@test.com");
+      verify(ps).setString(4, "Test Member");
+      verify(ps).setString(5, "0987654321");
+      verify(ps).setBigDecimal(8, BigDecimal.ZERO);
+      verify(ps).executeUpdate();
     }
 
-    // ════════════════════════════════════════════════════════════════
-    // HELPERS
-    // ════════════════════════════════════════════════════════════════
+    @Test
+    @DisplayName("insert() - UserAdmin success")
+    void insertUserAdminSuccess() throws SQLException {
+      when(conn.prepareStatement(anyString(), eq(Statement.RETURN_GENERATED_KEYS))).thenReturn(ps);
+      when(ps.getGeneratedKeys()).thenReturn(keyRs);
+      when(keyRs.next()).thenReturn(true);
+      when(keyRs.getInt(1)).thenReturn(100);
 
-    private Item item(int id, int sellerId) {
-        Item i = new Item.Builder(sellerId, "iPhone 17", ItemCategory.ELECTRONICS)
-                .condition(ItemCondition.NEW)
-                .description("Mô tả sản phẩm")
-                .build();
-        i.assignId(id);
-        return i;
+      UserAdmin admin = new UserAdmin.Builder("testadmin", "admin@test.com", "pass", AdminLevel.MODERATOR).build();
+
+      dao.insert(admin);
+
+      assertEquals(100, admin.getId());
+      verify(ps).setString(1, "testadmin");
+      verify(ps).setString(2, "admin@test.com");
+      verify(ps).setString(9, "MODERATOR");
+      verify(ps).executeUpdate();
     }
 
-    private Item item(int id, int sellerId, ItemCategory cat) {
-        Item i = new Item.Builder(sellerId, "Sản phẩm " + cat, cat)
-                .condition(ItemCondition.NEW)
-                .description("Mô tả")
-                .build();
-        i.assignId(id);
-        return i;
+    @Test
+    @DisplayName("insert() - no generated keys throws SQLException")
+    void insertNoKeysThrows() throws SQLException {
+      when(conn.prepareStatement(anyString(), eq(Statement.RETURN_GENERATED_KEYS))).thenReturn(ps);
+      when(ps.getGeneratedKeys()).thenReturn(keyRs);
+      when(keyRs.next()).thenReturn(false);
+
+      UserMember member = UserMember.builder("testmember", "member@test.com", "pass").build();
+
+      assertThrows(SQLException.class, () -> dao.insert(member));
     }
 
-    /** Tạo AuctionSession với status cụ thể qua reconstructor */
-    private AuctionSession session(int id, int itemId, SessionStatus status) {
-        AuctionSession s = AuctionSession.reconstructor()
-                .id(id)
-                .createdAt(Instant.now())
-                .isDeleted(false)
-                .itemId(itemId)
-                .startingPrice(new BigDecimal("100000"))
-                .currentPrice(new BigDecimal("150000"))
-                .status(status)
-                .startTime(Instant.now().minusSeconds(60))
-                .endTime(Instant.now().plusSeconds(3600))
-                .bidCount(3)
-                .build();
-        return s;
+    @Test
+    @DisplayName("findById() - Member found")
+    void findByIdMemberFound() throws SQLException {
+      when(conn.prepareStatement(anyString())).thenReturn(ps);
+      when(ps.executeQuery()).thenReturn(rs);
+      when(rs.next()).thenReturn(true);
+      setupUserMemberRs();
+
+      Optional<User> resultOpt = dao.findById(1);
+
+      assertTrue(resultOpt.isPresent());
+      User result = resultOpt.get();
+      assertTrue(result instanceof UserMember);
+      UserMember m = (UserMember) result;
+      assertEquals(1, m.getId());
+      assertEquals("member1", m.getUsername());
+      assertEquals("member1@mail.com", m.getEmail());
+      assertEquals("Member One", m.getFullname());
+      assertEquals("0912345678", m.getPhone());
+      assertEquals("Hanoi", m.getAddress());
+      assertEquals(0, m.getSellerRating().compareTo(new BigDecimal("4.8")));
+      assertEquals("avatar.png", m.getAvatarUrl());
+      assertEquals(5, m.getTotalBidsPlaced());
+      assertEquals(2, m.getTotalItemsSold());
+      assertTrue(m.getRoles().contains(UserRole.SELLER));
+      assertTrue(m.getRoles().contains(UserRole.BIDDER));
     }
 
-    private AuctionSession sessionWithBidCount(int id, int itemId, int bidCount) {
-        AuctionSession s = AuctionSession.reconstructor()
-                .id(id)
-                .createdAt(Instant.now())
-                .isDeleted(false)
-                .itemId(itemId)
-                .startingPrice(new BigDecimal("100000"))
-                .currentPrice(new BigDecimal("200000"))
-                .status(SessionStatus.ACTIVE)
-                .startTime(Instant.now().minusSeconds(60))
-                .endTime(Instant.now().plusSeconds(3600))
-                .bidCount(bidCount)
-                .build();
-        return s;
+    @Test
+    @DisplayName("findById() - Admin found")
+    void findByIdAdminFound() throws SQLException {
+      when(conn.prepareStatement(anyString())).thenReturn(ps);
+      when(ps.executeQuery()).thenReturn(rs);
+      when(rs.next()).thenReturn(true);
+      setupUserAdminRs();
+
+      Optional<User> resultOpt = dao.findById(2);
+
+      assertTrue(resultOpt.isPresent());
+      User result = resultOpt.get();
+      assertTrue(result instanceof UserAdmin);
+      UserAdmin a = (UserAdmin) result;
+      assertEquals(2, a.getId());
+      assertEquals("admin1", a.getUsername());
+      assertEquals(AdminLevel.SUPER_ADMIN, a.getAdminLevel());
     }
 
-    /** UserMember với sellerRating và totalItemsSold */
-    private UserMember seller(int id, BigDecimal rating, int sold) {
-        UserMember m = UserMember.builder("seller" + id, "s" + id + "@mail.com", "$hash")
-                .phone("09000000" + id)
-                .build();
-        m.assignId(id);
-        // dùng reconstructor để gán rating + sold
-        return UserMember.reconstructor()
-                .id(id)
-                .createdAt(Instant.now())
-                .isDeleted(false)
-                .username("seller" + id)
-                .email("s" + id + "@mail.com")
-                .encryptedPassword("$hash")
-                .status(vn.edu.vnu.uet.group8.common.enums.UserStatus.ACTIVE)
-                .roles(java.util.EnumSet.of(
-                        vn.edu.vnu.uet.group8.common.enums.UserRole.SELLER))
-                .balance(new BigDecimal("500000"))
-                .phone("09000000" + id)
-                .sellerRating(rating)
-                .totalItemsSold(sold)
-                .build();
+    @Test
+    @DisplayName("findById() - not found")
+    void findByIdNotFound() throws SQLException {
+      when(conn.prepareStatement(anyString())).thenReturn(ps);
+      when(ps.executeQuery()).thenReturn(rs);
+      when(rs.next()).thenReturn(false);
+
+      Optional<User> result = dao.findById(999);
+      assertTrue(result.isEmpty());
     }
 
-    /** UserAdmin – để test nhánh seller instanceof UserMember = false */
-    private UserAdmin adminSeller(int id) {
-        UserAdmin a = new UserAdmin.Builder(
-                "admin" + id, "admin" + id + "@mail.com",
-                "$hash", AdminLevel.MODERATOR).build();
-        a.assignId(id);
-        return a;
+    @Test
+    @DisplayName("findByEmail() - success")
+    void findByEmailSuccess() throws SQLException {
+      when(conn.prepareStatement(anyString())).thenReturn(ps);
+      when(ps.executeQuery()).thenReturn(rs);
+      when(rs.next()).thenReturn(true);
+      setupUserMemberRs();
+
+      Optional<User> result = dao.findByEmail("member1@mail.com");
+      assertTrue(result.isPresent());
+      assertEquals("member1@mail.com", result.get().getEmail());
     }
 
-    // ════════════════════════════════════════════════════════════════
-    // ① getItemDetail()  — tăng branch coverage từ 80% → 100%
-    // ════════════════════════════════════════════════════════════════
+    @Test
+    @DisplayName("findByUsername() - success")
+    void findByUsernameSuccess() throws SQLException {
+      when(conn.prepareStatement(anyString())).thenReturn(ps);
+      when(ps.executeQuery()).thenReturn(rs);
+      when(rs.next()).thenReturn(true);
+      setupUserMemberRs();
 
-    @Nested
-    @DisplayName("① getItemDetail() — tất cả nhánh")
-    class GetItemDetailFull {
-
-        @Test
-        @DisplayName("Item không tồn tại → ItemNotFoundException")
-        void itemKhongTonTai() throws SQLException {
-            when(itemDAO.findById(99)).thenReturn(Optional.empty());
-
-            assertThrows(ItemNotFoundException.class,
-                    () -> service.getItemDetail(99));
-        }
-
-        @Test
-        @DisplayName("Session ACTIVE → dùng active, bidCount từ session")
-        void coActiveSession() throws SQLException {
-            Item item = item(10, 5);
-            AuctionSession active = session(20, 10, SessionStatus.ACTIVE);
-            UserMember sellerUser = seller(5, new BigDecimal("4.8"), 12);
-
-            when(itemDAO.findById(10)).thenReturn(Optional.of(item));
-            when(sessionDAO.findActiveSessionByItemId(10)).thenReturn(Optional.of(active));
-            when(sessionDAO.findUpcomingByItemId(10)).thenReturn(Optional.empty());
-            when(userDAO.findById(5)).thenReturn(Optional.of(sellerUser));
-
-            AuctionItemDTO dto = service.getItemDetail(10);
-
-            assertNotNull(dto);
-            assertEquals("seller5", dto.getSellerUsername());
-            assertEquals(3, dto.getBidCount());
-            // sellerRating được map
-            assertEquals(0, dto.getSellerRating().compareTo(new BigDecimal("4.8")));
-        }
-
-        @Test
-        @DisplayName("Session UPCOMING (active=empty) → dùng upcoming")
-        void coUpcomingKhongActive() throws SQLException {
-            Item item = item(10, 5);
-            AuctionSession upcoming = session(21, 10, SessionStatus.UPCOMING);
-            UserMember sellerUser = seller(5, null, 0);
-
-            when(itemDAO.findById(10)).thenReturn(Optional.of(item));
-            when(sessionDAO.findActiveSessionByItemId(10)).thenReturn(Optional.empty());
-            when(sessionDAO.findUpcomingByItemId(10)).thenReturn(Optional.of(upcoming));
-            when(userDAO.findById(5)).thenReturn(Optional.of(sellerUser));
-
-            AuctionItemDTO dto = service.getItemDetail(10);
-
-            assertNotNull(dto);
-            assertEquals(SessionStatus.UPCOMING, dto.getStatus());
-        }
-
-        @Test
-        @DisplayName("Không có session nào → DTO với giá null")
-        void khongCoSession() throws SQLException {
-            Item item = item(10, 5);
-            UserMember sellerUser = seller(5, null, 0);
-
-            when(itemDAO.findById(10)).thenReturn(Optional.of(item));
-            when(sessionDAO.findActiveSessionByItemId(10)).thenReturn(Optional.empty());
-            when(sessionDAO.findUpcomingByItemId(10)).thenReturn(Optional.empty());
-            when(userDAO.findById(5)).thenReturn(Optional.of(sellerUser));
-
-            AuctionItemDTO dto = service.getItemDetail(10);
-
-            assertNotNull(dto);
-            assertNull(dto.getCurrentPrice(), "Không có session → currentPrice phải null");
-            assertNull(dto.getEndTime(),       "Không có session → endTime phải null");
-        }
-
-        @Test
-        @DisplayName("seller không tồn tại trong DB → username = 'seller#id'")
-        void sellerKhongTonTai() throws SQLException {
-            Item item = item(10, 999);
-
-            when(itemDAO.findById(10)).thenReturn(Optional.of(item));
-            when(sessionDAO.findActiveSessionByItemId(10)).thenReturn(Optional.empty());
-            when(sessionDAO.findUpcomingByItemId(10)).thenReturn(Optional.empty());
-            when(userDAO.findById(999)).thenReturn(Optional.empty());
-
-            AuctionItemDTO dto = service.getItemDetail(10);
-
-            assertEquals("seller#999", dto.getSellerUsername(),
-                    "Seller không tồn tại → fallback 'seller#id'");
-        }
-
-        @Test
-        @DisplayName("seller là UserAdmin (không phải UserMember) → rating=null, sold=0")
-        void sellerLaAdmin() throws SQLException {
-            Item item = item(10, 7);
-            UserAdmin admin = adminSeller(7);
-
-            when(itemDAO.findById(10)).thenReturn(Optional.of(item));
-            when(sessionDAO.findActiveSessionByItemId(10)).thenReturn(Optional.empty());
-            when(sessionDAO.findUpcomingByItemId(10)).thenReturn(Optional.empty());
-            when(userDAO.findById(7)).thenReturn(Optional.of(admin));
-
-            AuctionItemDTO dto = service.getItemDetail(10);
-
-            assertNotNull(dto);
-            assertNull(dto.getSellerRating(),
-                    "UserAdmin không có sellerRating → phải null");
-            assertEquals(0, dto.getTotalItemsSold());
-        }
-
-        @Test
-        @DisplayName("seller là UserMember có rating → sellerRating đúng trong DTO")
-        void sellerMemberCoRating() throws SQLException {
-            Item item = item(10, 5);
-            UserMember m = seller(5, new BigDecimal("4.5"), 20);
-
-            when(itemDAO.findById(10)).thenReturn(Optional.of(item));
-            when(sessionDAO.findActiveSessionByItemId(10)).thenReturn(Optional.empty());
-            when(sessionDAO.findUpcomingByItemId(10)).thenReturn(Optional.empty());
-            when(userDAO.findById(5)).thenReturn(Optional.of(m));
-
-            AuctionItemDTO dto = service.getItemDetail(10);
-
-            assertEquals(0, dto.getSellerRating().compareTo(new BigDecimal("4.5")));
-            assertEquals(20, dto.getTotalItemsSold());
-        }
-
-        @Test
-        @DisplayName("bidCount lấy từ session, không query BidTransactionDAO")
-        void bidCountTuSessionKhongQueryBidDAO() throws SQLException {
-            Item item = item(10, 5);
-            AuctionSession s = sessionWithBidCount(20, 10, 17);
-            UserMember m = seller(5, null, 0);
-
-            when(itemDAO.findById(10)).thenReturn(Optional.of(item));
-            when(sessionDAO.findActiveSessionByItemId(10)).thenReturn(Optional.of(s));
-            when(userDAO.findById(5)).thenReturn(Optional.of(m));
-
-            AuctionItemDTO dto = service.getItemDetail(10);
-
-            assertEquals(17, dto.getBidCount());
-            // BidTransactionDAO không được gọi
-            verifyNoInteractions(bidTransactionDAO);
-        }
+      Optional<User> result = dao.findByUsername("member1");
+      assertTrue(result.isPresent());
+      assertEquals("member1", result.get().getUsername());
     }
 
-    // ════════════════════════════════════════════════════════════════
-    // ② getActiveItems() — 0% → 100%
-    // ════════════════════════════════════════════════════════════════
+    @Test
+    @DisplayName("updateProfile() - values set correctly")
+    void updateProfileValuesSet() throws SQLException {
+      when(conn.prepareStatement(anyString())).thenReturn(ps);
 
-    @Nested
-    @DisplayName("② getActiveItems() — 0% → 100%")
-    class GetActiveItemsFull {
+      UserMember member = UserMember.reconstructor()
+          .id(1)
+          .createdAt(Instant.now())
+          .isDeleted(false)
+          .username("member1")
+          .email("member1@mail.com")
+          .encryptedPassword("hash")
+          .status(UserStatus.ACTIVE)
+          .roles(EnumSet.of(UserRole.BIDDER))
+          .balance(BigDecimal.ZERO)
+          .fullname("New Name")
+          .phone("0987654321")
+          .address("New Address")
+          .avatarUrl("new_avatar.png")
+          .build();
 
-        @Test
-        @DisplayName("Không có session active nào → trả empty list")
-        void khongCoSessionActive() throws SQLException {
-            when(sessionDAO.findAllActive()).thenReturn(Collections.emptyList());
+      dao.updateProfile(member);
 
-            List<AuctionItemDTO> result = service.getActiveItems();
-
-            assertTrue(result.isEmpty());
-            verify(sessionDAO).findAllActive();
-        }
-
-        @Test
-        @DisplayName("Có 1 session active + item hợp lệ → trả 1 DTO")
-        void motSessionActive() throws SQLException {
-            AuctionSession s = session(20, 10, SessionStatus.ACTIVE);
-            Item item = item(10, 5);
-            UserMember m = seller(5, new BigDecimal("4.0"), 5);
-
-            when(sessionDAO.findAllActive()).thenReturn(List.of(s));
-            when(itemDAO.findById(10)).thenReturn(Optional.of(item));
-            when(userDAO.findById(5)).thenReturn(Optional.of(m));
-
-            List<AuctionItemDTO> result = service.getActiveItems();
-
-            assertEquals(1, result.size());
-            assertEquals("seller5", result.get(0).getSellerUsername());
-        }
-
-        @Test
-        @DisplayName("Có 3 session active khác nhau → trả 3 DTO theo thứ tự")
-        void baSessionActive() throws SQLException {
-            AuctionSession s1 = session(1, 10, SessionStatus.ACTIVE);
-            AuctionSession s2 = session(2, 11, SessionStatus.ACTIVE);
-            AuctionSession s3 = session(3, 12, SessionStatus.ACTIVE);
-            Item i1 = item(10, 5); Item i2 = item(11, 5); Item i3 = item(12, 5);
-            UserMember m = seller(5, null, 0);
-
-            when(sessionDAO.findAllActive()).thenReturn(List.of(s1, s2, s3));
-            when(itemDAO.findById(10)).thenReturn(Optional.of(i1));
-            when(itemDAO.findById(11)).thenReturn(Optional.of(i2));
-            when(itemDAO.findById(12)).thenReturn(Optional.of(i3));
-            when(userDAO.findById(5)).thenReturn(Optional.of(m));
-
-            List<AuctionItemDTO> result = service.getActiveItems();
-
-            assertEquals(3, result.size());
-        }
-
-        @Test
-        @DisplayName("Session active nhưng item bị xóa (không tồn tại) → bỏ qua, log warn")
-        void sessionCoItemBiXoa() throws SQLException {
-            AuctionSession s1 = session(1, 10, SessionStatus.ACTIVE);  // item tồn tại
-            AuctionSession s2 = session(2, 99, SessionStatus.ACTIVE);  // item không tồn tại
-            Item item = item(10, 5);
-            UserMember m = seller(5, null, 0);
-
-            when(sessionDAO.findAllActive()).thenReturn(List.of(s1, s2));
-            when(itemDAO.findById(10)).thenReturn(Optional.of(item));
-            when(itemDAO.findById(99)).thenReturn(Optional.empty()); // bị xóa
-            when(userDAO.findById(5)).thenReturn(Optional.of(m));
-
-            List<AuctionItemDTO> result = service.getActiveItems();
-
-            // Session 2 bị skip → chỉ 1 kết quả
-            assertEquals(1, result.size(),
-                    "Session có item không tồn tại phải bị bỏ qua");
-        }
-
-        @Test
-        @DisplayName("Tất cả session active đều có item bị xóa → trả empty list")
-        void tatCaItemBiXoa() throws SQLException {
-            AuctionSession s1 = session(1, 91, SessionStatus.ACTIVE);
-            AuctionSession s2 = session(2, 92, SessionStatus.ACTIVE);
-
-            when(sessionDAO.findAllActive()).thenReturn(List.of(s1, s2));
-            when(itemDAO.findById(91)).thenReturn(Optional.empty());
-            when(itemDAO.findById(92)).thenReturn(Optional.empty());
-
-            List<AuctionItemDTO> result = service.getActiveItems();
-
-            assertTrue(result.isEmpty());
-        }
-
-        @Test
-        @DisplayName("Cache seller: 2 item cùng sellerId → userDAO.findById chỉ gọi 1 lần")
-        void cacheSellerTranhNPlusOne() throws SQLException {
-            // 2 session, 2 item, cùng seller = 5
-            AuctionSession s1 = session(1, 10, SessionStatus.ACTIVE);
-            AuctionSession s2 = session(2, 11, SessionStatus.ACTIVE);
-            Item i1 = item(10, 5); Item i2 = item(11, 5);
-            UserMember m = seller(5, null, 0);
-
-            when(sessionDAO.findAllActive()).thenReturn(List.of(s1, s2));
-            when(itemDAO.findById(10)).thenReturn(Optional.of(i1));
-            when(itemDAO.findById(11)).thenReturn(Optional.of(i2));
-            when(userDAO.findById(5)).thenReturn(Optional.of(m));
-
-            service.getActiveItems();
-
-            // Cache hoạt động → chỉ gọi 1 lần dù có 2 item
-            verify(userDAO, times(1)).findById(5);
-        }
-
-        @Test
-        @DisplayName("Cache seller: seller null → userDAO.findById vẫn chỉ gọi 1 lần")
-        void cacheSellerNull() throws SQLException {
-            AuctionSession s1 = session(1, 10, SessionStatus.ACTIVE);
-            AuctionSession s2 = session(2, 11, SessionStatus.ACTIVE);
-            Item i1 = item(10, 99); Item i2 = item(11, 99); // seller 99 không tồn tại
-
-            when(sessionDAO.findAllActive()).thenReturn(List.of(s1, s2));
-            when(itemDAO.findById(10)).thenReturn(Optional.of(i1));
-            when(itemDAO.findById(11)).thenReturn(Optional.of(i2));
-            when(userDAO.findById(99)).thenReturn(Optional.empty());
-
-            List<AuctionItemDTO> result = service.getActiveItems();
-
-            assertEquals(2, result.size());
-            // seller không tìm thấy → fallback username
-            assertEquals("seller#99", result.get(0).getSellerUsername());
-            // Cache: chỉ gọi 1 lần dù có 2 item cùng seller
-            verify(userDAO, times(1)).findById(99);
-        }
-
-        @Test
-        @DisplayName("buildDtoList: seller là UserAdmin → sellerRating=null, sold=0")
-        void buildDtoListSellerAdmin() throws SQLException {
-            AuctionSession s = session(1, 10, SessionStatus.ACTIVE);
-            Item item = item(10, 7);
-            UserAdmin admin = adminSeller(7);
-
-            when(sessionDAO.findAllActive()).thenReturn(List.of(s));
-            when(itemDAO.findById(10)).thenReturn(Optional.of(item));
-            when(userDAO.findById(7)).thenReturn(Optional.of(admin));
-
-            List<AuctionItemDTO> result = service.getActiveItems();
-
-            assertEquals(1, result.size());
-            assertNull(result.get(0).getSellerRating());
-            assertEquals(0, result.get(0).getTotalItemsSold());
-        }
-
-        @Test
-        @DisplayName("bidCount trong DTO lấy từ session.getBidCount()")
-        void bidCountTuSession() throws SQLException {
-            AuctionSession s = sessionWithBidCount(1, 10, 42);
-            Item item = item(10, 5);
-            UserMember m = seller(5, null, 0);
-
-            when(sessionDAO.findAllActive()).thenReturn(List.of(s));
-            when(itemDAO.findById(10)).thenReturn(Optional.of(item));
-            when(userDAO.findById(5)).thenReturn(Optional.of(m));
-
-            List<AuctionItemDTO> result = service.getActiveItems();
-
-            assertEquals(42, result.get(0).getBidCount());
-            verifyNoInteractions(bidTransactionDAO);
-        }
+      verify(ps).setString(1, "New Name");
+      verify(ps).setString(2, "0987654321");
+      verify(ps).setString(3, "new_avatar.png");
+      verify(ps).setString(4, "New Address");
+      verify(ps).setInt(5, 1);
+      verify(ps).executeUpdate();
     }
 
-    // ════════════════════════════════════════════════════════════════
-    // ③ getWonItems() — 0% → 100%
-    // ════════════════════════════════════════════════════════════════
+    @Test
+    @DisplayName("updateProfile() - null / empty fields serialize to database NULL")
+    void updateProfileNullFields() throws SQLException {
+      when(conn.prepareStatement(anyString())).thenReturn(ps);
 
-    @Nested
-    @DisplayName("③ getWonItems() — 0% → 100%")
-    class GetWonItemsFull {
+      UserMember member = UserMember.reconstructor()
+          .id(1)
+          .createdAt(Instant.now())
+          .isDeleted(false)
+          .username("member1")
+          .email("member1@mail.com")
+          .encryptedPassword("hash")
+          .status(UserStatus.ACTIVE)
+          .roles(EnumSet.of(UserRole.BIDDER))
+          .balance(BigDecimal.ZERO)
+          .fullname("New Name")
+          .phone("0987654321")
+          .address("")
+          .avatarUrl(null)
+          .build();
 
-        @Test
-        @DisplayName("User chưa thắng phiên nào → trả empty list")
-        void chuaThang() throws SQLException {
-            when(sessionDAO.findWonSessionsByUserId(10))
-                    .thenReturn(Collections.emptyList());
+      dao.updateProfile(member);
 
-            List<AuctionItemDTO> result = service.getWonItems(10);
+      verify(ps).setString(1, "New Name");
+      verify(ps).setString(2, "0987654321");
+      verify(ps).setNull(3, Types.VARCHAR);
+      verify(ps).setNull(4, Types.VARCHAR);
+      verify(ps).setInt(5, 1);
+      verify(ps).executeUpdate();
+    }
+  }
 
-            assertTrue(result.isEmpty());
-            verify(sessionDAO).findWonSessionsByUserId(10);
-        }
+  // ═══════════════════════════════════════════════════
+  // SENSITIVE FIELDS & MODIFICATIONS
+  // ═══════════════════════════════════════════════════
 
-        @Test
-        @DisplayName("User thắng 1 phiên → trả 1 DTO với đúng thông tin")
-        void thangMotPhien() throws SQLException {
-            AuctionSession won = session(20, 10, SessionStatus.SOLD);
-            Item item = item(10, 5);
-            UserMember m = seller(5, new BigDecimal("4.9"), 30);
+  @Nested
+  @DisplayName("Modify Sensitive Fields")
+  class ModifySensitiveFieldsTest {
 
-            when(sessionDAO.findWonSessionsByUserId(7)).thenReturn(List.of(won));
-            when(itemDAO.findById(10)).thenReturn(Optional.of(item));
-            when(userDAO.findById(5)).thenReturn(Optional.of(m));
+    @Test
+    @DisplayName("updateStatus() - success")
+    void updateStatusSuccess() throws SQLException {
+      when(conn.prepareStatement(anyString())).thenReturn(ps);
+      when(ps.executeUpdate()).thenReturn(1);
 
-            List<AuctionItemDTO> result = service.getWonItems(7);
-
-            assertEquals(1, result.size());
-            assertEquals("seller5", result.get(0).getSellerUsername());
-            assertEquals(0,
-                    result.get(0).getSellerRating().compareTo(new BigDecimal("4.9")));
-        }
-
-        @Test
-        @DisplayName("User thắng nhiều phiên → trả đúng số lượng DTO")
-        void thangNhieuPhien() throws SQLException {
-            AuctionSession w1 = session(1, 10, SessionStatus.SOLD);
-            AuctionSession w2 = session(2, 11, SessionStatus.SOLD);
-            AuctionSession w3 = session(3, 12, SessionStatus.SOLD);
-            Item i1 = item(10, 5); Item i2 = item(11, 5); Item i3 = item(12, 5);
-            UserMember m = seller(5, null, 0);
-
-            when(sessionDAO.findWonSessionsByUserId(7))
-                    .thenReturn(List.of(w1, w2, w3));
-            when(itemDAO.findById(10)).thenReturn(Optional.of(i1));
-            when(itemDAO.findById(11)).thenReturn(Optional.of(i2));
-            when(itemDAO.findById(12)).thenReturn(Optional.of(i3));
-            when(userDAO.findById(5)).thenReturn(Optional.of(m));
-
-            List<AuctionItemDTO> result = service.getWonItems(7);
-
-            assertEquals(3, result.size());
-        }
-
-        @Test
-        @DisplayName("Won session nhưng item đã bị xóa → bỏ qua (log warn)")
-        void wonSessionItemBiXoa() throws SQLException {
-            AuctionSession w1 = session(1, 10, SessionStatus.SOLD); // item OK
-            AuctionSession w2 = session(2, 99, SessionStatus.SOLD); // item bị xóa
-            Item item = item(10, 5);
-            UserMember m = seller(5, null, 0);
-
-            when(sessionDAO.findWonSessionsByUserId(7))
-                    .thenReturn(List.of(w1, w2));
-            when(itemDAO.findById(10)).thenReturn(Optional.of(item));
-            when(itemDAO.findById(99)).thenReturn(Optional.empty());
-            when(userDAO.findById(5)).thenReturn(Optional.of(m));
-
-            List<AuctionItemDTO> result = service.getWonItems(7);
-
-            assertEquals(1, result.size(), "Item bị xóa phải bị bỏ qua");
-        }
-
-        @Test
-        @DisplayName("findWonSessionsByUserId ném SQLException → propagate lên")
-        void sqlExceptionPropagate() throws SQLException {
-            when(sessionDAO.findWonSessionsByUserId(anyInt()))
-                    .thenThrow(new SQLException("DB lỗi"));
-
-            assertThrows(SQLException.class, () -> service.getWonItems(10));
-        }
+      assertDoesNotThrow(() -> dao.updateStatus(1, UserStatus.BANNED));
+      verify(ps).setString(1, "BANNED");
+      verify(ps).setInt(2, 1);
     }
 
-    // ════════════════════════════════════════════════════════════════
-    // ④ getMyItemsByStatus() — 0% → 100%
-    // ════════════════════════════════════════════════════════════════
+    @Test
+    @DisplayName("updateStatus() - user not found throws Exception")
+    void updateStatusNotFoundThrows() throws SQLException {
+      when(conn.prepareStatement(anyString())).thenReturn(ps);
+      when(ps.executeUpdate()).thenReturn(0);
 
-    @Nested
-    @DisplayName("④ getMyItemsByStatus() — 0% → 100%")
-    class GetMyItemsByStatusFull {
-
-        @Test
-        @DisplayName("Seller không có item với status này → trả empty list")
-        void khongCoItemVoiStatus() throws SQLException {
-            when(itemDAO.findBySellerAndStatus(5, ItemStatus.DRAFT))
-                    .thenReturn(Collections.emptyList());
-
-            List<AuctionItemDTO> result =
-                    service.getMyItemsByStatus(5, ItemStatus.DRAFT);
-
-            assertTrue(result.isEmpty());
-        }
-
-        @ParameterizedTest
-        @EnumSource(ItemStatus.class)
-        @DisplayName("Tất cả ItemStatus đều hoạt động")
-        void tatCaStatus(ItemStatus status) throws SQLException {
-            when(itemDAO.findBySellerAndStatus(5, status))
-                    .thenReturn(Collections.emptyList());
-
-            assertDoesNotThrow(() -> service.getMyItemsByStatus(5, status));
-
-            verify(itemDAO).findBySellerAndStatus(5, status);
-        }
-
-        @Test
-        @DisplayName("Lọc LISTED: item có session ACTIVE → trả DTO với session")
-        void listedCoSession() throws SQLException {
-            Item item = item(10, 5);
-            AuctionSession active = session(20, 10, SessionStatus.ACTIVE);
-            UserMember m = seller(5, new BigDecimal("3.5"), 8);
-
-            when(itemDAO.findBySellerAndStatus(5, ItemStatus.LISTED))
-                    .thenReturn(List.of(item));
-            when(sessionDAO.findActiveSessionByItemId(10))
-                    .thenReturn(Optional.of(active));
-            when(userDAO.findById(5)).thenReturn(Optional.of(m));
-
-            List<AuctionItemDTO> result =
-                    service.getMyItemsByStatus(5, ItemStatus.LISTED);
-
-            assertEquals(1, result.size());
-            assertEquals(SessionStatus.ACTIVE, result.get(0).getStatus());
-            assertEquals(3, result.get(0).getBidCount());
-        }
-
-        @Test
-        @DisplayName("Lọc DRAFT: item không có session → trả DTO với price null")
-        void draftKhongCoSession() throws SQLException {
-            Item item = item(10, 5);
-            UserMember m = seller(5, null, 0);
-
-            when(itemDAO.findBySellerAndStatus(5, ItemStatus.DRAFT))
-                    .thenReturn(List.of(item));
-            when(sessionDAO.findActiveSessionByItemId(10))
-                    .thenReturn(Optional.empty());
-            when(sessionDAO.findUpcomingByItemId(10))
-                    .thenReturn(Optional.empty());
-            when(sessionDAO.findByItemId(10))
-                    .thenReturn(Collections.emptyList());
-            when(userDAO.findById(5)).thenReturn(Optional.of(m));
-
-            List<AuctionItemDTO> result =
-                    service.getMyItemsByStatus(5, ItemStatus.DRAFT);
-
-            assertEquals(1, result.size());
-            assertNull(result.get(0).getCurrentPrice());
-        }
-
-        @Test
-        @DisplayName("Lọc SOLD: item có session cuối (findByItemId) → trả DTO với session đó")
-        void soldCoSessionCuoi() throws SQLException {
-            Item item = item(10, 5);
-            AuctionSession sold = session(20, 10, SessionStatus.SOLD);
-            UserMember m = seller(5, null, 0);
-
-            when(itemDAO.findBySellerAndStatus(5, ItemStatus.SOLD))
-                    .thenReturn(List.of(item));
-            when(sessionDAO.findActiveSessionByItemId(10))
-                    .thenReturn(Optional.empty());
-            when(sessionDAO.findUpcomingByItemId(10))
-                    .thenReturn(Optional.empty());
-            when(sessionDAO.findByItemId(10))
-                    .thenReturn(List.of(sold));
-            when(userDAO.findById(5)).thenReturn(Optional.of(m));
-
-            List<AuctionItemDTO> result =
-                    service.getMyItemsByStatus(5, ItemStatus.SOLD);
-
-            assertEquals(1, result.size());
-            assertEquals(SessionStatus.SOLD, result.get(0).getStatus());
-        }
-
-        @Test
-        @DisplayName("Nhiều item với cùng status → trả đúng số lượng")
-        void nhieuItem() throws SQLException {
-            Item i1 = item(10, 5); Item i2 = item(11, 5); Item i3 = item(12, 5);
-            UserMember m = seller(5, null, 0);
-
-            when(itemDAO.findBySellerAndStatus(5, ItemStatus.DRAFT))
-                    .thenReturn(List.of(i1, i2, i3));
-            when(sessionDAO.findActiveSessionByItemId(anyInt()))
-                    .thenReturn(Optional.empty());
-            when(sessionDAO.findUpcomingByItemId(anyInt()))
-                    .thenReturn(Optional.empty());
-            when(sessionDAO.findByItemId(anyInt()))
-                    .thenReturn(Collections.emptyList());
-            when(userDAO.findById(5)).thenReturn(Optional.of(m));
-
-            List<AuctionItemDTO> result =
-                    service.getMyItemsByStatus(5, ItemStatus.DRAFT);
-
-            assertEquals(3, result.size());
-        }
-
-        @Test
-        @DisplayName("seller là UserAdmin trong getMyItemsByStatus → rating=null")
-        void sellerAdminTrongMyItemsByStatus() throws SQLException {
-            Item item = item(10, 7);
-            UserAdmin admin = adminSeller(7);
-
-            when(itemDAO.findBySellerAndStatus(7, ItemStatus.DRAFT))
-                    .thenReturn(List.of(item));
-            when(sessionDAO.findActiveSessionByItemId(10))
-                    .thenReturn(Optional.empty());
-            when(sessionDAO.findUpcomingByItemId(10))
-                    .thenReturn(Optional.empty());
-            when(sessionDAO.findByItemId(10))
-                    .thenReturn(Collections.emptyList());
-            when(userDAO.findById(7)).thenReturn(Optional.of(admin));
-
-            List<AuctionItemDTO> result =
-                    service.getMyItemsByStatus(7, ItemStatus.DRAFT);
-
-            assertEquals(1, result.size());
-            assertNull(result.get(0).getSellerRating());
-        }
-
-        @Test
-        @DisplayName("itemDAO.findBySellerAndStatus ném SQLException → propagate")
-        void sqlExceptionPropagate() throws SQLException {
-            when(itemDAO.findBySellerAndStatus(anyInt(), any()))
-                    .thenThrow(new SQLException("DB lỗi"));
-
-            assertThrows(SQLException.class,
-                    () -> service.getMyItemsByStatus(5, ItemStatus.DRAFT));
-        }
+      assertThrows(UserNotFoundException.class, () -> dao.updateStatus(999, UserStatus.ACTIVE));
     }
 
+    @Test
+    @DisplayName("softDelete() - success")
+    void softDeleteSuccess() throws SQLException {
+      when(conn.prepareStatement(anyString())).thenReturn(ps);
+      when(ps.executeUpdate()).thenReturn(1);
 
-
-    // ════════════════════════════════════════════════════════════════
-    // ⑥ findRelevantSession() — 77% → 100% (test gián tiếp qua getMyItems)
-    // ════════════════════════════════════════════════════════════════
-
-    @Nested
-    @DisplayName("⑥ findRelevantSession() — branch coverage qua getMyItems")
-    class FindRelevantSessionFull {
-
-        @Test
-        @DisplayName("Branch 1: có ACTIVE session → trả active ngay, không query upcoming/byItemId")
-        void branch1Active() throws SQLException {
-            Item item = item(10, 5);
-            AuctionSession active = session(20, 10, SessionStatus.ACTIVE);
-            UserMember m = seller(5, null, 0);
-
-            when(itemDAO.findBySeller(5)).thenReturn(List.of(item));
-            when(sessionDAO.findActiveSessionByItemId(10))
-                    .thenReturn(Optional.of(active));
-            when(userDAO.findById(5)).thenReturn(Optional.of(m));
-
-            service.getMyItems(5);
-
-            // Không cần query upcoming hay byItemId
-            verify(sessionDAO, never()).findUpcomingByItemId(10);
-            verify(sessionDAO, never()).findByItemId(10);
-        }
-
-        @Test
-        @DisplayName("Branch 2: không có ACTIVE, có UPCOMING → trả upcoming, không query byItemId")
-        void branch2Upcoming() throws SQLException {
-            Item item = item(10, 5);
-            AuctionSession upcoming = session(21, 10, SessionStatus.UPCOMING);
-            UserMember m = seller(5, null, 0);
-
-            when(itemDAO.findBySeller(5)).thenReturn(List.of(item));
-            when(sessionDAO.findActiveSessionByItemId(10))
-                    .thenReturn(Optional.empty());
-            when(sessionDAO.findUpcomingByItemId(10))
-                    .thenReturn(Optional.of(upcoming));
-            when(userDAO.findById(5)).thenReturn(Optional.of(m));
-
-            List<AuctionItemDTO> result = service.getMyItems(5);
-
-            assertEquals(1, result.size());
-            assertEquals(SessionStatus.UPCOMING, result.get(0).getStatus());
-            // Không cần query byItemId
-            verify(sessionDAO, never()).findByItemId(10);
-        }
-
-        @Test
-        @DisplayName("Branch 3: không ACTIVE/UPCOMING, có session cũ (SOLD/CANCELLED) → trả session[0]")
-        void branch3SessionCu() throws SQLException {
-            Item item = item(10, 5);
-            AuctionSession sold = session(22, 10, SessionStatus.SOLD);
-            UserMember m = seller(5, null, 0);
-
-            when(itemDAO.findBySeller(5)).thenReturn(List.of(item));
-            when(sessionDAO.findActiveSessionByItemId(10))
-                    .thenReturn(Optional.empty());
-            when(sessionDAO.findUpcomingByItemId(10))
-                    .thenReturn(Optional.empty());
-            when(sessionDAO.findByItemId(10)).thenReturn(List.of(sold));
-            when(userDAO.findById(5)).thenReturn(Optional.of(m));
-
-            List<AuctionItemDTO> result = service.getMyItems(5);
-
-            assertEquals(1, result.size());
-            assertEquals(SessionStatus.SOLD, result.get(0).getStatus());
-        }
-
-        @Test
-        @DisplayName("Branch 4: không có bất kỳ session nào → Optional.empty()")
-        void branch4KhongCoSession() throws SQLException {
-            Item item = item(10, 5);
-            UserMember m = seller(5, null, 0);
-
-            when(itemDAO.findBySeller(5)).thenReturn(List.of(item));
-            when(sessionDAO.findActiveSessionByItemId(10))
-                    .thenReturn(Optional.empty());
-            when(sessionDAO.findUpcomingByItemId(10))
-                    .thenReturn(Optional.empty());
-            when(sessionDAO.findByItemId(10)).thenReturn(Collections.emptyList());
-            when(userDAO.findById(5)).thenReturn(Optional.of(m));
-
-            List<AuctionItemDTO> result = service.getMyItems(5);
-
-            assertEquals(1, result.size());
-            assertNull(result.get(0).getCurrentPrice(),
-                    "Không có session → currentPrice null");
-        }
+      assertDoesNotThrow(() -> dao.softDelete(1));
+      verify(ps).setInt(1, 1);
     }
 
-    // ════════════════════════════════════════════════════════════════
-    // ⑦ getMyItems() — tăng từ 96% → 100% (bổ sung branch còn thiếu)
-    // ════════════════════════════════════════════════════════════════
+    @Test
+    @DisplayName("softDelete() - user not found throws Exception")
+    void softDeleteNotFoundThrows() throws SQLException {
+      when(conn.prepareStatement(anyString())).thenReturn(ps);
+      when(ps.executeUpdate()).thenReturn(0);
 
-    @Nested
-    @DisplayName("⑦ getMyItems() — bổ sung branch còn thiếu")
-    class GetMyItemsExtra {
-
-        @Test
-        @DisplayName("Seller không có item nào → trả empty list")
-        void khongCoItem() throws SQLException {
-            when(itemDAO.findBySeller(5)).thenReturn(Collections.emptyList());
-
-            assertTrue(service.getMyItems(5).isEmpty());
-        }
-
-        @Test
-        @DisplayName("seller không tồn tại → sellerUsername = 'seller#id'")
-        void sellerKhongTonTai() throws SQLException {
-            Item item = item(10, 888);
-
-            when(itemDAO.findBySeller(888)).thenReturn(List.of(item));
-            when(sessionDAO.findActiveSessionByItemId(10))
-                    .thenReturn(Optional.empty());
-            when(sessionDAO.findUpcomingByItemId(10))
-                    .thenReturn(Optional.empty());
-            when(sessionDAO.findByItemId(10))
-                    .thenReturn(Collections.emptyList());
-            when(userDAO.findById(888)).thenReturn(Optional.empty());
-
-            List<AuctionItemDTO> result = service.getMyItems(888);
-
-            assertEquals(1, result.size());
-            assertEquals("seller#888", result.get(0).getSellerUsername());
-        }
-
-        @Test
-        @DisplayName("seller là UserAdmin → rating=null, sold=0")
-        void sellerAdmin() throws SQLException {
-            Item item = item(10, 7);
-            UserAdmin admin = adminSeller(7);
-
-            when(itemDAO.findBySeller(7)).thenReturn(List.of(item));
-            when(sessionDAO.findActiveSessionByItemId(10))
-                    .thenReturn(Optional.empty());
-            when(sessionDAO.findUpcomingByItemId(10))
-                    .thenReturn(Optional.empty());
-            when(sessionDAO.findByItemId(10))
-                    .thenReturn(Collections.emptyList());
-            when(userDAO.findById(7)).thenReturn(Optional.of(admin));
-
-            List<AuctionItemDTO> result = service.getMyItems(7);
-
-            assertEquals(1, result.size());
-            assertNull(result.get(0).getSellerRating());
-            assertEquals(0, result.get(0).getTotalItemsSold());
-        }
-
-        @Test
-        @DisplayName("Nhiều item với session hỗn hợp → tất cả đều có trong kết quả")
-        void nhieuItemHonHop() throws SQLException {
-            Item i1 = item(10, 5); // có ACTIVE session
-            Item i2 = item(11, 5); // có UPCOMING session
-            Item i3 = item(12, 5); // không có session
-            UserMember m = seller(5, new BigDecimal("4.2"), 15);
-
-            AuctionSession active   = session(20, 10, SessionStatus.ACTIVE);
-            AuctionSession upcoming = session(21, 11, SessionStatus.UPCOMING);
-
-            when(itemDAO.findBySeller(5)).thenReturn(List.of(i1, i2, i3));
-            when(sessionDAO.findActiveSessionByItemId(10))
-                    .thenReturn(Optional.of(active));
-            when(sessionDAO.findActiveSessionByItemId(11))
-                    .thenReturn(Optional.empty());
-            when(sessionDAO.findActiveSessionByItemId(12))
-                    .thenReturn(Optional.empty());
-            when(sessionDAO.findUpcomingByItemId(11))
-                    .thenReturn(Optional.of(upcoming));
-            when(sessionDAO.findUpcomingByItemId(12))
-                    .thenReturn(Optional.empty());
-            when(sessionDAO.findByItemId(12))
-                    .thenReturn(Collections.emptyList());
-            when(userDAO.findById(5)).thenReturn(Optional.of(m));
-
-            List<AuctionItemDTO> result = service.getMyItems(5);
-
-            assertEquals(3, result.size());
-        }
+      assertThrows(UserNotFoundException.class, () -> dao.softDelete(999));
     }
 
-    // ════════════════════════════════════════════════════════════════
-    // ⑧ getAuctions() — 100% (giữ vững + bổ sung sortBy)
-    // ════════════════════════════════════════════════════════════════
+    @Test
+    @DisplayName("updatePassword() - success")
+    void updatePasswordSuccess() throws SQLException {
+      when(conn.prepareStatement(anyString())).thenReturn(ps);
+      when(ps.executeUpdate()).thenReturn(1);
+      staticPasswordMock.when(() -> PasswordUtil.hash("newpass")).thenReturn("hashedNewPass");
 
-    @Nested
-    @DisplayName("⑧ getAuctions() — giữ 100% + thêm sortBy")
-    class GetAuctionsFull {
-
-        @Test
-        @DisplayName("filter null → gọi searchItems với NEWEST")
-        void filterNull() throws SQLException {
-            when(sessionDAO.findByPriceRange(any(), any(), any(), any()))
-                    .thenReturn(Collections.emptyList());
-
-            service.getAuctions(null);
-
-            verify(sessionDAO).findByPriceRange(
-                    isNull(), isNull(), isNull(),
-                    eq(GetAuctionsRequest.SortOption.NEWEST));
-        }
-
-        @Test
-        @DisplayName("filter với sortBy = ENDING_SOON → forward đúng")
-        void filterEndingSoon() throws SQLException {
-            GetAuctionsRequest filter = GetAuctionsRequest.builder()
-                    .sortBy(GetAuctionsRequest.SortOption.ENDING_SOON)
-                    .build();
-            when(sessionDAO.findByPriceRange(any(), any(), any(), any()))
-                    .thenReturn(Collections.emptyList());
-
-            service.getAuctions(filter);
-
-            verify(sessionDAO).findByPriceRange(
-                    isNull(), isNull(), isNull(),
-                    eq(GetAuctionsRequest.SortOption.ENDING_SOON));
-        }
-
-        @Test
-        @DisplayName("filter với sortBy = PRICE_ASC → forward đúng")
-        void filterPriceAsc() throws SQLException {
-            GetAuctionsRequest filter = GetAuctionsRequest.builder()
-                    .sortBy(GetAuctionsRequest.SortOption.PRICE_ASC)
-                    .build();
-            when(sessionDAO.findByPriceRange(any(), any(), any(), any()))
-                    .thenReturn(Collections.emptyList());
-
-            service.getAuctions(filter);
-
-            verify(sessionDAO).findByPriceRange(
-                    any(), any(), any(),
-                    eq(GetAuctionsRequest.SortOption.PRICE_ASC));
-        }
-
-        @Test
-        @DisplayName("filter với tất cả field → forward đúng tất cả")
-        void filterDayDu() throws SQLException {
-            GetAuctionsRequest filter = GetAuctionsRequest.builder()
-                    .category(ItemCategory.FASHION)
-                    .minPrice(new BigDecimal("500000"))
-                    .maxPrice(new BigDecimal("10000000"))
-                    .sortBy(GetAuctionsRequest.SortOption.HOT)
-                    .build();
-            when(sessionDAO.findByPriceRange(any(), any(), any(), any()))
-                    .thenReturn(Collections.emptyList());
-
-            service.getAuctions(filter);
-
-            verify(sessionDAO).findByPriceRange(
-                    eq(ItemCategory.FASHION),
-                    eq(new BigDecimal("500000")),
-                    eq(new BigDecimal("10000000")),
-                    eq(GetAuctionsRequest.SortOption.HOT));
-        }
-
-        @Test
-        @DisplayName("sessionDAO trả danh sách sessions → buildDtoList được gọi")
-        void sessionsDaoTraList() throws SQLException {
-            AuctionSession s = session(1, 10, SessionStatus.ACTIVE);
-            Item item = item(10, 5);
-            UserMember m = seller(5, null, 0);
-
-            when(sessionDAO.findByPriceRange(any(), any(), any(), any()))
-                    .thenReturn(List.of(s));
-            when(itemDAO.findById(10)).thenReturn(Optional.of(item));
-            when(userDAO.findById(5)).thenReturn(Optional.of(m));
-
-            List<AuctionItemDTO> result = service.getAuctions(null);
-
-            assertEquals(1, result.size());
-        }
+      assertDoesNotThrow(() -> dao.updatePassword(1, "newpass"));
+      verify(ps).setString(1, "hashedNewPass");
+      verify(ps).setInt(2, 1);
     }
 
-    // ════════════════════════════════════════════════════════════════
-    // ⑨ resolveSellerUsername() — 0% (private, test gián tiếp)
-    //    (Method này tồn tại trong source nhưng hiện không được
-    //     gọi trong code sản xuất — test để đảm bảo nhánh fallback
-    //     hoạt động đúng qua các method public)
-    // ════════════════════════════════════════════════════════════════
+    @Test
+    @DisplayName("updatePassword() - user not found throws Exception")
+    void updatePasswordNotFoundThrows() throws SQLException {
+      when(conn.prepareStatement(anyString())).thenReturn(ps);
+      when(ps.executeUpdate()).thenReturn(0);
+      staticPasswordMock.when(() -> PasswordUtil.hash("newpass")).thenReturn("hashedNewPass");
 
-    @Nested
-    @DisplayName("⑨ resolveSellerUsername() — gián tiếp qua getItemDetail")
-    class ResolveSellerUsernameFull {
-
-        @Test
-        @DisplayName("Seller tồn tại → trả username thật")
-        void sellerTonTai() throws SQLException {
-            Item item = item(10, 5);
-            UserMember m = seller(5, null, 0);
-
-            when(itemDAO.findById(10)).thenReturn(Optional.of(item));
-            when(sessionDAO.findActiveSessionByItemId(10))
-                    .thenReturn(Optional.empty());
-            when(sessionDAO.findUpcomingByItemId(10))
-                    .thenReturn(Optional.empty());
-            when(userDAO.findById(5)).thenReturn(Optional.of(m));
-
-            AuctionItemDTO dto = service.getItemDetail(10);
-
-            assertEquals("seller5", dto.getSellerUsername());
-        }
-
-        @Test
-        @DisplayName("Seller không tồn tại → trả 'seller#id' (không throw)")
-        void sellerKhongTonTai() throws SQLException {
-            Item item = item(10, 777);
-
-            when(itemDAO.findById(10)).thenReturn(Optional.of(item));
-            when(sessionDAO.findActiveSessionByItemId(10))
-                    .thenReturn(Optional.empty());
-            when(sessionDAO.findUpcomingByItemId(10))
-                    .thenReturn(Optional.empty());
-            when(userDAO.findById(777)).thenReturn(Optional.empty());
-
-            AuctionItemDTO dto = service.getItemDetail(10);
-
-            assertEquals("seller#777", dto.getSellerUsername(),
-                    "Fallback phải là 'seller#id' khi không tìm thấy user");
-        }
+      assertThrows(UserNotFoundException.class, () -> dao.updatePassword(999, "newpass"));
     }
 
-    // ════════════════════════════════════════════════════════════════
-    // ⑩ SQL EXCEPTION PROPAGATION — tất cả method đều test
-    // ════════════════════════════════════════════════════════════════
+    @Test
+    @DisplayName("updateLastLogin() - success")
+    void updateLastLoginSuccess() throws SQLException {
+      when(conn.prepareStatement(anyString())).thenReturn(ps);
+      when(ps.executeUpdate()).thenReturn(1);
 
-    @Nested
-    @DisplayName("⑩ SQLException propagation — tất cả method")
-    class SqlExceptionPropagation {
-
-        @Test
-        @DisplayName("getItemDetail: itemDAO ném SQL → propagate")
-        void getItemDetailSQL() throws SQLException {
-            when(itemDAO.findById(anyInt()))
-                    .thenThrow(new SQLException("DB lỗi"));
-            assertThrows(SQLException.class, () -> service.getItemDetail(1));
-        }
-
-        @Test
-        @DisplayName("getActiveItems: sessionDAO ném SQL → propagate")
-        void getActiveItemsSQL() throws SQLException {
-            when(sessionDAO.findAllActive())
-                    .thenThrow(new SQLException("DB lỗi"));
-            assertThrows(SQLException.class, () -> service.getActiveItems());
-        }
-
-        @Test
-        @DisplayName("getMyItems: itemDAO ném SQL → propagate")
-        void getMyItemsSQL() throws SQLException {
-            when(itemDAO.findBySeller(anyInt()))
-                    .thenThrow(new SQLException("DB lỗi"));
-            assertThrows(SQLException.class, () -> service.getMyItems(5));
-        }
-
-        @Test
-        @DisplayName("getMyItemsByStatus: sessionDAO ném SQL khi findActive → propagate")
-        void getMyItemsByStatusSQL() throws SQLException {
-            Item item = item(10, 5);
-            when(itemDAO.findBySellerAndStatus(5, ItemStatus.LISTED))
-                    .thenReturn(List.of(item));
-            when(sessionDAO.findActiveSessionByItemId(10))
-                    .thenThrow(new SQLException("DB lỗi"));
-
-            assertThrows(SQLException.class,
-                    () -> service.getMyItemsByStatus(5, ItemStatus.LISTED));
-        }
-
-        @Test
-        @DisplayName("getWonItems: sessionDAO ném SQL → propagate")
-        void getWonItemsSQL() throws SQLException {
-            when(sessionDAO.findWonSessionsByUserId(anyInt()))
-                    .thenThrow(new SQLException("DB lỗi"));
-            assertThrows(SQLException.class, () -> service.getWonItems(5));
-        }
-
-        @Test
-        @DisplayName("getAuctions: sessionDAO ném SQL → propagate")
-        void getAuctionsSQL() throws SQLException {
-            when(sessionDAO.findByPriceRange(any(), any(), any(), any()))
-                    .thenThrow(new SQLException("DB lỗi"));
-            assertThrows(SQLException.class, () -> service.getAuctions(null));
-        }
+      assertDoesNotThrow(() -> dao.updateLastLogin(1));
+      verify(ps).setTimestamp(eq(1), any(Timestamp.class));
+      verify(ps).setInt(eq(2), eq(1));
     }
+
+    @Test
+    @DisplayName("addRole() - success")
+    void addRoleSuccess() throws SQLException {
+      // Setup finding user
+      PreparedStatement psFind = mock(PreparedStatement.class);
+      ResultSet rsFind = mock(ResultSet.class);
+      when(conn.prepareStatement(argThat(s -> s != null && s.contains("SELECT * FROM users") && s.contains("user_id = ?")))).thenReturn(psFind);
+      when(psFind.executeQuery()).thenReturn(rsFind);
+      when(rsFind.next()).thenReturn(true);
+      
+      // Setup ResultSet fields for user matching member 1
+      when(rsFind.getInt("user_id")).thenReturn(1);
+      when(rsFind.getTimestamp("created_at")).thenReturn(Timestamp.from(Instant.now()));
+      when(rsFind.getBoolean("is_deleted")).thenReturn(false);
+      when(rsFind.getString("username")).thenReturn("member1");
+      when(rsFind.getString("email")).thenReturn("member1@mail.com");
+      when(rsFind.getString("password_hash")).thenReturn("hash");
+      when(rsFind.getString("status")).thenReturn("ACTIVE");
+      when(rsFind.getTimestamp("last_login_at")).thenReturn(null);
+      when(rsFind.getString("admin_level")).thenReturn(null);
+      when(rsFind.getString("roles")).thenReturn("BIDDER"); // currently only bidder
+      when(rsFind.getBigDecimal("balance")).thenReturn(BigDecimal.ZERO);
+      when(rsFind.getString("full_name")).thenReturn("name");
+      when(rsFind.getString("phone")).thenReturn("0123456789");
+      
+      // Setup update roles statement
+      PreparedStatement psUpdate = mock(PreparedStatement.class);
+      when(conn.prepareStatement(argThat(s -> s != null && s.contains("UPDATE users") && s.contains("roles")))).thenReturn(psUpdate);
+
+      dao.addRole(1, UserRole.SELLER);
+
+      verify(psUpdate).setString(eq(1), argThat(s -> s != null && s.contains("BIDDER") && s.contains("SELLER")));
+      verify(psUpdate).setInt(2, 1);
+      verify(psUpdate).executeUpdate();
+    }
+
+    @Test
+    @DisplayName("addRole() - user not found throws Exception")
+    void addRoleNotFoundThrows() throws SQLException {
+      PreparedStatement psFind = mock(PreparedStatement.class);
+      ResultSet rsFind = mock(ResultSet.class);
+      lenient().when(conn.prepareStatement(argThat(s -> s != null && s.contains("SELECT * FROM users")))).thenReturn(psFind);
+      lenient().when(psFind.executeQuery()).thenReturn(rsFind);
+      lenient().when(rsFind.next()).thenReturn(false);
+
+      assertThrows(UserNotFoundException.class, () -> dao.addRole(999, UserRole.SELLER));
+    }
+
+    @Test
+    @DisplayName("updateSellerRating() - success")
+    void updateSellerRatingSuccess() throws SQLException {
+      when(conn.prepareStatement(anyString())).thenReturn(ps);
+
+      dao.updateSellerRating(5);
+
+      verify(ps).setInt(1, 5);
+      verify(ps).setInt(2, 5);
+      verify(ps).executeUpdate();
+    }
+  }
+
+  // ═══════════════════════════════════════════════════
+  // TRANSACTIONS & MONEY OPERATIONS
+  // ═══════════════════════════════════════════════════
+
+  @Nested
+  @DisplayName("Wallet Transactions & Balance Operations")
+  class BalanceOperationsTest {
+
+    @Test
+    @DisplayName("insertTransactionAndUpdateBalance() - transaction already exists")
+    void transactionAlreadyExists() throws SQLException {
+      // exist check returns true
+      PreparedStatement psExists = mock(PreparedStatement.class);
+      ResultSet rsExists = mock(ResultSet.class);
+      when(conn.prepareStatement(argThat(s -> s != null && s.contains("SELECT EXISTS")))).thenReturn(psExists);
+      when(psExists.executeQuery()).thenReturn(rsExists);
+      when(rsExists.next()).thenReturn(true);
+      when(rsExists.getBoolean(1)).thenReturn(true);
+
+      // balance check setup
+      PreparedStatement psSelect = mock(PreparedStatement.class);
+      ResultSet rsSelect = mock(ResultSet.class);
+      when(conn.prepareStatement(argThat(s -> s != null && s.contains("SELECT balance") && s.contains("FROM users")))).thenReturn(psSelect);
+      when(psSelect.executeQuery()).thenReturn(rsSelect);
+      when(rsSelect.next()).thenReturn(true);
+      when(rsSelect.getBigDecimal("balance")).thenReturn(new BigDecimal("250.00"));
+
+      BigDecimal balance = dao.insertTransactionAndUpdateBalance(
+          "tx-exist-123", 1, new BigDecimal("100.00"), TransactionType.DEPOSIT, PaymentMethod.BANK_TRANSFER);
+
+      assertEquals(0, balance.compareTo(new BigDecimal("250.00")));
+      // verify no update statement is executed
+      verify(conn, never()).setAutoCommit(anyBoolean());
+    }
+
+    @Test
+    @DisplayName("insertTransactionAndUpdateBalance() - success execution")
+    void insertTransactionAndBalanceSuccess() throws SQLException {
+      // transaction exists check returns false
+      PreparedStatement psExists = mock(PreparedStatement.class);
+      ResultSet rsExists = mock(ResultSet.class);
+      lenient().when(conn.prepareStatement(argThat(s -> s != null && s.contains("SELECT EXISTS")))).thenReturn(psExists);
+      lenient().when(psExists.executeQuery()).thenReturn(rsExists);
+      lenient().when(rsExists.next()).thenReturn(true);
+      lenient().when(rsExists.getBoolean(1)).thenReturn(false);
+
+      // update balance setup
+      PreparedStatement psUpdate = mock(PreparedStatement.class);
+      lenient().when(conn.prepareStatement(argThat(s -> s != null && s.contains("UPDATE users") && s.contains("SET balance")))).thenReturn(psUpdate);
+      lenient().when(psUpdate.executeUpdate()).thenReturn(1);
+
+      // insert transaction setup
+      PreparedStatement psInsertTx = mock(PreparedStatement.class);
+      lenient().when(conn.prepareStatement(argThat(s -> s != null && s.contains("INSERT INTO wallet_transaction")))).thenReturn(psInsertTx);
+
+      // select balance setup
+      PreparedStatement psSelect = mock(PreparedStatement.class);
+      ResultSet rsSelect = mock(ResultSet.class);
+      lenient().when(conn.prepareStatement(argThat(s -> s != null && s.contains("SELECT balance") && s.contains("FROM users")))).thenReturn(psSelect);
+      lenient().when(psSelect.executeQuery()).thenReturn(rsSelect);
+      when(rsSelect.next()).thenReturn(true);
+      when(rsSelect.getBigDecimal("balance")).thenReturn(new BigDecimal("150.00"));
+
+      when(conn.getAutoCommit()).thenReturn(true);
+
+      BigDecimal result = dao.insertTransactionAndUpdateBalance(
+          "tx-new-123", 1, new BigDecimal("50.00"), TransactionType.DEPOSIT, PaymentMethod.BANK_TRANSFER);
+
+      assertEquals(0, result.compareTo(new BigDecimal("150.00")));
+      verify(conn).setAutoCommit(false);
+      verify(psUpdate).setBigDecimal(1, new BigDecimal("50.00"));
+      verify(psUpdate).setInt(2, 1);
+      verify(psUpdate).setBigDecimal(3, new BigDecimal("50.00"));
+      verify(psInsertTx).setString(1, "tx-new-123");
+      verify(conn).commit();
+      verify(conn).setAutoCommit(true);
+    }
+
+    @Test
+    @DisplayName("insertTransactionAndUpdateBalance() - affectedRows = 0 throws InsufficientBalanceException")
+    void insertTransactionInsufficientBalance() throws SQLException {
+      PreparedStatement psExists = mock(PreparedStatement.class);
+      ResultSet rsExists = mock(ResultSet.class);
+      lenient().when(conn.prepareStatement(argThat(s -> s != null && s.contains("SELECT EXISTS")))).thenReturn(psExists);
+      lenient().when(psExists.executeQuery()).thenReturn(rsExists);
+      lenient().when(rsExists.next()).thenReturn(true);
+      lenient().when(rsExists.getBoolean(1)).thenReturn(false);
+
+      PreparedStatement psUpdate = mock(PreparedStatement.class);
+      lenient().when(conn.prepareStatement(argThat(s -> s != null && s.contains("UPDATE users") && s.contains("SET balance")))).thenReturn(psUpdate);
+      lenient().when(psUpdate.executeUpdate()).thenReturn(0); // 0 rows affected (e.g. balance + amount < 0)
+
+      when(conn.getAutoCommit()).thenReturn(true);
+
+      assertThrows(InsufficientBalanceException.class, () -> dao.insertTransactionAndUpdateBalance(
+          "tx-fail-123", 1, new BigDecimal("-500.00"), TransactionType.WITHDRAW, PaymentMethod.BANK_TRANSFER));
+    }
+
+    @Test
+    @DisplayName("settleAuctionPayment() - connection version with refund")
+    void settleAuctionPaymentWithRefund() throws SQLException {
+      PreparedStatement psBuyer = mock(PreparedStatement.class);
+      PreparedStatement psSeller = mock(PreparedStatement.class);
+      PreparedStatement psInsertTx = mock(PreparedStatement.class);
+
+      lenient().when(conn.prepareStatement(argThat(s -> s != null && s.contains("frozen_balance")))).thenReturn(psBuyer);
+      lenient().when(conn.prepareStatement(argThat(s -> s != null && s.contains("balance = balance +") && !s.contains("frozen_balance")))).thenReturn(psSeller);
+      lenient().when(conn.prepareStatement(argThat(s -> s != null && s.contains("INSERT INTO wallet_transaction")))).thenReturn(psInsertTx);
+
+      lenient().when(psBuyer.executeUpdate()).thenReturn(1);
+      lenient().when(psSeller.executeUpdate()).thenReturn(1);
+
+      // heldAmount = 100, currentPrice = 80 (refund = 20)
+      dao.settleAuctionPayment(conn, "win-tx", "refund-tx", "sell-tx", 1, 2, 10, new BigDecimal("100.00"), new BigDecimal("80.00"));
+
+      // Verify buyer balance updates
+      verify(psBuyer).setBigDecimal(1, new BigDecimal("100.00"));
+      verify(psBuyer).setBigDecimal(2, new BigDecimal("20.00")); // refund amount
+      verify(psBuyer).setInt(3, 1); // winnerId
+      verify(psBuyer).setBigDecimal(4, new BigDecimal("100.00")); // heldAmount
+
+      // Verify seller balance updates
+      verify(psSeller).setBigDecimal(1, new BigDecimal("80.00")); // currentPrice
+      verify(psSeller).setInt(2, 2); // sellerId
+
+      // Verify transaction insertions (winner payment, winner refund, seller sale)
+      verify(psInsertTx).setString(1, "win-tx");
+      verify(psInsertTx).setString(1, "refund-tx");
+      verify(psInsertTx).setString(1, "sell-tx");
+    }
+
+    @Test
+    @DisplayName("settleAuctionPayment() - connection version buyer update fails throws InsufficientBalanceException")
+    void settleAuctionPaymentBuyerFails() throws SQLException {
+      PreparedStatement psBuyer = mock(PreparedStatement.class);
+      lenient().when(conn.prepareStatement(argThat(s -> s != null && s.contains("frozen_balance")))).thenReturn(psBuyer);
+      lenient().when(psBuyer.executeUpdate()).thenReturn(0); // buyer update fails
+
+      assertThrows(InsufficientBalanceException.class, () -> dao.settleAuctionPayment(
+          conn, "win-tx", "refund-tx", "sell-tx", 1, 2, 10, new BigDecimal("100.00"), new BigDecimal("80.00")));
+    }
+
+    @Test
+    @DisplayName("settleAuctionPayment() - connection version seller update fails throws SQLException")
+    void settleAuctionPaymentSellerFails() throws SQLException {
+      PreparedStatement psBuyer = mock(PreparedStatement.class);
+      PreparedStatement psSeller = mock(PreparedStatement.class);
+      PreparedStatement psInsertTx = mock(PreparedStatement.class);
+
+      lenient().when(conn.prepareStatement(argThat(s -> s != null && s.contains("frozen_balance")))).thenReturn(psBuyer);
+      lenient().when(conn.prepareStatement(argThat(s -> s != null && s.contains("balance = balance +") && !s.contains("frozen_balance")))).thenReturn(psSeller);
+      lenient().when(conn.prepareStatement(argThat(s -> s != null && s.contains("INSERT INTO wallet_transaction")))).thenReturn(psInsertTx);
+
+      lenient().when(psBuyer.executeUpdate()).thenReturn(1);
+      lenient().when(psSeller.executeUpdate()).thenReturn(0); // seller update fails
+
+      assertThrows(SQLException.class, () -> dao.settleAuctionPayment(
+          conn, "win-tx", "refund-tx", "sell-tx", 1, 2, 10, new BigDecimal("100.00"), new BigDecimal("80.00")));
+    }
+
+    @Test
+    @DisplayName("settleAuctionPayment() - non-connection version success")
+    void settleAuctionPaymentNonConnSuccess() throws SQLException {
+      PreparedStatement psBuyer = mock(PreparedStatement.class);
+      PreparedStatement psSeller = mock(PreparedStatement.class);
+      PreparedStatement psInsertTx = mock(PreparedStatement.class);
+
+      lenient().when(conn.prepareStatement(argThat(s -> s != null && s.contains("frozen_balance")))).thenReturn(psBuyer);
+      lenient().when(conn.prepareStatement(argThat(s -> s != null && s.contains("balance = balance +") && !s.contains("frozen_balance")))).thenReturn(psSeller);
+      lenient().when(conn.prepareStatement(argThat(s -> s != null && s.contains("INSERT INTO wallet_transaction")))).thenReturn(psInsertTx);
+
+      lenient().when(psBuyer.executeUpdate()).thenReturn(1);
+      lenient().when(psSeller.executeUpdate()).thenReturn(1);
+      when(conn.getAutoCommit()).thenReturn(true);
+
+      dao.settleAuctionPayment("win-tx", "sell-tx", 1, 2, 10, new BigDecimal("50.00"), TransactionType.BID_WIN);
+
+      verify(conn).setAutoCommit(false);
+      verify(psBuyer).setBigDecimal(1, new BigDecimal("50.00"));
+      verify(psBuyer).setInt(2, 1);
+      verify(psSeller).setBigDecimal(1, new BigDecimal("50.00"));
+      verify(psSeller).setInt(2, 2);
+      verify(conn).commit();
+      verify(conn).setAutoCommit(true);
+    }
+
+    @Test
+    @DisplayName("settleAuctionPayment() - non-connection version SQLException triggers rollback")
+    void settleAuctionPaymentNonConnRollback() throws SQLException {
+      PreparedStatement psBuyer = mock(PreparedStatement.class);
+      when(conn.prepareStatement(argThat(s -> s != null && s.contains("frozen_balance = frozen_balance -")))).thenReturn(psBuyer);
+      when(psBuyer.executeUpdate()).thenThrow(new SQLException("DB write error"));
+      when(conn.getAutoCommit()).thenReturn(true);
+
+      assertThrows(SQLException.class, () -> dao.settleAuctionPayment(
+          "win-tx", "sell-tx", 1, 2, 10, new BigDecimal("50.00"), TransactionType.BID_WIN));
+
+      verify(conn).rollback();
+    }
+  }
+
+  // ═══════════════════════════════════════════════════
+  // OTHER SPECIAL METHODS & AUTH
+  // ═══════════════════════════════════════════════════
+
+  @Nested
+  @DisplayName("Authentication & Helpers")
+  class AuthenticationAndHelpersTest {
+
+    @Test
+    @DisplayName("authenticate() - user not found")
+    void authenticateUserNotFound() throws SQLException {
+      when(conn.prepareStatement(anyString())).thenReturn(ps);
+      when(ps.executeQuery()).thenReturn(rs);
+      when(rs.next()).thenReturn(false);
+
+      Optional<User> auth = dao.authenticate("unknown_user", "password");
+
+      assertTrue(auth.isEmpty());
+    }
+
+    @Test
+    @DisplayName("authenticate() - password mismatch")
+    void authenticatePasswordMismatch() throws SQLException {
+      when(conn.prepareStatement(anyString())).thenReturn(ps);
+      when(ps.executeQuery()).thenReturn(rs);
+      when(rs.next()).thenReturn(true);
+      setupUserMemberRs();
+      staticPasswordMock.when(() -> PasswordUtil.verify("wrong_pass", "hashedPass")).thenReturn(false);
+
+      Optional<User> auth = dao.authenticate("member1", "wrong_pass");
+
+      assertTrue(auth.isEmpty());
+    }
+
+    @Test
+    @DisplayName("authenticate() - user is BANNED / inactive")
+    void authenticateUserInactive() throws SQLException {
+      when(conn.prepareStatement(anyString())).thenReturn(ps);
+      when(ps.executeQuery()).thenReturn(rs);
+      when(rs.next()).thenReturn(true);
+      
+      setupUserMemberRs();
+      when(rs.getString("status")).thenReturn("BANNED"); // set status to BANNED
+
+      staticPasswordMock.when(() -> PasswordUtil.verify("password", "hashedPass")).thenReturn(true);
+
+      Optional<User> auth = dao.authenticate("member1", "password");
+
+      assertTrue(auth.isEmpty());
+    }
+
+    @Test
+    @DisplayName("authenticate() - active user success")
+    void authenticateSuccess() throws SQLException {
+      when(conn.prepareStatement(anyString())).thenReturn(ps);
+      when(ps.executeQuery()).thenReturn(rs);
+      when(rs.next()).thenReturn(true);
+      setupUserMemberRs();
+      staticPasswordMock.when(() -> PasswordUtil.verify("password", "hashedPass")).thenReturn(true);
+
+      Optional<User> auth = dao.authenticate("member1", "password");
+
+      assertTrue(auth.isPresent());
+      assertEquals("member1", auth.get().getUsername());
+    }
+
+    @Test
+    @DisplayName("existsByEmail() - true")
+    void existsByEmailTrue() throws SQLException {
+      when(conn.prepareStatement(anyString())).thenReturn(ps);
+      when(ps.executeQuery()).thenReturn(rs);
+      when(rs.next()).thenReturn(true);
+      when(rs.getBoolean(1)).thenReturn(true);
+
+      assertTrue(dao.existsByEmail("test@mail.com"));
+    }
+
+    @Test
+    @DisplayName("existsByEmail() - false")
+    void existsByEmailFalse() throws SQLException {
+      when(conn.prepareStatement(anyString())).thenReturn(ps);
+      when(ps.executeQuery()).thenReturn(rs);
+      when(rs.next()).thenReturn(true);
+      when(rs.getBoolean(1)).thenReturn(false);
+
+      assertFalse(dao.existsByEmail("test@mail.com"));
+    }
+
+    @Test
+    @DisplayName("existsByUsername() - true")
+    void existsByUsernameTrue() throws SQLException {
+      when(conn.prepareStatement(anyString())).thenReturn(ps);
+      when(ps.executeQuery()).thenReturn(rs);
+      when(rs.next()).thenReturn(true);
+      when(rs.getBoolean(1)).thenReturn(true);
+
+      assertTrue(dao.existsByUsername("username"));
+    }
+
+    @Test
+    @DisplayName("existsByPhone() - true")
+    void existsByPhoneTrue() throws SQLException {
+      when(conn.prepareStatement(anyString())).thenReturn(ps);
+      when(ps.executeQuery()).thenReturn(rs);
+      when(rs.next()).thenReturn(true);
+      when(rs.getBoolean(1)).thenReturn(true);
+
+      assertTrue(dao.existsByPhone("0912345678"));
+    }
+
+    @Test
+    @DisplayName("findAllSellers() - filters and maps active sellers correctly")
+    void findAllSellersFilters() throws SQLException {
+      when(conn.prepareStatement(anyString())).thenReturn(ps);
+      when(ps.executeQuery()).thenReturn(rs);
+
+      // Mock 3 rows: 1 member active, 1 admin (should be skipped), 1 member active
+      when(rs.next()).thenReturn(true, true, true, false);
+
+      // Row 1: Member Active
+      when(rs.getInt("user_id")).thenReturn(10, 11, 12);
+      when(rs.getTimestamp("created_at")).thenReturn(Timestamp.from(Instant.now()));
+      when(rs.getBoolean("is_deleted")).thenReturn(false);
+      when(rs.getString("username")).thenReturn("seller1", "admin_row", "seller2");
+      when(rs.getString("email")).thenReturn("s1@mail.com", "admin@mail.com", "s2@mail.com");
+      when(rs.getString("password_hash")).thenReturn("hash");
+      when(rs.getString("status")).thenReturn("ACTIVE");
+      when(rs.getTimestamp("last_login_at")).thenReturn(null);
+      when(rs.getString("full_name")).thenReturn("Seller One", "Admin One", "Seller Two");
+
+      // Set different user roles & types for each row iteration
+      when(rs.getString("admin_level")).thenReturn(null, "SUPER_ADMIN", null);
+      when(rs.getString("roles")).thenReturn("SELLER", "ADMIN", "SELLER");
+      when(rs.getBigDecimal("balance")).thenReturn(BigDecimal.ZERO);
+      when(rs.getString("phone")).thenReturn("09123");
+      when(rs.getString("address")).thenReturn("HN");
+      when(rs.getBigDecimal("seller_rating")).thenReturn(new BigDecimal("4.5"));
+      when(rs.getString("avatar_url")).thenReturn("img.jpg");
+      when(rs.getInt("total_bids_placed")).thenReturn(0);
+      when(rs.getInt("total_items_sold")).thenReturn(10);
+
+      List<UserMember> sellers = dao.findAllSellers();
+
+      // Verify that the Admin row was skipped and both active Member sellers are included
+      assertEquals(2, sellers.size());
+      assertEquals("seller1", sellers.get(0).getUsername());
+      assertEquals("seller2", sellers.get(1).getUsername());
+    }
+  }
 }

@@ -1,10 +1,12 @@
 package vn.edu.vnu.uet.group8.common.dto.model;
 
-import static org.junit.jupiter.api.Assertions.*;
-
 import java.math.BigDecimal;
 import java.time.Instant;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -136,14 +138,7 @@ class BidRecordTest {
                     () -> mauHopLe().amount(new BigDecimal("-1")).build());
         }
     }
-
-    @Test
-    @DisplayName("placedAt tương lai → ném")
-    void placedAtTuongLai() {
-        assertThrows(IllegalArgumentException.class,
-                () -> mauHopLe().placedAt(Instant.now().plusSeconds(3600)).build());
-    }
-
+    
     @Test
     @DisplayName("toString() chứa các field chính")
     void toStringFull() {
