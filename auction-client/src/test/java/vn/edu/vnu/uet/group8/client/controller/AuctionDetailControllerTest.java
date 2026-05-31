@@ -656,7 +656,8 @@ class AuctionDetailControllerTest extends FxTestBase {
     void onFavorite_removeFailure_callsErrorAlert() throws Exception {
         try (MockedStatic<ClientModel> cm = mockStatic(ClientModel.class);
              MockedStatic<FavoriteService> fs = mockStatic(FavoriteService.class);
-             MockedStatic<ModalUtil> mu = mockStatic(ModalUtil.class)) {
+             MockedStatic<ModalUtil> mu = mockStatic(ModalUtil.class);
+             MockedStatic<Platform> mp = mockPlatformRunLaterSync()) {
 
             AuctionItemDTO item = makeItem(SessionStatus.ACTIVE);
             ClientModel mockModel = mock(ClientModel.class);
@@ -681,7 +682,8 @@ class AuctionDetailControllerTest extends FxTestBase {
     void onFavorite_addFailure_callsErrorAlert() throws Exception {
         try (MockedStatic<ClientModel> cm = mockStatic(ClientModel.class);
              MockedStatic<FavoriteService> fs = mockStatic(FavoriteService.class);
-             MockedStatic<ModalUtil> mu = mockStatic(ModalUtil.class)) {
+             MockedStatic<ModalUtil> mu = mockStatic(ModalUtil.class);
+             MockedStatic<Platform> mp = mockPlatformRunLaterSync()) {
 
             AuctionItemDTO item = makeItem(SessionStatus.ACTIVE);
             ClientModel mockModel = mock(ClientModel.class);
@@ -1025,7 +1027,10 @@ class AuctionDetailControllerTest extends FxTestBase {
             TextField tfMax = getField("tfMaxPrice"); tfMax.setText("5000000");
             controller.onActivateAuto();
 
-            mu.verify(() -> ModalUtil.showSuccessModal(anyString(), anyString()));
+            Label toast = getField("toastLabel");
+            assertNotNull(toast);
+            assertTrue(toast.isVisible());
+            assertTrue(toast.getText().contains("Đã kích hoạt Auto-bid thành công!"));
             assertTrue(((Button) getField("btnAutoToggle")).getText().contains("ĐANG BẬT"));
         }
     }
@@ -1054,7 +1059,10 @@ class AuctionDetailControllerTest extends FxTestBase {
             TextField tfMax = getField("tfMaxPrice"); tfMax.setText("5000000");
             controller.onActivateAuto();
 
-            mu.verify(() -> ModalUtil.showSuccessModal(anyString(), eq("Đã kích hoạt Auto-bid thành công!")));
+            Label toast = getField("toastLabel");
+            assertNotNull(toast);
+            assertTrue(toast.isVisible());
+            assertTrue(toast.getText().contains("Đã kích hoạt Auto-bid thành công!"));
         }
     }
 
@@ -1082,7 +1090,10 @@ class AuctionDetailControllerTest extends FxTestBase {
             TextField tfMax = getField("tfMaxPrice"); tfMax.setText("100");
             controller.onActivateAuto();
 
-            mu.verify(() -> ModalUtil.showFailureModal(anyString(), eq("Số dư không đủ")));
+            Label toast = getField("toastLabel");
+            assertNotNull(toast);
+            assertTrue(toast.isVisible());
+            assertTrue(toast.getText().contains("Số dư không đủ"));
         }
     }
 
@@ -1106,7 +1117,10 @@ class AuctionDetailControllerTest extends FxTestBase {
             TextField tfMax = getField("tfMaxPrice"); tfMax.setText("100");
             controller.onActivateAuto();
 
-            mu.verify(() -> ModalUtil.showFailureModal(anyString(), eq("Không thể kích hoạt Auto-bid!")));
+            Label toast = getField("toastLabel");
+            assertNotNull(toast);
+            assertTrue(toast.isVisible());
+            assertTrue(toast.getText().contains("Không thể kích hoạt Auto-bid!"));
         }
     }
 
@@ -1150,7 +1164,10 @@ class AuctionDetailControllerTest extends FxTestBase {
 
             controller.onCancelAuto();
 
-            mu.verify(() -> ModalUtil.showSuccessModal(anyString(), eq("Đã hủy Auto-bid")));
+            Label toast = getField("toastLabel");
+            assertNotNull(toast);
+            assertTrue(toast.isVisible());
+            assertTrue(toast.getText().contains("Đã hủy Auto-bid"));
             assertTrue(((Button) getField("btnAutoToggle")).getText().contains("ĐANG TẮT"));
         }
     }
@@ -1178,7 +1195,10 @@ class AuctionDetailControllerTest extends FxTestBase {
 
             controller.onCancelAuto();
 
-            mu.verify(() -> ModalUtil.showSuccessModal(anyString(), eq("Đã hủy tính năng Auto-bid!")));
+            Label toast = getField("toastLabel");
+            assertNotNull(toast);
+            assertTrue(toast.isVisible());
+            assertTrue(toast.getText().contains("Đã hủy tính năng Auto-bid!"));
         }
     }
 
@@ -1205,7 +1225,10 @@ class AuctionDetailControllerTest extends FxTestBase {
 
             controller.onCancelAuto();
 
-            mu.verify(() -> ModalUtil.showFailureModal(anyString(), eq("Lỗi server")));
+            Label toast = getField("toastLabel");
+            assertNotNull(toast);
+            assertTrue(toast.isVisible());
+            assertTrue(toast.getText().contains("Lỗi server"));
         }
     }
 
@@ -1228,7 +1251,10 @@ class AuctionDetailControllerTest extends FxTestBase {
 
             controller.onCancelAuto();
 
-            mu.verify(() -> ModalUtil.showFailureModal(anyString(), eq("Không thể hủy Auto-bid!")));
+            Label toast = getField("toastLabel");
+            assertNotNull(toast);
+            assertTrue(toast.isVisible());
+            assertTrue(toast.getText().contains("Không thể hủy Auto-bid!"));
         }
     }
 
@@ -1418,24 +1444,30 @@ class AuctionDetailControllerTest extends FxTestBase {
     @Test @Order(170)
     @DisplayName("showAlert(INFORMATION) → showSuccessModal")
     void showAlert_information_callsSuccessModal() throws Exception {
-        try (MockedStatic<ModalUtil> mu = mockStatic(ModalUtil.class)) {
-            mu.when(() -> ModalUtil.showSuccessModal(any(), any())).thenAnswer(inv -> null);
+        try (MockedStatic<Platform> mp = mockPlatformRunLaterSync()) {
             invokePrivate("showAlert",
                     new Class[]{javafx.scene.control.Alert.AlertType.class, String.class, String.class},
                     javafx.scene.control.Alert.AlertType.INFORMATION, "Tiêu đề", "Nội dung");
-            mu.verify(() -> ModalUtil.showSuccessModal("Tiêu đề", "Nội dung"));
+            
+            Label toast = getField("toastLabel");
+            assertNotNull(toast);
+            assertTrue(toast.isVisible());
+            assertTrue(toast.getText().contains("Nội dung"));
         }
     }
 
     @Test @Order(171)
     @DisplayName("showAlert(ERROR) → showFailureModal")
     void showAlert_error_callsFailureModal() throws Exception {
-        try (MockedStatic<ModalUtil> mu = mockStatic(ModalUtil.class)) {
-            mu.when(() -> ModalUtil.showFailureModal(any(), any())).thenAnswer(inv -> null);
+        try (MockedStatic<Platform> mp = mockPlatformRunLaterSync()) {
             invokePrivate("showAlert",
                     new Class[]{javafx.scene.control.Alert.AlertType.class, String.class, String.class},
                     javafx.scene.control.Alert.AlertType.ERROR, "Lỗi", "Chi tiết");
-            mu.verify(() -> ModalUtil.showFailureModal("Lỗi", "Chi tiết"));
+            
+            Label toast = getField("toastLabel");
+            assertNotNull(toast);
+            assertTrue(toast.isVisible());
+            assertTrue(toast.getText().contains("Chi tiết"));
         }
     }
 
@@ -1647,7 +1679,7 @@ class AuctionDetailControllerTest extends FxTestBase {
             Label toast = getField("toastLabel");
             assertNotNull(toast);
             assertTrue(toast.isVisible());
-            assertTrue(toast.getText().contains("Phiên đã kết thúc"));
+            assertTrue(toast.getText().contains("Phiên đấu giá đã khép lại"));
         }
     }
 
