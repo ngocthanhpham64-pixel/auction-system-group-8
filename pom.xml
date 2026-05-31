@@ -22,6 +22,9 @@
 
         <junit.jupiter.version>5.10.0</junit.jupiter.version>
         <jacoco.version>0.8.11</jacoco.version>
+        <mockito.version>5.10.0</mockito.version>
+        <byte-buddy.version>1.14.12</byte-buddy.version>
+        <maven.surefire.version>3.2.5</maven.surefire.version>
     </properties>
 
     <modules>
