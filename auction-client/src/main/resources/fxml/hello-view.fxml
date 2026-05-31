@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ScrollPane?>
+<?import javafx.scene.layout.FlowPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Region?>
+<?import javafx.scene.layout.VBox?>
+<?import java.net.URL?>
+
+<VBox xmlns="http://javafx.com/javafx/25" xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="com.example.hellofx.HelloController"
+      styleClass="app-bg"
+      spacing="0">
+
+    <stylesheets>
+        <URL value="@../css/tokens.css"/>
+        <URL value="@../css/components.css"/>
+        <URL value="@../css/layout.css"/>
+    </stylesheets>
+
+    <ScrollPane fitToWidth="true" VBox.vgrow="ALWAYS" styleClass="scrollpane-clean">
+        <content>
+            <VBox spacing="20" style="-fx-padding: 24;">
+
+                <!-- HERO BANNER -->
+                <VBox styleClass="card-orange" spacing="8">
+                    <Label text="CHÀO MỪNG ĐẾN VỚI AUCTIVA"
+                           style="-fx-font-size: 11px; -fx-font-weight: bold; -fx-text-fill: rgba(255,255,255,0.9);"/>
+                    <Label text="Đấu giá trực tuyến minh bạch"
+                           style="-fx-font-size: 24px; -fx-font-weight: bold; -fx-text-fill: white;"/>
+                    <Label text="Khám phá hàng nghìn phiên đấu giá độc đáo từ đồng hồ cổ điển đến nghệ thuật quý hiếm"
+                           wrapText="true"
+                           style="-fx-font-size: 13px; -fx-text-fill: rgba(255,255,255,0.9);"/>
+                    <HBox style="-fx-padding: 8 0 0 0;">
+                        <Button text="Khám phá ngay →" onAction="#onExploreNow"
+                                style="-fx-background-color: white; -fx-text-fill: #F97316; -fx-font-size: 13px; -fx-font-weight: bold; -fx-background-radius: 8; -fx-padding: 10 24; -fx-cursor: hand;"/>
+                    </HBox>
+                </VBox>
+
+                <!-- THỐNG KÊ -->
+                <HBox spacing="12">
+                    <VBox styleClass="card" alignment="CENTER" HBox.hgrow="ALWAYS">
+                        <Label text="Phiên đang diễn ra" styleClass="text-muted" style="-fx-padding: 0 0 4 0;"/>
+                        <Label fx:id="lblActiveAuctions" text="128" styleClass="price-medium"/>
+                    </VBox>
+                    <VBox styleClass="card" alignment="CENTER" HBox.hgrow="ALWAYS">
+                        <Label text="Người tham gia" styleClass="text-muted" style="-fx-padding: 0 0 4 0;"/>
+                        <Label fx:id="lblParticipants" text="2,547"
+                               style="-fx-font-size: 22px; -fx-font-weight: bold; -fx-text-fill: #1a1a1a;"/>
+                    </VBox>
+                    <VBox styleClass="card" alignment="CENTER" HBox.hgrow="ALWAYS">
+                        <Label text="Đã giao dịch" styleClass="text-muted" style="-fx-padding: 0 0 4 0;"/>
+                        <Label fx:id="lblTotalTraded" text="15.2 tỷ"
+                               style="-fx-font-size: 22px; -fx-font-weight: bold; -fx-text-fill: #22C55E;"/>
+                    </VBox>
+                    <VBox styleClass="card" alignment="CENTER" HBox.hgrow="ALWAYS">
+                        <Label text="Sản phẩm" styleClass="text-muted" style="-fx-padding: 0 0 4 0;"/>
+                        <Label fx:id="lblTotalProducts" text="3,891"
+                               style="-fx-font-size: 22px; -fx-font-weight: bold; -fx-text-fill: #1a1a1a;"/>
+                    </VBox>
+                </HBox>
+
+                <!-- DANH MỤC -->
+                <VBox spacing="10">
+                    <Label text="Danh mục nổi bật" styleClass="h4"/>
+                    <HBox spacing="8">
+                        <Button text="Tất cả" onAction="#onCategoryAll" styleClass="tag-orange"/>
+                        <Button text="Đồ điện tử" onAction="#onCategoryElectronics" styleClass="tag-inactive"/>
+                        <Button text="Thời trang" onAction="#onCategoryFashion" styleClass="tag-inactive"/>
+                        <Button text="Đồ cổ" onAction="#onCategoryAntiques" styleClass="tag-inactive"/>
+                        <Button text="Bất động sản" onAction="#onCategoryRealEstate" styleClass="tag-inactive"/>
+                        <Button text="Xe cộ" onAction="#onCategoryVehicles" styleClass="tag-inactive"/>
+                        <Button text="Khác" onAction="#onCategoryOther" styleClass="tag-inactive"/>
+                    </HBox>
+                </VBox>
+
+                <!-- ĐẤU GIÁ NỔI BẬT -->
+                <HBox alignment="CENTER_LEFT">
+                    <VBox HBox.hgrow="ALWAYS">
+                        <Label text="🔥 Đấu giá nổi bật" styleClass="h4"/>
+                        <Label text="Những phiên đấu giá hot nhất hôm nay" styleClass="text-muted" style="-fx-padding: 2 0 0 0;"/>
+                    </VBox>
+                    <Label text="Xem tất cả →" onMouseClicked="#onViewAllAuctions" styleClass="text-link-bold"/>
+                </HBox>
+
+                <!-- DANH SÁCH SẢN PHẨM -->
+                <FlowPane fx:id="productContainer" hgap="16" vgap="16"
+                          style="-fx-background-color: transparent;"/>
+
+            </VBox>
+        </content>
+    </ScrollPane>
+</VBox>
