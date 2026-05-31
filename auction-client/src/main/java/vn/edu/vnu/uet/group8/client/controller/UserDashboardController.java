@@ -13,7 +13,6 @@ import javafx.scene.Node;
 import javafx.scene.chart.CategoryAxis;
 import javafx.scene.chart.LineChart;
 import javafx.scene.chart.NumberAxis;
-import javafx.scene.chart.XYChart;
 import javafx.scene.control.Button;
 import javafx.scene.control.Hyperlink;
 import javafx.scene.control.Label;
@@ -366,63 +365,6 @@ public class UserDashboardController implements Initializable {
     }
 
     private void loadActivityChart() {
-        if (activityChart == null) return;
-        
-        activityChart.getData().clear();
-        
-        XYChart.Series<String, Number> bidSeries = new XYChart.Series<>();
-        bidSeries.setName("Lượt đặt giá");
-        
-        XYChart.Series<String, Number> winSeries = new XYChart.Series<>();
-        winSeries.setName("Lượt thắng thầu");
-        
-        java.time.LocalDate today = java.time.LocalDate.now();
-        java.time.LocalDate startDate = today.minusDays(6);
-        java.time.format.DateTimeFormatter dtf = java.time.format.DateTimeFormatter.ofPattern("dd/MM");
-        
-        java.util.Map<java.time.LocalDate, Integer> bidCounts = new java.util.HashMap<>();
-        java.util.Map<java.time.LocalDate, Integer> winCounts = new java.util.HashMap<>();
-        
-        for (int i = 0; i < 7; i++) {
-            java.time.LocalDate date = startDate.plusDays(i);
-            bidCounts.put(date, 0);
-            winCounts.put(date, 0);
-        }
-        
-        UserService.loadMyBids(bids -> {
-            if (bids != null) {
-                for (var bid : bids) {
-                    if (bid.getBidTime() != null) {
-                        java.time.LocalDate bidDate = bid.getBidTime().atZone(java.time.ZoneId.systemDefault()).toLocalDate();
-                        if (bidCounts.containsKey(bidDate)) {
-                            bidCounts.put(bidDate, bidCounts.get(bidDate) + 1);
-                        }
-                    }
-                }
-            }
-            
-            UserService.loadPurchaseHistory(purchases -> {
-                if (purchases != null) {
-                    for (var item : purchases) {
-                        if (item.getEndTime() != null) {
-                            java.time.LocalDate winDate = item.getEndTime().atZone(java.time.ZoneId.systemDefault()).toLocalDate();
-                            if (winCounts.containsKey(winDate)) {
-                                winCounts.put(winDate, winCounts.get(winDate) + 1);
-                            }
-                        }
-                    }
-                }
-                
-                Platform.runLater(() -> {
-                    for (int i = 0; i < 7; i++) {
-                        java.time.LocalDate date = startDate.plusDays(i);
-                        String label = date.format(dtf);
-                        bidSeries.getData().add(new XYChart.Data<>(label, bidCounts.get(date)));
-                        winSeries.getData().add(new XYChart.Data<>(label, winCounts.get(date)));
-                    }
-                    activityChart.getData().addAll(bidSeries, winSeries);
-                });
-            });
-        });
+       // Xóa
     }
 }

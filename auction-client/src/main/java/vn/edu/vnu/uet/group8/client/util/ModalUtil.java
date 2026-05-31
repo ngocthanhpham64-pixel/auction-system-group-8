@@ -81,9 +81,14 @@ public final class ModalUtil {
             Scene scene = new Scene(wrapperRoot);
             scene.setFill(Color.TRANSPARENT);
             
-            // Kế thừa CSS từ màn hình chính
+            // CHỈ copy stylesheet chính (theme), KHÔNG copy toàn bộ stylesheets
+            // Mỗi Scene có CSS cache riêng — copy tất cả tạo ~33KB cache trùng lặp mỗi lần mở modal
             if (SceneManager.getStage() != null && SceneManager.getStage().getScene() != null) {
-                scene.getStylesheets().addAll(SceneManager.getStage().getScene().getStylesheets());
+                for (String ss : SceneManager.getStage().getScene().getStylesheets()) {
+                    if (!scene.getStylesheets().contains(ss)) {
+                        scene.getStylesheets().add(ss);
+                    }
+                }
             }
 
             modalStage.setScene(scene);
@@ -111,7 +116,20 @@ public final class ModalUtil {
                 fadeIn.play();
             });
 
-            modalStage.showAndWait();
+            // CRITICAL FIX: Dọn dẹp khi đóng modal để tránh memory leak
+            // initOwner() tạo strong reference parent→child. Nếu không dọn,
+            // mỗi modal Stage (~50MB) sẽ KHÔNG BAO GIỜ bị GC.
+            modalStage.setOnHidden(e -> {
+                // Xóa scene graph để giải phóng FXML nodes + CSS cache
+                scene.setRoot(new javafx.scene.layout.StackPane());
+                scene.getStylesheets().clear();
+                modalStage.setScene(null);
+                if (wrapperController != null) {
+                    wrapperController.setModalStage(null); // Cắt reference vòng
+                }
+            });
+
+            modalStage.show();
 
         } catch (IOException e) {
             LOGGER.log(Level.SEVERE, "Failed to load modal: " + contentFxml, e);
@@ -121,7 +139,7 @@ public final class ModalUtil {
                 alert.setTitle("Lỗi");
                 alert.setHeaderText("Không thể tải giao diện hộp thoại");
                 alert.setContentText("Không thể nạp " + contentFxml + "\nChi tiết: " + e.getMessage());
-                alert.showAndWait();
+                alert.show();
             });
         }
     }

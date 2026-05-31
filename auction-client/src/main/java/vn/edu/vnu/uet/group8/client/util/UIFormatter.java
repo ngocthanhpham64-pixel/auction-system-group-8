@@ -37,6 +37,20 @@ public class UIFormatter {
         return String.format("%02d:%02d:%02d", hours,minutes,secs);
     }
 
+    public static String resolveImageUrl(String url) {
+        if (url == null || url.trim().isEmpty()) {
+            return "";
+        }
+        String resolvedUrl = url;
+        if (resolvedUrl.startsWith("http://localhost:8081")) {
+            String serverHost = vn.edu.vnu.uet.group8.client.networking.AuctionClient.getInstance().getHost();
+            if (serverHost != null && !serverHost.equalsIgnoreCase("localhost")) {
+                resolvedUrl = resolvedUrl.replace("localhost", serverHost);
+            }
+        }
+        return resolvedUrl;
+    }
+
     public static void setCircularAvatar(javafx.scene.image.ImageView imageView, javafx.scene.control.Label fallbackLabel, String avatarUrl, double size) {
         if (avatarUrl == null || avatarUrl.trim().isEmpty()) {
             if (imageView != null) imageView.setVisible(false);
@@ -44,13 +58,7 @@ public class UIFormatter {
             return;
         }
 
-        String resolvedUrl = avatarUrl;
-        if (resolvedUrl.startsWith("http://localhost:8081")) {
-            String serverHost = vn.edu.vnu.uet.group8.client.networking.AuctionClient.getInstance().getHost();
-            if (serverHost != null && !serverHost.equalsIgnoreCase("localhost")) {
-                resolvedUrl = resolvedUrl.replace("localhost", serverHost);
-            }
-        }
+        String resolvedUrl = resolveImageUrl(avatarUrl);
 
         try {
             javafx.scene.image.Image img = new javafx.scene.image.Image(resolvedUrl, true);

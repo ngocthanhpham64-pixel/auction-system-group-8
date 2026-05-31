@@ -116,10 +116,17 @@ public final class BidService {
                 .payload(Map.of("itemId", itemId))
                 .build();
         AuctionClient.getInstance().sendRequest(request,response -> {
-            if(response.isSuccess()){
-                List<BidRecord> records = GsonUtil.toList(response.getData(),BidRecord.class);
-                onResult.accept(records != null ? records : List.of());
-            } else{
+            try {
+                if(response.isSuccess()){
+                    List<BidRecord> records = GsonUtil.toList(response.getData(),BidRecord.class);
+                    onResult.accept(records != null ? records : List.of());
+                } else{
+                    System.err.println("BID_HISTORY failed: " + response.getMessage());
+                    onResult.accept(List.of());
+                }
+            } catch (Exception e) {
+                System.err.println("Exception in BidService.loadHistory parsing: " + e.getMessage());
+                e.printStackTrace();
                 onResult.accept(List.of());
             }
         });

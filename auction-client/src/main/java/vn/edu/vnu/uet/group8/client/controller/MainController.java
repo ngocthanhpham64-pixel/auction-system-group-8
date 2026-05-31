@@ -3,6 +3,8 @@ package vn.edu.vnu.uet.group8.client.controller;
 import java.io.IOException;
 import java.util.logging.Logger;
 
+import javafx.beans.value.ChangeListener;
+import javafx.beans.value.WeakChangeListener;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
@@ -18,8 +20,6 @@ import vn.edu.vnu.uet.group8.client.service.UserService;
 import vn.edu.vnu.uet.group8.client.util.PopupUtil;
 import vn.edu.vnu.uet.group8.client.util.SessionManager;
 import vn.edu.vnu.uet.group8.client.util.UIFormatter;
-import javafx.beans.value.ChangeListener;
-import javafx.beans.value.WeakChangeListener;
 
 /**
  * Controller chính điều phối layout và navigation cho toàn bộ ứng dụng.
@@ -68,7 +68,7 @@ public class MainController {
         // Đăng ký nhận thông báo real-time khi đang mở app
         vn.edu.vnu.uet.group8.client.service.NotificationService.subscribePush(notif -> {
             javafx.application.Platform.runLater(() -> {
-                ClientModel.getInstance().addNotification(notif);
+                
                 
                 // Trừ khi bị vượt giá tiền max (autobid bị tắt) thì mới hiện popup
                 if ("OUTBID".equals(notif.getType())) {

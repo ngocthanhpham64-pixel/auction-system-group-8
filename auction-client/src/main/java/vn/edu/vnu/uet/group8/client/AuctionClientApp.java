@@ -61,12 +61,10 @@ public class AuctionClientApp extends Application {
         }
 
         // 3. Hiển thị màn hình đăng nhập
-        // ✅ Fix: file thực tế là "LoginView.fxml", không phải "login.fxml"
         SceneManager.switchTo(SceneManager.VIEW_LOGIN);
     }
 
     /**
-     * ✅ Fix: JavaFX gọi stop() khi user đóng cửa sổ.
      * Dọn socket trước khi JVM thoát, tránh thread daemon bị treo.
      */
     @Override
