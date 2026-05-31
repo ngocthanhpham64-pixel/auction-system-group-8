@@ -174,8 +174,13 @@ public class AuctionService {
     try {
       AuctionSession session = loadSessionOrThrow(sessionId);
 
-      boolean ok = session.transitionStatus(
-          SessionStatus.UPCOMING, SessionStatus.ACTIVE);
+      boolean ok = false;
+      if (session.getStatus() == SessionStatus.ACTIVE) {
+        ok = true;
+      } else {
+        ok = session.transitionStatus(
+            SessionStatus.UPCOMING, SessionStatus.ACTIVE);
+      }
 
       if (!ok) {
         throw new AuctionException(

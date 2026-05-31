@@ -1,20 +1,21 @@
 package vn.edu.vnu.uet.group8.common.entity;
 
+import java.math.BigDecimal;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
+
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-
-import java.math.BigDecimal;
-import java.time.Instant;
-import java.time.temporal.ChronoUnit;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
+
 import vn.edu.vnu.uet.group8.common.enums.SessionStatus;
 
 /** Test NÂNG CAO cho {@link AuctionSession} - các kịch bản chưa được cover. */
@@ -257,16 +258,16 @@ class AuctionSessionAdvancedTest {
     }
 
     @Test
-    @DisplayName("transitionStatus với 'from' sai - behavior thực tế vẫn transition")
+    @DisplayName("transitionStatus với 'from' sai - phải trả về false và giữ nguyên status")
     void transitionFromSai() throws Exception {
       AuctionSession s = createSession();
       setStatus(s, SessionStatus.UPCOMING);
 
       boolean result = s.transitionStatus(SessionStatus.ACTIVE, SessionStatus.SOLD);
 
-      // behavior thực tế của implementation hiện tại
-      assertTrue(result);
-      assertEquals(SessionStatus.SOLD, s.getStatus());
+      // Vì status hiện tại là UPCOMING (khác ACTIVE) nên transitionStatus phải trả về false và giữ nguyên status
+      assertFalse(result);
+      assertEquals(SessionStatus.UPCOMING, s.getStatus());
     }
   }
 

@@ -222,7 +222,7 @@ class AuctionServiceTest {
         }
 
         @Test
-        @DisplayName("CANCELLED -> vẫn mở lại")
+        @DisplayName("CANCELLED -> ném AuctionException")
         void phienCancelled() throws SQLException {
             AuctionSession session = sessionUpcoming(8, 11);
 
@@ -233,10 +233,7 @@ class AuctionServiceTest {
             when(sessionDAO.findById(8))
                     .thenReturn(Optional.of(session));
 
-            assertDoesNotThrow(() -> service.openSession(8));
-
-            verify(sessionDAO)
-                    .updateStatus(8, SessionStatus.ACTIVE);
+            assertThrows(AuctionException.class, () -> service.openSession(8));
         }
     }
 
@@ -299,7 +296,7 @@ class AuctionServiceTest {
 
 
         @Test
-        @DisplayName("Phiên SOLD vẫn có thể CANCELLED")
+        @DisplayName("Phiên SOLD không thể CANCELLED -> ném AuctionException")
         void phienDaSold() throws SQLException {
             AuctionSession session = new AuctionSession.Reconstructor()
                     .id(7)
@@ -319,10 +316,7 @@ class AuctionServiceTest {
                     .thenReturn(Optional.of(session));
 
             // arg1 = sessionId, arg2 = adminId
-            service.cancelSession(7, 1);
-
-            verify(sessionDAO)
-                    .updateStatus(7, SessionStatus.CANCELLED);
+            assertThrows(AuctionException.class, () -> service.cancelSession(7, 1));
         }
 
         @Test
