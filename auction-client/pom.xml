@@ -18,6 +18,11 @@
   <properties>
     <gson.version>2.10.1</gson.version>
     <javafx.version>17.0.6</javafx.version>
+    <junit.jupiter.version>5.10.0</junit.jupiter.version>
+    <mockito.version>5.11.0</mockito.version>
+    <byte-buddy.version>1.14.12</byte-buddy.version> <!-- Thêm biến này -->
+    <maven.surefire.version>3.2.5</maven.surefire.version> <!-- Thêm biến này -->
+    <jacoco.version>0.8.11</jacoco.version> <!-- Thêm biến này -->
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <jacocoArgLine></jacocoArgLine>
   </properties>
@@ -92,6 +97,8 @@
 
   <build>
 
+  <finalName>auction-client</finalName>
+
     <resources>
       <resource>
         <directory>src/main/resources</directory>
@@ -100,6 +107,8 @@
         </includes>
       </resource>
     </resources>
+
+
 
     <plugins>
 
@@ -170,6 +179,40 @@
         </executions>
       </plugin>
 
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-shade-plugin</artifactId>
+        <version>3.5.1</version>
+        <executions>
+          <execution>
+            <phase>package</phase>
+            <goals>
+              <goal>shade</goal>
+            </goals>
+            <configuration>
+              <transformers>
+                <!-- Trỏ vào class chim mồi để lách luật JavaFX 11+ -->
+                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                  <mainClass>vn.edu.vnu.uet.group8.client.MainLauncher</mainClass>
+                </transformer>
+                <!-- Gộp các file cấu hình META-INF để tránh xung đột thư viện -->
+                <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
+              </transformers>
+              <filters>
+                <filter>
+                  <artifact>*:*</artifact>
+                  <excludes>
+                    <!-- Lọc bỏ các file chữ ký bảo mật để tránh lỗi SecurityException khi chạy JAR -->
+                    <exclude>META-INF/*.SF</exclude>
+                    <exclude>META-INF/*.DSA</exclude>
+                    <exclude>META-INF/*.RSA</exclude>
+                  </excludes>
+                </filter>
+              </filters>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
     </plugins>
 
   </build>
