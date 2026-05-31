@@ -1,15 +1,20 @@
 package vn.edu.vnu.uet.group8.common.util;
 
-import static org.junit.jupiter.api.Assertions.*;
-
-import com.google.gson.JsonObject;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+
+import com.google.gson.JsonObject;
 
 /** Test cho {@link GsonUtil} - test custom Instant adapter và các tiện ích chuyển đổi. */
 class GsonUtilTest {

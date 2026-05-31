@@ -15,7 +15,10 @@ public final class GsonUtil {
             .registerTypeAdapter(Instant.class,
                     (com.google.gson.JsonSerializer<Instant>) (src, typeOfSrc,context) -> context.serialize(src.toString()))
             .registerTypeAdapter(Instant.class,
-                    (com.google.gson.JsonDeserializer<Instant>) (json,typeOfT,context)-> Instant.parse(json.getAsString()))
+                    (com.google.gson.JsonDeserializer<Instant>) (json,typeOfT,context)-> {
+                        if (json == null || json.isJsonNull() || json.getAsString().isEmpty()) return null;
+                        return Instant.parse(json.getAsString());
+                    })
             .create();
     private GsonUtil(){}
     /**

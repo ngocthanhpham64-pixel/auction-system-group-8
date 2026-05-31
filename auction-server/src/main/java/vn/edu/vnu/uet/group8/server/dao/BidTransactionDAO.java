@@ -3,10 +3,9 @@ package vn.edu.vnu.uet.group8.server.dao;
 import java.math.BigDecimal;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
-import java.sql.Statement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Timestamp;
+import java.sql.Statement;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
@@ -182,7 +181,7 @@ public class BidTransactionDAO {
           SELECT bt.bid_id, bt.session_id, bt.bidder_id, u.username, bt.bid_amount, bt.status, bt.created_at
           FROM bid_transaction bt
           JOIN users u ON bt.bidder_id = u.user_id
-          WHERE session_id = ?
+          WHERE bt.session_id = ?
           ORDER BY bt.created_at DESC, bt.bid_id DESC
           LIMIT 50
         """;
