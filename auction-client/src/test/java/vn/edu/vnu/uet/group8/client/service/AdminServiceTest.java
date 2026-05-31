@@ -1,13 +1,18 @@
 package vn.edu.vnu.uet.group8.client.service;
 
-import org.junit.jupiter.api.*;
-import vn.edu.vnu.uet.group8.client.TestFXSetup;
-import vn.edu.vnu.uet.group8.client.util.SessionManager;
-import vn.edu.vnu.uet.group8.common.dto.UserAdminDTO;
-
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Test;
+
+import vn.edu.vnu.uet.group8.client.TestFXSetup;
+import vn.edu.vnu.uet.group8.client.util.SessionManager;
+import vn.edu.vnu.uet.group8.common.dto.model.UserAdminDTO;
 
 @DisplayName("AdminService (client-side validation)")
 class AdminServiceTest extends TestFXSetup {
