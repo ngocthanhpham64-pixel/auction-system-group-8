@@ -66,7 +66,7 @@ public class UserDashboardController implements Initializable {
     @FXML private Label lblSalesSuccessRate;
     
     // Biểu đồ
-    @FXML private LineChart<String, Number> spendingChart;
+    @FXML private LineChart<String, Number> activityChart;
     @FXML private CategoryAxis xAxis;
     @FXML private NumberAxis yAxis;
     
@@ -89,7 +89,6 @@ public class UserDashboardController implements Initializable {
     private ChangeListener<LoginResponse> userListener;
     private ChangeListener<String> avatarListener;
     private ChangeListener<BigDecimal> balanceListener;
-    private ChangeListener<BigDecimal> chartBalanceListener;
 
     // =========================================================================
     // 2. HÀM KHỞI TẠO HỆ THỐNG VẬN HÀNH (INITIALIZE)
@@ -166,7 +165,7 @@ public class UserDashboardController implements Initializable {
 
         // Kích hoạt lấy thông tin mới nhất từ máy chủ SQLite/Network
         loadFreshData();
-        loadSpendingChart(null);
+        loadActivityChart();
     }
 
     // =========================================================================
@@ -218,8 +217,8 @@ public class UserDashboardController implements Initializable {
                     if (lblBalance != null && profile.getBalance() != null) {
                         lblBalance.setText(UIFormatter.formatPrice(profile.getBalance()));
                     }
-                    // Cập nhật biểu đồ chi tiêu với ngày tạo tài khoản thực tế
-                    loadSpendingChart(profile.getCreatedAt());
+                    // Cập nhật biểu đồ hoạt động
+                    loadActivityChart();
                 });
             }
         });
@@ -366,53 +365,64 @@ public class UserDashboardController implements Initializable {
         }
     }
 
-    private void loadSpendingChart(java.time.Instant joinInstant) {
-        if (spendingChart == null) return;
+    private void loadActivityChart() {
+        if (activityChart == null) return;
         
-        spendingChart.getData().clear();
+        activityChart.getData().clear();
         
-        XYChart.Series<String, Number> series = new XYChart.Series<>();
-        series.setName("Biến động số dư");
+        XYChart.Series<String, Number> bidSeries = new XYChart.Series<>();
+        bidSeries.setName("Lượt đặt giá");
         
-        if (joinInstant == null) joinInstant = java.time.Instant.now();
-        java.time.LocalDate joinDate = joinInstant.atZone(java.time.ZoneId.systemDefault()).toLocalDate();
+        XYChart.Series<String, Number> winSeries = new XYChart.Series<>();
+        winSeries.setName("Lượt thắng thầu");
+        
+        java.time.LocalDate today = java.time.LocalDate.now();
+        java.time.LocalDate startDate = today.minusDays(6);
         java.time.format.DateTimeFormatter dtf = java.time.format.DateTimeFormatter.ofPattern("dd/MM");
         
-        // Tạo 7 mốc ngang cố định (Ngày tạo đến 6 ngày sau hoặc tuần gần nhất)
-        java.time.LocalDate today = java.time.LocalDate.now();
-        java.time.LocalDate startDate = joinDate;
+        java.util.Map<java.time.LocalDate, Integer> bidCounts = new java.util.HashMap<>();
+        java.util.Map<java.time.LocalDate, Integer> winCounts = new java.util.HashMap<>();
         
-        // Cập nhật để biểu đồ cuốn theo tuần: Nếu ngày tạo quá 7 ngày so với hiện tại,
-        // thì hiển thị 7 ngày gần nhất (từ 6 ngày trước đến hôm nay) để biểu đồ luôn refresh.
-        if (java.time.temporal.ChronoUnit.DAYS.between(joinDate, today) > 6) {
-            startDate = today.minusDays(6);
-        }
-
         for (int i = 0; i < 7; i++) {
             java.time.LocalDate date = startDate.plusDays(i);
-            
-            // Nếu ngày đang vẽ là tương lai thì gán = 0, ngược lại nếu là hôm nay thì lấy số dư, quá khứ thì mock = số dư
-            Number bal = date.isAfter(today) ? 0 : ClientModel.getInstance().getBalance();
-            series.getData().add(new XYChart.Data<>(date.format(dtf), bal));
+            bidCounts.put(date, 0);
+            winCounts.put(date, 0);
         }
-
-        // Cập nhật biểu đồ khi số dư thay đổi (nếu ngày hôm nay nằm trong 7 ngày đó)
-        if (chartBalanceListener != null) {
-            ClientModel.getInstance().balanceProperty().removeListener(chartBalanceListener);
-        }
-        chartBalanceListener = (obs, oldVal, newVal) -> {
-            Platform.runLater(() -> {
-                String todayStr = java.time.Instant.now().atZone(java.time.ZoneId.systemDefault()).toLocalDate().format(dtf);
-                for (XYChart.Data<String, Number> data : series.getData()) {
-                    if (data.getXValue().equals(todayStr)) {
-                        data.setYValue(newVal);
-                        break;
+        
+        UserService.loadMyBids(bids -> {
+            if (bids != null) {
+                for (var bid : bids) {
+                    if (bid.getBidTime() != null) {
+                        java.time.LocalDate bidDate = bid.getBidTime().atZone(java.time.ZoneId.systemDefault()).toLocalDate();
+                        if (bidCounts.containsKey(bidDate)) {
+                            bidCounts.put(bidDate, bidCounts.get(bidDate) + 1);
+                        }
                     }
                 }
+            }
+            
+            UserService.loadPurchaseHistory(purchases -> {
+                if (purchases != null) {
+                    for (var item : purchases) {
+                        if (item.getEndTime() != null) {
+                            java.time.LocalDate winDate = item.getEndTime().atZone(java.time.ZoneId.systemDefault()).toLocalDate();
+                            if (winCounts.containsKey(winDate)) {
+                                winCounts.put(winDate, winCounts.get(winDate) + 1);
+                            }
+                        }
+                    }
+                }
+                
+                Platform.runLater(() -> {
+                    for (int i = 0; i < 7; i++) {
+                        java.time.LocalDate date = startDate.plusDays(i);
+                        String label = date.format(dtf);
+                        bidSeries.getData().add(new XYChart.Data<>(label, bidCounts.get(date)));
+                        winSeries.getData().add(new XYChart.Data<>(label, winCounts.get(date)));
+                    }
+                    activityChart.getData().addAll(bidSeries, winSeries);
+                });
             });
-        };
-        ClientModel.getInstance().balanceProperty().addListener(new WeakChangeListener<>(chartBalanceListener));
-        
-        spendingChart.getData().add(series);
+        });
     }
 }

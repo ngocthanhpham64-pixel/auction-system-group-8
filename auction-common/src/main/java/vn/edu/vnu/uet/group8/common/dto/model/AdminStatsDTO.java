@@ -60,6 +60,7 @@ public class AdminStatsDTO {
         this.totalRevenue = totalRevenue;
         this.totalBids = totalBids;
     }
+
     public AdminStatsDTO(int activeAuctions, int totalUsers, BigDecimal totalRevenue, int totalBids,
                          int soldAuctions, int cancelledAuctions, int upcomingAuctions, int endedNoBidAuctions) {
         this(activeAuctions, totalUsers, totalRevenue, totalBids);
@@ -104,15 +105,16 @@ public class AdminStatsDTO {
     public void setCancelledAuctions(int v)  { this.cancelledAuctions = v; }
     public void setUpcomingAuctions(int v)   { this.upcomingAuctions = v; }
     public void setEndedNoBidAuctions(int v) { this.endedNoBidAuctions = v; }
+
     // ===== Object overrides =====
 
     @Override
     public String toString() {
         return "AdminStatsDTO{" +
-                "activeAuctions=" + activeAuctions +
-                ", totalUsers=" + totalUsers +
-                ", totalRevenue=" + getTotalRevenue() +
-                ", totalBids=" + totalBids +
+                "activeAuctions="   + activeAuctions +
+                ", totalUsers="     + totalUsers +
+                ", totalRevenue="   + getTotalRevenue() +
+                ", totalBids="      + totalBids +
                 ", soldAuctions="       + soldAuctions +
                 ", cancelledAuctions="  + cancelledAuctions +
                 ", upcomingAuctions="   + upcomingAuctions +
@@ -124,9 +126,9 @@ public class AdminStatsDTO {
     public boolean equals(Object o) {
         if (this == o) return true;
         if (!(o instanceof AdminStatsDTO that)) return false;
-        return activeAuctions == that.activeAuctions
-                && totalUsers == that.totalUsers
-                && totalBids == that.totalBids
+        return activeAuctions    == that.activeAuctions
+                && totalUsers    == that.totalUsers
+                && totalBids     == that.totalBids
                 && soldAuctions      == that.soldAuctions
                 && cancelledAuctions == that.cancelledAuctions
                 && upcomingAuctions  == that.upcomingAuctions

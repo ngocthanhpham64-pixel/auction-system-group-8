@@ -199,10 +199,10 @@ public final class AuctionService {
         }
         ClientModel.getInstance().updateItemCurrentPrice(update.getItemId(), update.getNewPrice());
         AuctionStatusDTO status = new AuctionStatusDTO(
-            update.getItemId(),
-            update.getNewPrice(),
-            update.getNewEndTime() != null ? update.getNewEndTime() : java.time.Instant.now(),
-            java.util.Collections.emptyList()
+                update.getItemId(),
+                update.getNewPrice(),
+                update.getNewEndTime() != null ? update.getNewEndTime() : java.time.Instant.now(),
+                java.util.Collections.emptyList()
         );
         listener.accept(status);
     }
@@ -233,6 +233,38 @@ public final class AuctionService {
         ResponseDispatcher.subscribe(EventType.AUCTION_ENDED, wrapper);
         LOGGER.fine("Subscribed AUCTION_ENDED");
         return wrapper;
+    }
+
+    // ========================================
+    // BID HISTORY
+    // ========================================
+
+    /**
+     * Lấy lịch sử đặt giá của một item (dùng trong AdminAuctionListController).
+     *
+     * @param itemId   ID item cần xem lịch sử
+     * @param onResult callback nhận danh sách {@link vn.edu.vnu.uet.group8.common.dto.model.BidRecord}
+     */
+    public static void getItemBidHistory(int itemId,
+                                         Consumer<List<vn.edu.vnu.uet.group8.common.dto.model.BidRecord>> onResult) {
+        ServerRequest<Map<String, Integer>> request = ServerRequest
+                .<Map<String, Integer>>builder(ActionType.BID_HISTORY)
+                .userId(SessionManager.getUserId())
+                .token(SessionManager.getAuthToken())
+                .payload(Map.of("itemId", itemId))
+                .build();
+
+        AuctionClient.getInstance().sendRequest(request, response -> {
+            if (response.isSuccess()) {
+                List<vn.edu.vnu.uet.group8.common.dto.model.BidRecord> list =
+                        GsonUtil.toList(response.getData(),
+                                vn.edu.vnu.uet.group8.common.dto.model.BidRecord.class);
+                acceptIfNotNull(onResult, list != null ? list : Collections.emptyList());
+            } else {
+                LOGGER.warning(() -> "BID_HISTORY failed for item " + itemId + ": " + response.getMessage());
+                acceptIfNotNull(onResult, Collections.emptyList());
+            }
+        });
     }
 
     /**
