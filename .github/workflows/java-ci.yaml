@@ -22,7 +22,7 @@ jobs:
 
     - name: Verify Code Style and Run Tests
       # Dùng 'verify' để kích hoạt cả Checkstyle (đã cài ở pom.xml) và JUnit Test
-      run: mvn clean verify 
+      run: xvfb-run mvn clean verify 
 
     - name: Package Application
       # Nếu bước Verify thành công, tiến hành đóng gói file .jar
