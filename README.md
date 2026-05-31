@@ -1,6 +1,6 @@
 # Auctiva — Hệ thống Đấu giá Trực tuyến
 
-> Bài Tập Lớn **Lập trình Nâng cao** — Học kỳ 2, năm học 2025–2026
+> Bài Tập Lớn **Lập trình Nâng cao**
 > Trường Đại học Công nghệ — Đại học Quốc gia Hà Nội (UET-VNU)
 
 **Auctiva** là một hệ thống đấu giá trực tuyến (online auction) xây dựng theo kiến trúc **client–server** với giao diện JavaFX và giao thức truyền tin TCP socket. Người dùng có thể đăng bán sản phẩm, tham gia các phiên đấu giá thời gian thực, đặt giá tự động (auto-bid) và quản lý ví điện tử trong nền tảng.
@@ -22,7 +22,8 @@
 - [11. Kiểm thử (Unit Test)](#11-kiểm-thử-unit-test)
 - [12. CI/CD](#12-cicd)
 - [13. Quy ước phát triển](#13-quy-ước-phát-triển)
-- [14. Nhóm phát triển](#14-nhóm-phát-triển)
+- [14. PDF và Video](#14-PDF-và-Video)
+- [15. Nhóm phát triển](#15-nhóm-phát-triển)
 
 ---
 
@@ -650,9 +651,13 @@ chore: them JaCoCo plugin vao pom.xml
 
 ---
 
+## 15. Link PDF và Video
+- Báo cáo dự án: https://drive.google.com/file/d/1eR1wb-UqqglAeWlAqGboDHq4wGkRmjm5/view?usp=drive_link hoặc có ở trong thư mục docs, file Báo cáo bài tập lớn.pdf
+- Video các chức năng chính: https://drive.google.com/file/d/1M-5LSMYr_cJn2FQiv1XfZz6BtfbRqUVo/view?usp=drive_link
+
 ## 14. Nhóm phát triển
 
-**Group 8 — Lớp Lập trình Nâng cao — UET-VNU — Học kỳ 2, 2025–2026.**
+**Group 8 — Lớp Lập trình Nâng cao — UET-VNU.**
 
 | Họ tên | Vai trò |
 |---|---|

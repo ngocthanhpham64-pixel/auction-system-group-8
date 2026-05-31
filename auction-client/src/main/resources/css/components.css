@@ -119,8 +119,8 @@
 .h2 { -fx-font-size: 20px; -fx-font-weight: bold; }
 .section-title { -fx-font-size: 14px; -fx-font-weight: bold; }
 .label-info { -fx-text-fill: #9ca3af; -fx-font-size: 12px; }
-.text-heading { -fx-text-fill: #0F172A; }
-.text-sub { -fx-text-fill: #64748B; }
+/* .text-heading: defined in light-theme.css / dark-theme.css */
+/* .text-sub: defined in light-theme.css / dark-theme.css */
 
 /* === AVATAR === */
 .avatar { -fx-background-color: #1a2744; -fx-text-fill: white; -fx-background-radius: 50; -fx-alignment: CENTER; }
@@ -165,7 +165,7 @@
 
 /* === COMBO BOX BASE STYLING === */
 .combo-box {
-    -fx-background-color: white;
+    -fx-background-color: transparent;
     -fx-border-color: #CBD5E1;
     -fx-border-width: 1;
     -fx-border-radius: 8;
