@@ -651,11 +651,13 @@ chore: them JaCoCo plugin vao pom.xml
 
 ---
 
-## 15. Link PDF và Video
+## 14. Link PDF và Video
 - Báo cáo dự án: https://drive.google.com/file/d/1eR1wb-UqqglAeWlAqGboDHq4wGkRmjm5/view?usp=drive_link hoặc có ở trong thư mục docs, file Báo cáo bài tập lớn.pdf
 - Video các chức năng chính: https://drive.google.com/file/d/1M-5LSMYr_cJn2FQiv1XfZz6BtfbRqUVo/view?usp=drive_link
 
-## 14. Nhóm phát triển
+---
+
+## 15. Nhóm phát triển
 
 **Group 8 — Lớp Lập trình Nâng cao — UET-VNU.**
 
